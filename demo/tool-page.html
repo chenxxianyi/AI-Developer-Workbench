@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具页面 - AI Developer Workbench</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f7f7f5',
+                        surface: '#ffffff',
+                        'surface-muted': '#f1f1ef',
+                        border: '#e5e5e0',
+                        'text-primary': '#18181b',
+                        'text-secondary': '#52525b',
+                        'text-muted': '#71717a',
+                        accent: '#2563eb',
+                        'accent-soft': '#dbeafe',
+                        danger: '#dc2626',
+                        warning: '#d97706',
+                        success: '#16a34a',
+                    },
+                    fontFamily: {
+                        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    maxWidth: {
+                        'content': '1180px',
+                        'dashboard': '1280px',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7f7f5;
+        }
+
+        .transition-smooth {
+            transition: all 200ms ease-out;
+        }
+
+        *:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .transition-smooth {
+                transition: none;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1ef;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        .sidebar-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 200ms ease-out, visibility 200ms;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 200ms ease-out;
+        }
+
+        .sidebar-mobile.active {
+            transform: translateX(0);
+        }
+
+        /* File input styling */
+        .file-upload-zone {
+            border: 2px dashed #e5e5e0;
+            background: #f1f1ef;
+        }
+
+        .file-upload-zone:hover {
+            border-color: #2563eb;
+            background: #dbeafe;
+        }
+
+        /* Code textarea styling */
+        .code-input {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="font-jakarta text-text-primary antialiased">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-30">
+        <div class="px-6 py-5 border-b border-border">
+            <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-smooth cursor-pointer">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">工具</span>
+                </div>
+
+                <a href="tool-page.html?tool=ui-review" id="nav-ui-review" class="tool-nav-item flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <span>UI Review</span>
+                </a>
+
+                <a href="tool-page.html?tool=project-doctor" id="nav-project-doctor" class="tool-nav-item flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Project Doctor</span>
+                </a>
+
+                <a href="tool-page.html?tool=agent-config" id="nav-agent-config" class="tool-nav-item flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="robot" class="w-5 h-5"></i>
+                    <span>Agent Config</span>
+                </a>
+
+                <a href="tool-page.html?tool=api-doc" id="nav-api-doc" class="tool-nav-item flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>API Doc</span>
+                </a>
+
+                <a href="tool-page.html?tool=db-schema" id="nav-db-schema" class="tool-nav-item flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    <span>DB Schema</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">系统</span>
+                </div>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="px-4 py-4 border-t border-border">
+            <div class="px-3 py-2 bg-success/10 rounded-lg">
+                <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i>
+                    <span class="text-sm font-medium text-success">服务正常</span>
+                </div>
+                <div class="text-xs text-text-muted">Mock Mode · OpenAI Compatible</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Sidebar (Mobile) -->
+    <aside id="sidebarMobile" class="sidebar-mobile fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-50 hidden md:hidden">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+            <button id="closeSidebarBtn" class="p-1 hover:bg-surface-muted rounded transition-smooth cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">工具</span>
+                </div>
+
+                <a href="tool-page.html?tool=ui-review" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <span>UI Review</span>
+                </a>
+
+                <a href="tool-page.html?tool=project-doctor" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Project Doctor</span>
+                </a>
+
+                <a href="tool-page.html?tool=agent-config" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="robot" class="w-5 h-5"></i>
+                    <span>Agent Config</span>
+                </a>
+
+                <a href="tool-page.html?tool=api-doc" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>API Doc</span>
+                </a>
+
+                <a href="tool-page.html?tool=db-schema" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    <span>DB Schema</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">系统</span>
+                </div>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border z-20">
+            <div class="max-w-content mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+                <button id="menuBtn" class="md:hidden p-2 hover:bg-surface-muted rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                <div class="flex-1 md:flex-none">
+                    <h1 id="toolTitle" class="text-xl md:text-2xl font-bold">UI Review</h1>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <a href="dashboard.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-surface-muted border border-border text-text-primary rounded-lg hover:bg-border transition-smooth cursor-pointer">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>返回</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tool Content -->
+        <div class="max-w-content mx-auto px-4 md:px-8 py-8">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Input Section -->
+                <div class="lg:col-span-2">
+                    <div class="bg-surface border border-border rounded-lg p-6">
+                        <!-- Tool Description -->
+                        <div id="toolDescription" class="mb-6 pb-6 border-b border-border">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div id="toolIcon" class="w-10 h-10 bg-accent-soft rounded-lg flex items-center justify-center">
+                                    <i data-lucide="eye" class="w-5 h-5 text-accent"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-semibold">UI Review</h2>
+                                    <p class="text-sm text-text-muted">UI 质量审查工具</p>
+                                </div>
+                            </div>
+                            <p class="text-text-secondary leading-relaxed">
+                                根据截图和前端代码审查 UI 质量，识别 AI 生成痕迹，评估设计一致性和最佳实践遵循情况。
+                            </p>
+                        </div>
+
+                        <!-- Dynamic Form Section -->
+                        <div id="formSection">
+                            <!-- Title Input -->
+                            <div class="mb-6">
+                                <label for="title" class="block text-sm font-semibold mb-2">
+                                    报告标题 <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    id="title"
+                                    name="title"
+                                    class="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth"
+                                    placeholder="例如：E-commerce Dashboard UI Review"
+                                    required
+                                >
+                                <p class="mt-2 text-sm text-text-muted">为报告设置一个清晰的标题</p>
+                            </div>
+
+                            <!-- UI Review Specific Fields -->
+                            <div id="ui-review-fields" class="tool-fields">
+                                <!-- Review Mode -->
+                                <div class="mb-6">
+                                    <label for="reviewMode" class="block text-sm font-semibold mb-2">
+                                        审查模式 <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        id="reviewMode"
+                                        name="review_mode"
+                                        class="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth cursor-pointer"
+                                        required
+                                    >
+                                        <option value="">选择审查模式</option>
+                                        <option value="screenshot">截图审查</option>
+                                        <option value="code">代码审查</option>
+                                        <option value="screenshot_code">截图 + 代码</option>
+                                    </select>
+                                    <p class="mt-2 text-sm text-text-muted">选择输入类型，至少需要一种</p>
+                                </div>
+
+                                <!-- Page Type -->
+                                <div class="mb-6">
+                                    <label for="pageType" class="block text-sm font-semibold mb-2">
+                                        页面类型
+                                    </label>
+                                    <select
+                                        id="pageType"
+                                        name="page_type"
+                                        class="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth cursor-pointer"
+                                    >
+                                        <option value="">选择页面类型（可选）</option>
+                                        <option value="landing">Landing Page</option>
+                                        <option value="dashboard">Dashboard</option>
+                                        <option value="form">Form Page</option>
+                                        <option value="detail">Detail Page</option>
+                                        <option value="listing">Listing Page</option>
+                                    </select>
+                                </div>
+
+                                <!-- Target Style -->
+                                <div class="mb-6">
+                                    <label for="targetStyle" class="block text-sm font-semibold mb-2">
+                                        目标风格
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="targetStyle"
+                                        name="target_style"
+                                        class="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth"
+                                        placeholder="例如：Apple、Stripe、Linear"
+                                    >
+                                    <p class="mt-2 text-sm text-text-muted">期望的设计风格参考</p>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="mb-6">
+                                    <label for="description" class="block text-sm font-semibold mb-2">
+                                        项目描述
+                                    </label>
+                                    <textarea
+                                        id="description"
+                                        name="description"
+                                        rows="3"
+                                        class="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth resize-none"
+                                        placeholder="简要描述项目背景、目标用户和核心功能..."
+                                    ></textarea>
+                                    <p class="mt-2 text-sm text-text-muted">帮助 AI 更准确理解设计意图</p>
+                                </div>
+
+                                <!-- Screenshot Upload -->
+                                <div class="mb-6" id="screenshotUpload">
+                                    <label class="block text-sm font-semibold mb-2">
+                                        UI 截图 <span id="screenshotRequired" class="text-danger">*</span>
+                                    </label>
+                                    <div class="file-upload-zone rounded-lg p-6 transition-smooth cursor-pointer hover:cursor-pointer">
+                                        <div class="flex flex-col items-center justify-center gap-3">
+                                            <i data-lucide="upload" class="w-10 h-10 text-text-muted"></i>
+                                            <div class="text-center">
+                                                <p class="text-text-primary font-medium mb-1">点击或拖拽上传截图</p>
+                                                <p class="text-sm text-text-muted">支持 PNG、JPEG、WebP，最大 10MB</p>
+                                            </div>
+                                            <input type="file" id="screenshot" name="screenshot" accept="image/png,image/jpeg,image/webp" class="hidden">
+                                            <button class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-smooth">
+                                                选择文件
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="screenshotPreview" class="mt-3 hidden">
+                                        <div class="flex items-center gap-3 p-3 bg-surface-muted rounded-lg">
+                                            <i data-lucide="file-image" class="w-5 h-5 text-accent"></i>
+                                            <div class="flex-1">
+                                                <p class="font-medium text-sm" id="screenshotName">文件名</p>
+                                                <p class="text-xs text-text-muted" id="screenshotSize">文件大小</p>
+                                            </div>
+                                            <button class="p-1 hover:bg-danger/10 rounded transition-smooth cursor-pointer" onclick="clearFile('screenshot')">
+                                                <i data-lucide="x" class="w-4 h-4 text-danger"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Code Input -->
+                                <div class="mb-6" id="codeInput">
+                                    <label for="code" class="block text-sm font-semibold mb-2">
+                                        前端代码 <span id="codeRequired" class="text-danger">*</span>
+                                    </label>
+                                    <textarea
+                                        id="code"
+                                        name="code"
+                                        rows="10"
+                                        class="code-input w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-accent focus:ring-1 focus:ring-accent transition-smooth resize-none"
+                                        placeholder="粘贴前端代码（HTML/CSS/JSX/Vue 等）..."
+                                    ></textarea>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <p class="text-sm text-text-muted">建议粘贴核心 UI 组件代码</p>
+                                        <span class="text-sm text-text-muted" id="codeCharCount">0 字符</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="pt-6 border-t border-border">
+                                <button
+                                    id="submitBtn"
+                                    class="w-full px-6 py-4 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-smooth cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    disabled
+                                >
+                                    <i data-lucide="play" class="w-5 h-5"></i>
+                                    <span id="submitText">开始审查</span>
+                                </button>
+                                <p class="mt-3 text-sm text-text-muted text-center">
+                                    提交后将跳转到报告详情页面
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Section -->
+                <div class="lg:col-span-1">
+                    <!-- Tips Card -->
+                    <div class="bg-surface border border-border rounded-lg p-6 mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-warning"></i>
+                            <h3 class="font-semibold">使用提示</h3>
+                        </div>
+                        <div class="space-y-3 text-sm text-text-secondary">
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <p>截图审查能识别 AI 生成痕迹和模板化设计</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <p>代码审查关注结构、命名和最佳实践</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <p>截图+代码模式能提供更全面的建议</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Limits Card -->
+                    <div class="bg-surface border border-border rounded-lg p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="info" class="w-5 h-5 text-accent"></i>
+                            <h3 class="font-semibold">上传限制</h3>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-text-secondary">图片最大大小</span>
+                                <span class="font-medium">10 MB</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-text-secondary">支持格式</span>
+                                <span class="font-medium">PNG, JPEG, WebP</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-text-secondary">代码最大长度</span>
+                                <span class="font-medium">50,000 字符</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mock Mode Notice -->
+                    <div class="mt-6 bg-warning/10 border border-warning/20 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-warning"></i>
+                            <span class="text-sm font-semibold text-warning">Mock Mode</span>
+                        </div>
+                        <p class="text-sm text-text-secondary">
+                            当前为演示模式，提交后将生成模拟报告用于展示功能。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Initialize Lucide Icons and Script -->
+    <script>
+        lucide.createIcons();
+
+        // Mobile menu functionality
+        const menuBtn = document.getElementById('menuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebarMobile = document.getElementById('sidebarMobile');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuBtn.addEventListener('click', () => {
+            sidebarMobile.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            sidebarOverlay.classList.remove('hidden');
+        });
+
+        closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+        function closeMobileSidebar() {
+            sidebarMobile.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            setTimeout(() => {
+                sidebarOverlay.classList.add('hidden');
+            }, 200);
+        }
+
+        // Get tool type from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const toolType = urlParams.get('tool') || 'ui-review';
+
+        // Update navigation active state
+        document.querySelectorAll('.tool-nav-item').forEach(item => {
+            if (item.id === `nav-${toolType}`) {
+                item.classList.add('bg-accent-soft', 'text-accent');
+                item.classList.remove('text-text-secondary');
+            }
+        });
+
+        // Tool configurations
+        const toolConfigs = {
+            'ui-review': {
+                title: 'UI Review',
+                icon: 'eye',
+                color: 'accent',
+                description: '根据截图和前端代码审查 UI 质量，识别 AI 生成痕迹，评估设计一致性和最佳实践遵循情况。'
+            },
+            'project-doctor': {
+                title: 'Project Doctor',
+                icon: 'stethoscope',
+                color: 'success',
+                description: '静态分析项目 ZIP，检查工程结构、依赖管理、代码规范和潜在风险，生成健康报告。'
+            },
+            'agent-config': {
+                title: 'Agent Config Studio',
+                icon: 'robot',
+                color: 'warning',
+                description: '根据项目特征生成 AGENTS.md、TASK_PLAN.md 等配置文件，优化 AI Coding 效果。'
+            },
+            'api-doc': {
+                title: 'API Doc Builder',
+                icon: 'file-text',
+                color: 'danger',
+                description: '从代码或项目 ZIP 生成 Markdown/OpenAPI 文档，支持多种后端框架和输出格式。'
+            },
+            'db-schema': {
+                title: 'DB Schema Review',
+                icon: 'database',
+                color: 'accent',
+                description: '审查 SQL、GORM、Prisma 等数据库定义，评估表结构、索引、性能和安全问题。'
+            }
+        };
+
+        // Apply tool configuration
+        const config = toolConfigs[toolType];
+        if (config) {
+            document.getElementById('toolTitle').textContent = config.title;
+
+            const iconDiv = document.getElementById('toolIcon');
+            iconDiv.className = `w-10 h-10 bg-${config.color}-soft rounded-lg flex items-center justify-center`;
+            iconDiv.innerHTML = `<i data-lucide="${config.icon}" class="w-5 h-5 text-${config.color}"></i>`;
+
+            lucide.createIcons();
+
+            document.getElementById('toolDescription').querySelector('h2').textContent = config.title;
+            document.getElementById('toolDescription').querySelector('p.text-text-secondary').textContent = config.description;
+            document.getElementById('submitText').textContent = '开始' + config.title.replace(' Studio', '').replace(' Builder', '');
+        }
+
+        // Form validation
+        const titleInput = document.getElementById('title');
+        const reviewModeSelect = document.getElementById('reviewMode');
+        const submitBtn = document.getElementById('submitBtn');
+        const screenshotInput = document.getElementById('screenshot');
+        const codeTextarea = document.getElementById('code');
+
+        // Character count for code
+        codeTextarea.addEventListener('input', (e) => {
+            const count = e.target.value.length;
+            document.getElementById('codeCharCount').textContent = `${count} 字符`;
+        });
+
+        // Review mode change handler
+        reviewModeSelect.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            const screenshotUpload = document.getElementById('screenshotUpload');
+            const codeInput = document.getElementById('codeInput');
+            const screenshotRequired = document.getElementById('screenshotRequired');
+            const codeRequired = document.getElementById('codeRequired');
+
+            if (mode === 'screenshot') {
+                screenshotUpload.classList.remove('hidden');
+                codeInput.classList.add('hidden');
+                screenshotRequired.classList.remove('hidden');
+                codeRequired.classList.add('hidden');
+            } else if (mode === 'code') {
+                screenshotUpload.classList.add('hidden');
+                codeInput.classList.remove('hidden');
+                screenshotRequired.classList.add('hidden');
+                codeRequired.classList.remove('hidden');
+            } else if (mode === 'screenshot_code') {
+                screenshotUpload.classList.remove('hidden');
+                codeInput.classList.remove('hidden');
+                screenshotRequired.classList.remove('hidden');
+                codeRequired.classList.remove('hidden');
+            } else {
+                screenshotUpload.classList.remove('hidden');
+                codeInput.classList.remove('hidden');
+            }
+
+            lucide.createIcons();
+        });
+
+        // File upload handling
+        const fileUploadZone = document.querySelector('.file-upload-zone');
+        const fileInputBtn = fileUploadZone.querySelector('button');
+
+        fileUploadZone.addEventListener('click', () => {
+            screenshotInput.click();
+        });
+
+        screenshotInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                document.getElementById('screenshotName').textContent = file.name;
+                document.getElementById('screenshotSize').textContent = formatFileSize(file.size);
+                document.getElementById('screenshotPreview').classList.remove('hidden');
+                fileUploadZone.classList.add('hidden');
+                validateForm();
+            }
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function clearFile(inputId) {
+            document.getElementById(inputId).value = '';
+            document.getElementById('screenshotPreview').classList.add('hidden');
+            document.querySelector('.file-upload-zone').classList.remove('hidden');
+            validateForm();
+        }
+
+        // Form validation
+        function validateForm() {
+            const title = titleInput.value.trim();
+            const reviewMode = reviewModeSelect.value;
+            const screenshot = screenshotInput.files && screenshotInput.files[0];
+            const code = codeTextarea.value.trim();
+
+            let isValid = title.length > 0 && reviewMode.length > 0;
+
+            if (reviewMode === 'screenshot') {
+                isValid = isValid && screenshot;
+            } else if (reviewMode === 'code') {
+                isValid = isValid && code.length > 0;
+            } else if (reviewMode === 'screenshot_code') {
+                isValid = isValid && screenshot && code.length > 0;
+            }
+
+            submitBtn.disabled = !isValid;
+        }
+
+        // Add validation listeners
+        titleInput.addEventListener('input', validateForm);
+        reviewModeSelect.addEventListener('change', validateForm);
+        codeTextarea.addEventListener('input', validateForm);
+
+        // Submit handler (demo - redirect to report detail)
+        submitBtn.addEventListener('click', () => {
+            if (!submitBtn.disabled) {
+                // Show loading state
+                submitBtn.innerHTML = `
+                    <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                    <span>正在处理...</span>
+                `;
+                submitBtn.disabled = true;
+                lucide.createIcons();
+
+                // Simulate delay and redirect
+                setTimeout(() => {
+                    window.location.href = 'report-detail.html?id=demo';
+                }, 1500);
+            }
+        });
+    </script>
+</body>
+</html>

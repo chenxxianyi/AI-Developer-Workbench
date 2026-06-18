@@ -1,0 +1,131 @@
+package tools
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+
+	"ai-developer-workbench/internal/dto"
+	"ai-developer-workbench/internal/model"
+	"ai-developer-workbench/internal/prompts"
+	"ai-developer-workbench/internal/service"
+	"ai-developer-workbench/internal/util"
+)
+
+// AgentConfigService handles Agent Config Studio operations.
+type AgentConfigService struct {
+	aiService     service.AIService
+	reportService service.ReportService
+}
+
+// NewAgentConfigService creates a new Agent Config service.
+func NewAgentConfigService(aiService service.AIService, reportService service.ReportService) *AgentConfigService {
+	return &AgentConfigService{
+		aiService:     aiService,
+		reportService: reportService,
+	}
+}
+
+// Run executes the Agent Config Studio tool.
+func (s *AgentConfigService) Run(ctx context.Context, req dto.AgentConfigRequest) (*dto.ReportDTO, error) {
+	// 1. Create processing report.
+	inputData, _ := json.Marshal(req)
+	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeAgentConfig, req.Title, "json", inputData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create report: %w", err)
+	}
+
+	// 2. Build prompt.
+	systemPrompt, userPrompt := prompts.BuildAgentConfigPrompt(
+		req.ProjectName, req.ProjectType, req.FrontendStack,
+		req.BackendStack, req.Database, req.UIStyle,
+		req.CodingPreferences, req.StrictRules,
+	)
+
+	// 3. Call AI service.
+	aiResult, err := s.aiService.GenerateJSON(ctx, service.AIRequest{
+		ToolType:     model.ToolTypeAgentConfig,
+		SystemPrompt: systemPrompt,
+		UserPrompt:   userPrompt,
+	})
+	if err != nil {
+		slog.Error("AI call failed for Agent Config", "error", err)
+		_ = s.reportService.FailReport(ctx, report.ID, err.Error())
+		return nil, err
+	}
+
+	// 4. Parse AI response.
+	var result dto.AgentConfigResult
+	if err := util.ParseAIResponseInto(aiResult.JSONText, &result); err != nil {
+		slog.Warn("Failed to parse AI response, using fallback", "error", err)
+		// Generate fallback result.
+		result = s.buildFallbackResult(req)
+		fallbackJSON, _ := json.Marshal(result)
+		_ = s.reportService.FallbackReport(ctx, report.ID, fallbackJSON, "AI response parsing failed, using fallback data")
+		return s.reportService.GetReport(ctx, report.ID)
+	}
+
+	// 5. Normalize result.
+	s.normalizeResult(&result)
+
+	// 6. Build generated files.
+	generatedFiles := s.buildGeneratedFiles(result)
+
+	// 7. Save succeeded report.
+	summary := fmt.Sprintf("Generated %d configuration files for %s", len(result.GeneratedFilesContent), req.ProjectName)
+	reportJSON, _ := json.Marshal(result)
+
+	return s.reportService.SucceedReport(ctx, report.ID, reportJSON, summary, nil, nil, generatedFiles)
+}
+
+// normalizeResult normalizes the result data.
+func (s *AgentConfigService) normalizeResult(result *dto.AgentConfigResult) {
+	if result.Recommendations == nil {
+		result.Recommendations = []string{}
+	}
+	if result.GeneratedFilesContent == nil {
+		result.GeneratedFilesContent = map[string]string{}
+	}
+	// Validate filenames.
+	for filename := range result.GeneratedFilesContent {
+		if !util.IsAllowedGeneratedFilename(filename) {
+			slog.Warn("Unexpected generated filename", "filename", filename)
+		}
+	}
+}
+
+// buildGeneratedFiles creates model.GeneratedFile entries from the result.
+func (s *AgentConfigService) buildGeneratedFiles(result dto.AgentConfigResult) []model.GeneratedFile {
+	files := make([]model.GeneratedFile, 0, len(result.GeneratedFilesContent))
+	for filename, content := range result.GeneratedFilesContent {
+		mimeType := "text/markdown"
+		language := "markdown"
+		if filename == "openapi.json" {
+			mimeType = "application/json"
+			language = "json"
+		} else if filename == "migration.sql" {
+			mimeType = "text/x-sql"
+			language = "sql"
+		}
+		files = append(files, model.GeneratedFile{
+			Filename: filename,
+			Content:  content,
+			MimeType: mimeType,
+			Language: language,
+		})
+	}
+	return files
+}
+
+// buildFallbackResult creates a fallback result when AI parsing fails.
+func (s *AgentConfigService) buildFallbackResult(req dto.AgentConfigRequest) dto.AgentConfigResult {
+	return dto.AgentConfigResult{
+		GeneratedFilesContent: map[string]string{
+			"AGENTS.md":    "# AGENTS.md\n\nProject: " + req.ProjectName + "\n\n[Fallback - AI parsing failed]",
+			"TASK_PLAN.md": "# Task Plan\n\n[Fallback - AI parsing failed]",
+		},
+		Recommendations: []string{"AI response parsing failed. Please try again."},
+		CodexPrompt:     "Retry generating configuration files for " + req.ProjectName,
+	}
+}

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Developer Workbench - 开发者AI工作台</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f7f7f5',
+                        surface: '#ffffff',
+                        'surface-muted': '#f1f1ef',
+                        border: '#e5e5e0',
+                        'text-primary': '#18181b',
+                        'text-secondary': '#52525b',
+                        'text-muted': '#71717a',
+                        accent: '#2563eb',
+                        'accent-soft': '#dbeafe',
+                        danger: '#dc2626',
+                        warning: '#d97706',
+                        success: '#16a34a',
+                    },
+                    fontFamily: {
+                        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    maxWidth: {
+                        'content': '1180px',
+                        'dashboard': '1280px',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7f7f5;
+        }
+
+        /* Smooth transitions */
+        .transition-smooth {
+            transition: all 200ms ease-out;
+        }
+
+        /* Focus states for accessibility */
+        *:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            .transition-smooth {
+                transition: none;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1ef;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+    </style>
+</head>
+<body class="font-jakarta text-text-primary antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-4 left-4 right-4 z-50 bg-surface/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-smooth">
+        <div class="max-w-content mx-auto px-6 md:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </div>
+
+            <div class="hidden md:flex items-center gap-6">
+                <a href="#tools" class="text-text-secondary hover:text-accent transition-smooth cursor-pointer">工具</a>
+                <a href="#workflow" class="text-text-secondary hover:text-accent transition-smooth cursor-pointer">工作流</a>
+                <a href="#features" class="text-text-secondary hover:text-accent transition-smooth cursor-pointer">特性</a>
+            </div>
+
+            <a href="dashboard.html" class="px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-smooth cursor-pointer">
+                开始使用
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen pt-32 pb-20 px-4 md:px-8 flex items-center">
+        <div class="max-w-content mx-auto">
+            <div class="text-center max-w-3xl mx-auto">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                    Build better AI-generated projects
+                </h1>
+
+                <p class="text-lg md:text-xl text-text-secondary mb-8 leading-relaxed">
+                    Review UI quality, inspect project structure, generate AGENTS.md,
+                    build API docs, and improve database schemas in one developer workbench.
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                    <a href="dashboard.html" class="w-full sm:w-auto px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-smooth cursor-pointer flex items-center justify-center gap-2">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        进入工作台
+                    </a>
+                    <a href="#tools" class="w-full sm:w-auto px-8 py-3 bg-surface border border-border text-text-primary rounded-lg font-semibold hover:bg-surface-muted transition-smooth cursor-pointer flex items-center justify-center gap-2">
+                        <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        了解更多
+                    </a>
+                </div>
+
+                <!-- Stats -->
+                <div class="flex items-center justify-center gap-8 md:gap-12 text-sm text-text-muted">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                        <span>5 核心工具</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-check" class="w-4 h-4"></i>
+                        <span>智能分析</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>一键导出</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tools Section -->
+    <section id="tools" class="py-20 px-4 md:px-8 bg-surface">
+        <div class="max-w-content mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">五大核心工具</h2>
+                <p class="text-lg text-text-secondary max-w-2xl mx-auto">
+                    专为 AI Coding 开发者设计，覆盖 UI、项目结构、Agent 配置、API 文档和数据库设计全流程
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Tool 1: UI Review -->
+                <div class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-12 h-12 bg-accent-soft rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="eye" class="w-6 h-6 text-accent"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">UI Review</h3>
+                            <p class="text-text-secondary">UI 质量审查</p>
+                        </div>
+                    </div>
+                    <p class="text-text-secondary leading-relaxed">
+                        根据截图和前端代码审查 UI 质量，识别模板化痕迹，评估设计一致性，提供改进建议。
+                    </p>
+                </div>
+
+                <!-- Tool 2: Project Doctor -->
+                <div class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="stethoscope" class="w-6 h-6 text-success"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Project Doctor</h3>
+                            <p class="text-text-secondary">项目结构检查</p>
+                        </div>
+                    </div>
+                    <p class="text-text-secondary leading-relaxed">
+                        静态分析项目 ZIP，检查工程结构、依赖管理、代码规范和潜在风险，生成健康报告。
+                    </p>
+                </div>
+
+                <!-- Tool 3: Agent Config Studio -->
+                <div class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="robot" class="w-6 h-6 text-warning"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Agent Config Studio</h3>
+                            <p class="text-text-secondary">AI Agent 配置生成</p>
+                        </div>
+                    </div>
+                    <p class="text-text-secondary leading-relaxed">
+                        根据项目特征生成 AGENTS.md、TASK_PLAN.md 等配置文件，优化 AI Coding 效果。
+                    </p>
+                </div>
+
+                <!-- Tool 4: API Doc Builder -->
+                <div class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-12 h-12 bg-danger/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-text" class="w-6 h-6 text-danger"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">API Doc Builder</h3>
+                            <p class="text-text-secondary">API 文档生成</p>
+                        </div>
+                    </div>
+                    <p class="text-text-secondary leading-relaxed">
+                        从代码或项目 ZIP 生成 Markdown/OpenAPI 文档，支持多种后端框架和输出格式。
+                    </p>
+                </div>
+
+                <!-- Tool 5: DB Schema Review -->
+                <div class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="database" class="w-6 h-6 text-accent"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">DB Schema Review</h3>
+                            <p class="text-text-secondary">数据库结构审查</p>
+                        </div>
+                    </div>
+                    <p class="text-text-secondary leading-relaxed">
+                        审查 SQL、GORM、Prisma 等数据库定义，评估表结构、索引、性能和安全问题。
+                    </p>
+                </div>
+
+                <!-- Empty slot for grid alignment -->
+                <div class="hidden lg:block"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section id="workflow" class="py-20 px-4 md:px-8">
+        <div class="max-w-content mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">统一工作流</h2>
+                <p class="text-lg text-text-secondary max-w-2xl mx-auto">
+                    从输入到报告，每个工具遵循一致的交互闭环
+                </p>
+            </div>
+
+            <div class="max-w-3xl mx-auto">
+                <div class="space-y-6">
+                    <!-- Step 1 -->
+                    <div class="flex items-start gap-4 p-6 bg-surface border border-border rounded-lg">
+                        <div class="w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            1
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">选择工具</h3>
+                            <p class="text-text-secondary">从 Dashboard 选择合适的分析工具，填写表单或上传文件</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start gap-4 p-6 bg-surface border border-border rounded-lg">
+                        <div class="w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            2
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">智能分析</h3>
+                            <p class="text-text-secondary">后端进行安全处理和 AI 分析，生成结构化报告和评分</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start gap-4 p-6 bg-surface border border-border rounded-lg">
+                        <div class="w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            3
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">查看报告</h3>
+                            <p class="text-text-secondary">查看评分、问题列表和改进建议，了解具体优化方向</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex items-start gap-4 p-6 bg-surface border border-border rounded-lg">
+                        <div class="w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                            4
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">复制与导出</h3>
+                            <p class="text-text-secondary">复制 Codex Prompt 到 AI Coding 工具，下载生成文件或报告</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-4 md:px-8 bg-surface">
+        <div class="max-w-content mx-auto">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6">专为开发者设计</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-success flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">真实产品感</h3>
+                                <p class="text-text-secondary">避免模板化 SaaS 风格，克制、专业的开发者体验</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-success flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">安全优先</h3>
+                                <p class="text-text-secondary">静态分析不执行代码，完整的安全处理和输入校验</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-success flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">结构化输出</h3>
+                                <p class="text-text-secondary">评分、问题、建议清晰分离，支持 Markdown 和 OpenAPI</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-success flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">一键集成</h3>
+                                <p class="text-text-secondary">Codex Prompt 直接复制到 Claude Code、Cursor 等 AI 工具</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-background border border-border rounded-lg p-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="terminal" class="w-5 h-5 text-accent"></i>
+                        <span class="font-semibold">示例报告</span>
+                    </div>
+                    <div class="bg-surface-muted rounded p-4 text-sm font-mono leading-relaxed">
+                        <div class="text-text-muted mb-2"># UI Review Report</div>
+                        <div class="mb-3">
+                            <span class="text-warning font-semibold">Total Score:</span>
+                            <span class="text-text-primary"> 78/100</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-danger font-semibold">Issues Found:</span>
+                            <span class="text-text-primary"> 5</span>
+                        </div>
+                        <div class="text-text-secondary">
+                            <div class="mb-2">• High: AI template risk detected in hero section</div>
+                            <div class="mb-2">• Medium: Inconsistent button spacing</div>
+                            <div>• Low: Missing hover states on cards</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 px-4 md:px-8">
+        <div class="max-w-content mx-auto">
+            <div class="bg-surface border border-border rounded-lg p-8 md:p-12 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">开始提升你的 AI 项目质量</h2>
+                <p class="text-lg text-text-secondary mb-8 max-w-2xl mx-auto">
+                    立即进入工作台，体验智能分析工具带来的效率提升
+                </p>
+                <a href="dashboard.html" class="inline-flex items-center gap-2 px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-smooth cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    进入 Dashboard
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-4 md:px-8 bg-surface border-t border-border">
+        <div class="max-w-content mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                        <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="text-lg font-semibold">AI Developer Workbench</span>
+                </div>
+
+                <div class="text-sm text-text-muted">
+                    MVP 0.1.0 · 专为 AI Coding 开发者设计
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-text-secondary hover:text-accent transition-smooth cursor-pointer">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-text-secondary hover:text-accent transition-smooth cursor-pointer">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

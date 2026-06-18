@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI Developer Workbench</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f7f7f5',
+                        surface: '#ffffff',
+                        'surface-muted': '#f1f1ef',
+                        border: '#e5e5e0',
+                        'text-primary': '#18181b',
+                        'text-secondary': '#52525b',
+                        'text-muted': '#71717a',
+                        accent: '#2563eb',
+                        'accent-soft': '#dbeafe',
+                        danger: '#dc2626',
+                        warning: '#d97706',
+                        success: '#16a34a',
+                    },
+                    fontFamily: {
+                        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    maxWidth: {
+                        'content': '1180px',
+                        'dashboard': '1280px',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7f7f5;
+        }
+
+        .transition-smooth {
+            transition: all 200ms ease-out;
+        }
+
+        *:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .transition-smooth {
+                transition: none;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1ef;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Sidebar mobile animation */
+        .sidebar-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 200ms ease-out, visibility 200ms;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 200ms ease-out;
+        }
+
+        .sidebar-mobile.active {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="font-jakarta text-text-primary antialiased">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-30">
+        <!-- Logo -->
+        <div class="px-6 py-5 border-b border-border">
+            <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-smooth cursor-pointer">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <!-- Dashboard -->
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 bg-accent-soft text-accent rounded-lg font-medium cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Tools Section -->
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">工具</span>
+                </div>
+
+                <a href="tool-page.html?tool=ui-review" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <span>UI Review</span>
+                </a>
+
+                <a href="tool-page.html?tool=project-doctor" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Project Doctor</span>
+                </a>
+
+                <a href="tool-page.html?tool=agent-config" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="robot" class="w-5 h-5"></i>
+                    <span>Agent Config</span>
+                </a>
+
+                <a href="tool-page.html?tool=api-doc" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>API Doc</span>
+                </a>
+
+                <a href="tool-page.html?tool=db-schema" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    <span>DB Schema</span>
+                </a>
+
+                <!-- Reports Section -->
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                    <span class="ml-auto px-2 py-0.5 bg-surface-muted text-text-muted text-xs rounded">12</span>
+                </a>
+
+                <!-- Settings Section -->
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">系统</span>
+                </div>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- System Status -->
+        <div class="px-4 py-4 border-t border-border">
+            <div class="px-3 py-2 bg-success/10 rounded-lg">
+                <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i>
+                    <span class="text-sm font-medium text-success">服务正常</span>
+                </div>
+                <div class="text-xs text-text-muted">Mock Mode · OpenAI Compatible</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Sidebar (Mobile) -->
+    <aside id="sidebarMobile" class="sidebar-mobile fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-50 hidden md:hidden">
+        <!-- Logo -->
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+            <button id="closeSidebarBtn" class="p-1 hover:bg-surface-muted rounded transition-smooth cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation (Same structure as desktop) -->
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 bg-accent-soft text-accent rounded-lg font-medium cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">工具</span>
+                </div>
+
+                <a href="tool-page.html?tool=ui-review" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <span>UI Review</span>
+                </a>
+
+                <a href="tool-page.html?tool=project-doctor" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Project Doctor</span>
+                </a>
+
+                <a href="tool-page.html?tool=agent-config" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="robot" class="w-5 h-5"></i>
+                    <span>Agent Config</span>
+                </a>
+
+                <a href="tool-page.html?tool=api-doc" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>API Doc</span>
+                </a>
+
+                <a href="tool-page.html?tool=db-schema" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    <span>DB Schema</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                    <span class="ml-auto px-2 py-0.5 bg-surface-muted text-text-muted text-xs rounded">12</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">系统</span>
+                </div>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="px-4 py-4 border-t border-border">
+            <div class="px-3 py-2 bg-success/10 rounded-lg">
+                <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i>
+                    <span class="text-sm font-medium text-success">服务正常</span>
+                </div>
+                <div class="text-xs text-text-muted">Mock Mode</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border z-20">
+            <div class="max-w-dashboard mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+                <!-- Mobile Menu Button -->
+                <button id="menuBtn" class="md:hidden p-2 hover:bg-surface-muted rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                <div class="flex-1 md:flex-none">
+                    <h1 class="text-xl md:text-2xl font-bold">Dashboard</h1>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-3">
+                    <a href="reports.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-surface-muted border border-border text-text-primary rounded-lg hover:bg-border transition-smooth cursor-pointer">
+                        <i data-lucide="file-stack" class="w-4 h-4"></i>
+                        <span>查看报告</span>
+                    </a>
+                    <a href="index.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-surface-muted border border-border text-text-primary rounded-lg hover:bg-border transition-smooth cursor-pointer">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span>返回首页</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="max-w-dashboard mx-auto px-4 md:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <!-- Total Reports -->
+                <div class="p-6 bg-surface border border-border rounded-lg">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="file-stack" class="w-5 h-5 text-accent"></i>
+                        <span class="text-sm text-text-muted">总报告数</span>
+                    </div>
+                    <div class="text-3xl font-bold">12</div>
+                </div>
+
+                <!-- Average Score -->
+                <div class="p-6 bg-surface border border-border rounded-lg">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-success"></i>
+                        <span class="text-sm text-text-muted">平均评分</span>
+                    </div>
+                    <div class="text-3xl font-bold">78<span class="text-lg text-text-muted">/100</span></div>
+                </div>
+
+                <!-- Tools Used -->
+                <div class="p-6 bg-surface border border-border rounded-lg">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="wrench" class="w-5 h-5 text-warning"></i>
+                        <span class="text-sm text-text-muted">工具使用</span>
+                    </div>
+                    <div class="text-3xl font-bold">5<span class="text-lg text-text-muted">/5</span></div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="p-6 bg-surface border border-border rounded-lg">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="activity" class="w-5 h-5 text-danger"></i>
+                        <span class="text-sm text-text-muted">最近活动</span>
+                    </div>
+                    <div class="text-3xl font-bold">2<span class="text-lg text-text-muted">h</span></div>
+                </div>
+            </div>
+
+            <!-- Tools Grid -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold">核心工具</h2>
+                    <span class="text-sm text-text-muted">选择工具开始分析</span>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Tool 1: UI Review -->
+                    <a href="tool-page.html?tool=ui-review" class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-accent-soft rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="eye" class="w-6 h-6 text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">UI Review</h3>
+                                <p class="text-sm text-text-muted">UI 质量审查</p>
+                            </div>
+                        </div>
+                        <p class="text-text-secondary mb-4 leading-relaxed">
+                            根据截图和前端代码审查 UI 质量，识别 AI 生成痕迹，评估设计一致性
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-text-muted">
+                                <i data-lucide="file-image" class="w-4 h-4"></i>
+                                <span>3 次使用</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-text-muted group-hover:text-accent transition-smooth"></i>
+                        </div>
+                    </a>
+
+                    <!-- Tool 2: Project Doctor -->
+                    <a href="tool-page.html?tool=project-doctor" class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="stethoscope" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">Project Doctor</h3>
+                                <p class="text-sm text-text-muted">项目结构检查</p>
+                            </div>
+                        </div>
+                        <p class="text-text-secondary mb-4 leading-relaxed">
+                            静态分析项目结构，检查工程规范、依赖管理和潜在风险
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-text-muted">
+                                <i data-lucide="folder-zip" class="w-4 h-4"></i>
+                                <span>2 次使用</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-text-muted group-hover:text-accent transition-smooth"></i>
+                        </div>
+                    </a>
+
+                    <!-- Tool 3: Agent Config Studio -->
+                    <a href="tool-page.html?tool=agent-config" class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="robot" class="w-6 h-6 text-warning"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">Agent Config</h3>
+                                <p class="text-sm text-text-muted">AI Agent 配置</p>
+                            </div>
+                        </div>
+                        <p class="text-text-secondary mb-4 leading-relaxed">
+                            生成 AGENTS.md、TASK_PLAN.md，优化 AI Coding 工具效果
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-text-muted">
+                                <i data-lucide="file-code" class="w-4 h-4"></i>
+                                <span>4 次使用</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-text-muted group-hover:text-accent transition-smooth"></i>
+                        </div>
+                    </a>
+
+                    <!-- Tool 4: API Doc Builder -->
+                    <a href="tool-page.html?tool=api-doc" class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-danger/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="file-text" class="w-6 h-6 text-danger"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">API Doc</h3>
+                                <p class="text-sm text-text-muted">API 文档生成</p>
+                            </div>
+                        </div>
+                        <p class="text-text-secondary mb-4 leading-relaxed">
+                            从代码或项目生成 Markdown/OpenAPI 文档
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-text-muted">
+                                <i data-lucide="book-open" class="w-4 h-4"></i>
+                                <span>2 次使用</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-text-muted group-hover:text-accent transition-smooth"></i>
+                        </div>
+                    </a>
+
+                    <!-- Tool 5: DB Schema Review -->
+                    <a href="tool-page.html?tool=db-schema" class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth cursor-pointer">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="database" class="w-6 h-6 text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">DB Schema</h3>
+                                <p class="text-sm text-text-muted">数据库审查</p>
+                            </div>
+                        </div>
+                        <p class="text-text-secondary mb-4 leading-relaxed">
+                            审查 SQL、GORM、Prisma 定义，优化表结构和索引
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-text-muted">
+                                <i data-lucide="table-2" class="w-4 h-4"></i>
+                                <span>1 次使用</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-text-muted group-hover:text-accent transition-smooth"></i>
+                        </div>
+                    </a>
+
+                    <!-- Empty slot for grid alignment -->
+                    <div class="hidden lg:block"></div>
+                </div>
+            </div>
+
+            <!-- Recent Reports -->
+            <div>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold">最近报告</h2>
+                    <a href="reports.html" class="flex items-center gap-2 text-accent hover:underline transition-smooth cursor-pointer">
+                        <span>查看全部</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Report 1 -->
+                    <a href="report-detail.html?id=1" class="block p-4 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-sm transition-smooth cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-accent-soft rounded flex items-center justify-center">
+                                    <i data-lucide="eye" class="w-4 h-4 text-accent"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">E-commerce Dashboard UI</h3>
+                                    <p class="text-sm text-text-muted">UI Review · 2小时前</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="px-3 py-1 bg-warning/10 text-warning rounded-full text-sm font-medium">
+                                    78分
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-text-muted"></i>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary">
+                            发现 3 个高优先级问题：AI 模板痕迹、按钮间距不一致、缺少 hover 状态
+                        </p>
+                    </a>
+
+                    <!-- Report 2 -->
+                    <a href="report-detail.html?id=2" class="block p-4 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-sm transition-smooth cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-success/10 rounded flex items-center justify-center">
+                                    <i data-lucide="stethoscope" class="w-4 h-4 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Vue Project Structure</h3>
+                                    <p class="text-sm text-text-muted">Project Doctor · 5小时前</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="px-3 py-1 bg-success/10 text-success rounded-full text-sm font-medium">
+                                    85分
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-text-muted"></i>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary">
+                            项目结构良好，建议优化 TypeScript 配置和添加 ESLint 规则
+                        </p>
+                    </a>
+
+                    <!-- Report 3 -->
+                    <a href="report-detail.html?id=3" class="block p-4 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-sm transition-smooth cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-warning/10 rounded flex items-center justify-center">
+                                    <i data-lucide="robot" class="w-4 h-4 text-warning"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">SaaS Product AGENTS.md</h3>
+                                    <p class="text-sm text-text-muted">Agent Config · 1天前</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="px-3 py-1 bg-surface-muted text-text-muted rounded-full text-sm">
+                                    生成完成
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-text-muted"></i>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary">
+                            生成 AGENTS.md、TASK_PLAN.md 和 tech_stack.md 共 3 个文件
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Initialize Lucide Icons and Mobile Menu -->
+    <script>
+        lucide.createIcons();
+
+        // Mobile menu functionality
+        const menuBtn = document.getElementById('menuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebarMobile = document.getElementById('sidebarMobile');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuBtn.addEventListener('click', () => {
+            sidebarMobile.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            sidebarOverlay.classList.remove('hidden');
+        });
+
+        closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+        function closeMobileSidebar() {
+            sidebarMobile.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            setTimeout(() => {
+                sidebarOverlay.classList.add('hidden');
+            }, 200);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ai-workbench-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: ai_workbench
+      MYSQL_USER: workbench
+      MYSQL_PASSWORD: workbench_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - workbench-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-workbench-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_ENV=production
+      - APP_PORT=8080
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=ai_workbench
+      - DATABASE_USER=workbench
+      - DATABASE_PASSWORD=workbench_password
+      - DATABASE_CHARSET=utf8mb4
+      - DB_AUTO_MIGRATE=true
+      - UPLOAD_DIR=/app/uploads
+      - TEMP_DIR=/app/temp
+      - MAX_UPLOAD_SIZE_MB=20
+      - AI_MOCK_MODE=true
+      - CORS_ALLOW_ORIGINS=http://localhost:5173
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_temp:/app/temp
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - workbench-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-workbench-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080/api
+    depends_on:
+      - backend
+    networks:
+      - workbench-net
+
+volumes:
+  mysql_data:
+  backend_uploads:
+  backend_temp:
+
+networks:
+  workbench-net:
+    driver: bridge

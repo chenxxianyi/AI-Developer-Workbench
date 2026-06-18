@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报告详情 - AI Developer Workbench</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f7f7f5',
+                        surface: '#ffffff',
+                        'surface-muted': '#f1f1ef',
+                        border: '#e5e5e0',
+                        'text-primary': '#18181b',
+                        'text-secondary': '#52525b',
+                        'text-muted': '#71717a',
+                        accent: '#2563eb',
+                        'accent-soft': '#dbeafe',
+                        danger: '#dc2626',
+                        warning: '#d97706',
+                        success: '#16a34a',
+                    },
+                    fontFamily: {
+                        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    maxWidth: {
+                        'content': '1180px',
+                        'dashboard': '1280px',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7f7f5;
+        }
+
+        .transition-smooth {
+            transition: all 200ms ease-out;
+        }
+
+        *:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .transition-smooth {
+                transition: none;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1ef;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b';
+        }
+
+        .sidebar-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 200ms ease-out, visibility 200ms;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 200ms ease-out;
+        }
+
+        .sidebar-mobile.active {
+            transform: translateX(0);
+        }
+
+        .code-block {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="font-jakarta text-text-primary antialiased">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-30">
+        <div class="px-6 py-5 border-b border-border">
+            <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-smooth cursor-pointer">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">工具</span>
+                </div>
+
+                <a href="tool-page.html?tool=ui-review" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <span>UI Review</span>
+                </a>
+
+                <a href="tool-page.html?tool=project-doctor" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <span>Project Doctor</span>
+                </a>
+
+                <a href="tool-page.html?tool=agent-config" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="robot" class="w-5 h-5"></i>
+                    <span>Agent Config</span>
+                </a>
+
+                <a href="tool-page.html?tool=api-doc" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>API Doc</span>
+                </a>
+
+                <a href="tool-page.html?tool=db-schema" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    <span>DB Schema</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                    <span class="ml-auto px-2 py-0.5 bg-surface-muted text-text-muted text-xs rounded">12</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">系统</span>
+                </div>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted hover:text-text-primary rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="px-4 py-4 border-t border-border">
+            <div class="px-3 py-2 bg-success/10 rounded-lg">
+                <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-success"></i>
+                    <span class="text-sm font-medium text-success">服务正常</span>
+                </div>
+                <div class="text-xs text-text-muted">Mock Mode · OpenAI Compatible</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Sidebar (Mobile) -->
+    <aside id="sidebarMobile" class="sidebar-mobile fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex-col z-50 hidden md:hidden">
+        <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-lg font-semibold">AI Workbench</span>
+            </a>
+            <button id="closeSidebarBtn" class="p-1 hover:bg-surface-muted rounded transition-smooth cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 overflow-y-auto">
+            <div class="space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="mt-6 mb-2 px-3">
+                    <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告</span>
+                </div>
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg cursor-pointer">
+                    <i data-lucide="file-stack" class="w-5 h-5"></i>
+                    <span>所有报告</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border z-20">
+            <div class="max-w-content mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+                <button id="menuBtn" class="md:hidden p-2 hover:bg-surface-muted rounded-lg transition-smooth cursor-pointer">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                <div class="flex-1 md:flex-none">
+                    <h1 class="text-xl md:text-2xl font-bold">报告详情</h1>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <a href="reports.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-surface-muted border border-border text-text-primary rounded-lg hover:bg-border transition-smooth cursor-pointer">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>返回列表</span>
+                    </a>
+                    <button id="deleteBtn" class="hidden md:flex items-center gap-2 px-4 py-2 bg-danger/10 border border-danger/20 text-danger rounded-lg hover:bg-danger/20 transition-smooth cursor-pointer">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>删除</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Report Content -->
+        <div class="max-w-content mx-auto px-4 md:px-8 py-8">
+            <!-- Report Header -->
+            <div class="bg-surface border border-border rounded-lg p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-accent-soft rounded-lg flex items-center justify-center">
+                                <i data-lucide="eye" class="w-5 h-5 text-accent"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold">E-commerce Dashboard UI</h2>
+                                <p class="text-sm text-text-muted">UI Review · 截图 + 代码模式</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-3">
+                            <span class="px-3 py-1 bg-success/10 text-success rounded-full text-sm font-medium">succeeded</span>
+                            <span class="text-sm text-text-muted">创建于 2026-01-15 14:30</span>
+                        </div>
+                    </div>
+
+                    <!-- Score Display -->
+                    <div class="flex flex-col items-center md:items-end gap-2">
+                        <div class="text-5xl font-bold text-warning">78</div>
+                        <div class="text-lg text-text-muted">/ 100</div>
+                        <div class="px-4 py-2 bg-warning/10 text-warning rounded-lg font-semibold">Grade: B+</div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="bg-surface-muted rounded-lg p-4">
+                    <h3 class="font-semibold mb-2">摘要</h3>
+                    <p class="text-text-secondary leading-relaxed mb-3">
+                        UI 设计整体结构清晰，但存在明显的 AI 模板化痕迹。建议重点优化 Hero 区域的个性化设计，
+                        统一按钮间距规范，并添加必要的交互状态反馈。
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2 py-1 bg-success/10 text-success rounded text-xs font-medium">结构清晰</span>
+                        <span class="px-2 py-1 bg-danger/10 text-danger rounded text-xs font-medium">AI 模板痕迹</span>
+                        <span class="px-2 py-1 bg-warning/10 text-warning rounded text-xs font-medium">间距不一致</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Breakdown -->
+            <div class="bg-surface border border-border rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-accent"></i>
+                    评分详情
+                </h3>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Score Item 1 -->
+                    <div class="p-4 bg-surface-muted rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold">设计一致性</span>
+                            <span class="text-lg font-bold text-warning">70/100</span>
+                        </div>
+                        <div class="w-full h-2 bg-border rounded-full overflow-hidden">
+                            <div class="h-full bg-warning rounded-full" style="width: 70%"></div>
+                        </div>
+                        <p class="text-sm text-text-muted mt-2">整体风格不够统一，部分组件与主流设计脱节</p>
+                    </div>
+
+                    <!-- Score Item 2 -->
+                    <div class="p-4 bg-surface-muted rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold">AI 模板风险</span>
+                            <span class="text-lg font-bold text-danger">45/100</span>
+                        </div>
+                        <div class="w-full h-2 bg-border rounded-full overflow-hidden">
+                            <div class="h-full bg-danger rounded-full" style="width: 45%"></div>
+                        </div>
+                        <p class="text-sm text-text-muted mt-2">Hero 区域存在明显的 AI 生成特征</p>
+                    </div>
+
+                    <!-- Score Item 3 -->
+                    <div class="p-4 bg-surface-muted rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold">交互设计</span>
+                            <span class="text-lg font-bold text-success">85/100</span>
+                        </div>
+                        <div class="w-full h-2 bg-border rounded-full overflow-hidden">
+                            <div class="h-full bg-success rounded-full" style="width: 85%"></div>
+                        </div>
+                        <p class="text-sm text-text-muted mt-2">核心交互流程设计合理，但缺少部分 hover 状态</p>
+                    </div>
+
+                    <!-- Score Item 4 -->
+                    <div class="p-4 bg-surface-muted rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold">视觉层次</span>
+                            <span class="text-lg font-bold text-success">90/100</span>
+                        </div>
+                        <div class="w-full h-2 bg-border rounded-full overflow-hidden">
+                            <div class="h-full bg-success rounded-full" style="width: 90%"></div>
+                        </div>
+                        <p class="text-sm text-text-muted mt-2">信息层级清晰，排版和间距整体合理</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Issues -->
+            <div class="bg-surface border border-border rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-danger"></i>
+                    问题列表 (5)
+                </h3>
+
+                <div class="space-y-4">
+                    <!-- Issue 1 - High -->
+                    <div class="p-4 bg-danger/5 border-l-4 border-danger rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-danger/10 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 text-danger"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-danger text-white text-xs rounded font-medium">High</span>
+                                    <h4 class="font-semibold">AI 模板痕迹明显</h4>
+                                </div>
+                                <p class="text-text-secondary mb-2">
+                                    Hero 区域使用了典型的 AI 生成布局：大标题 + 描述文本 + CTA 按钮 + 装饰性图标，
+                                    缺少品牌个性化和差异化设计。
+                                </p>
+                                <div class="bg-surface-muted rounded p-3 mb-2">
+                                    <p class="text-sm"><strong>建议:</strong> 引入品牌元素，使用独特的配色方案，
+                                    添加原创插图或摄影作品，避免使用通用图标库的默认样式。</p>
+                                </div>
+                                <div class="bg-surface-muted rounded p-3">
+                                    <p class="text-sm font-medium mb-1">行动项:</p>
+                                    <ul class="list-disc list-inside text-sm text-text-secondary space-y-1">
+                                        <li>替换 Hero 图标为自定义 SVG</li>
+                                        <li>添加品牌 logo 和独特配色</li>
+                                        <li>使用原创背景图片或渐变</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issue 2 - Medium -->
+                    <div class="p-4 bg-warning/5 border-l-4 border-warning rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-warning/10 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="alert-circle" class="w-4 h-4 text-warning"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-warning text-white text-xs rounded font-medium">Medium</span>
+                                    <h4 class="font-semibold">按钮间距不一致</h4>
+                                </div>
+                                <p class="text-text-secondary mb-2">
+                                    不同区域的按钮间距存在 8px、12px、16px 三种标准，未遵循统一的间距系统。
+                                </p>
+                                <div class="bg-surface-muted rounded p-3">
+                                    <p class="text-sm"><strong>建议:</strong> 采用 Tailwind 的 spacing scale，
+                                    全局统一使用 gap-3 (12px) 或 gap-4 (16px)。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issue 3 - Medium -->
+                    <div class="p-4 bg-warning/5 border-l-4 border-warning rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-warning/10 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="alert-circle" class="w-4 h-4 text-warning"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-warning text-white text-xs rounded font-medium">Medium</span>
+                                    <h4 class="font-semibold">缺少 hover 状态</h4>
+                                </div>
+                                <p class="text-text-secondary mb-2">
+                                    卡片组件和部分按钮缺少 hover 反馈，导致交互体验不够流畅。
+                                </p>
+                                <div class="bg-surface-muted rounded p-3">
+                                    <p class="text-sm"><strong>建议:</strong> 为所有可点击元素添加 hover:shadow-md
+                                    和 hover:border-accent 状态，使用 transition-colors duration-200。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issue 4 - Low -->
+                    <div class="p-4 bg-surface-muted border-l-4 border-text-muted rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-surface-muted rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="info" class="w-4 h-4 text-text-muted"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-text-muted text-white text-xs rounded font-medium">Low</span>
+                                    <h4 class="font-semibold">响应式优化建议</h4>
+                                </div>
+                                <p class="text-text-secondary mb-2">
+                                    移动端部分文本过小，建议调整 font-size 为至少 16px。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issue 5 - Low -->
+                    <div class="p-4 bg-surface-muted border-l-4 border-text-muted rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-surface-muted rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="info" class="w-4 h-4 text-text-muted"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-text-muted text-white text-xs rounded font-medium">Low</span>
+                                    <h4 class="font-semibold">可访问性改进</h4>
+                                </div>
+                                <p class="text-text-secondary mb-2">
+                                    图标按钮缺少 aria-label，建议添加无障碍标签。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Codex Prompt -->
+            <div class="bg-surface border border-border rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-5 h-5 text-accent"></i>
+                    Codex Prompt
+                </h3>
+
+                <div class="bg-surface-muted rounded-lg p-4 mb-4">
+                    <pre class="code-block text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
+# UI Optimization Prompt
+
+Based on the UI review report, optimize the following components:
+
+## Priority: High
+- Replace Hero section icons with custom SVG designs
+- Add brand-specific color palette (#2563eb → brand-primary)
+- Use original photography or custom illustrations for background
+
+## Priority: Medium
+- Standardize button spacing: use gap-4 (16px) consistently
+- Add hover states to all interactive elements:
+  - hover:shadow-md
+  - hover:border-accent
+  - transition-colors duration-200
+
+## Priority: Low
+- Ensure minimum font-size 16px on mobile
+- Add aria-label to all icon buttons
+
+## Expected Outcome
+- Reduce AI template score from 45 to 80+
+- Improve design consistency score to 90+
+- Maintain current interaction and visual hierarchy scores</pre>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="copyPromptBtn" class="flex-1 md:flex-none px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-smooth cursor-pointer flex items-center justify-center gap-2">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                        <span>复制 Prompt</span>
+                    </button>
+                    <button class="flex-1 md:flex-none px-4 py-2 bg-surface-muted border border-border text-text-primary rounded-lg font-medium hover:bg-border transition-smooth cursor-pointer flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>下载 .md</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generated Files (Mock for Agent Config) -->
+            <div class="bg-surface border border-border rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="file-code" class="w-5 h-5 text-accent"></i>
+                    生成文件
+                </h3>
+
+                <div class="space-y-3">
+                    <!-- File 1 -->
+                    <div class="p-4 bg-surface-muted rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file-text" class="w-5 h-5 text-accent"></i>
+                            <div>
+                                <p class="font-medium">ui_optimization_plan.md</p>
+                                <p class="text-xs text-text-muted">Markdown · 2.4 KB</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 bg-surface border border-border text-text-primary rounded hover:bg-border transition-smooth cursor-pointer text-sm flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                <span>复制</span>
+                            </button>
+                            <button class="px-3 py-1 bg-accent text-white rounded hover:bg-accent/90 transition-smooth cursor-pointer text-sm flex items-center gap-1">
+                                <i data-lucide="download" class="w-3 h-3"></i>
+                                <span>下载</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 2 -->
+                    <div class="p-4 bg-surface-muted rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file-code" class="w-5 h-5 text-warning"></i>
+                            <div>
+                                <p class="font-medium">tailwind.config.js</p>
+                                <p class="text-xs text-text-muted">JavaScript · 1.8 KB</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 bg-surface border border-border text-text-primary rounded hover:bg-border transition-smooth cursor-pointer text-sm flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                <span>复制</span>
+                            </button>
+                            <button class="px-3 py-1 bg-accent text-white rounded hover:bg-accent/90 transition-smooth cursor-pointer text-sm flex items-center gap-1">
+                                <i data-lucide="download" class="w-3 h-3"></i>
+                                <span>下载</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Full Report -->
+            <div class="mt-6 flex items-center justify-center gap-4">
+                <button class="px-6 py-3 bg-surface border border-border text-text-primary rounded-lg font-medium hover:bg-surface-muted transition-smooth cursor-pointer flex items-center gap-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>下载完整报告 (Markdown)</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-danger/10 rounded-lg flex items-center justify-center">
+                    <i data-lucide="trash-2" class="w-6 h-6 text-danger"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">删除报告</h3>
+                    <p class="text-sm text-text-muted">此操作不可撤销</p>
+                </div>
+            </div>
+
+            <p class="text-text-secondary mb-6">
+                确定要删除这份报告吗？所有关联的上传文件和生成文件都将被永久删除。
+            </p>
+
+            <div class="flex items-center gap-3">
+                <button id="cancelDeleteBtn" class="flex-1 px-4 py-3 bg-surface-muted border border-border text-text-primary rounded-lg font-medium hover:bg-border transition-smooth cursor-pointer">
+                    取消
+                </button>
+                <button id="confirmDeleteBtn" class="flex-1 px-4 py-3 bg-danger text-white rounded-lg font-medium hover:bg-danger/90 transition-smooth cursor-pointer">
+                    确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Mobile menu
+        const menuBtn = document.getElementById('menuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebarMobile = document.getElementById('sidebarMobile');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuBtn.addEventListener('click', () => {
+            sidebarMobile.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            sidebarOverlay.classList.remove('hidden');
+        });
+
+        closeSidebarBtn.addEventListener('click', closeMobileSidebar);
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+        function closeMobileSidebar() {
+            sidebarMobile.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            setTimeout(() => {
+                sidebarOverlay.classList.add('hidden');
+            }, 200);
+        }
+
+        // Delete modal
+        const deleteBtn = document.getElementById('deleteBtn');
+        const deleteModal = document.getElementById('deleteModal');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                deleteModal.classList.remove('hidden');
+            });
+        }
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.classList.add('hidden');
+        });
+
+        confirmDeleteBtn.addEventListener('click', () => {
+            // Redirect to reports after "delete"
+            window.location.href = 'reports.html';
+        });
+
+        // Copy prompt
+        const copyPromptBtn = document.getElementById('copyPromptBtn');
+        copyPromptBtn.addEventListener('click', () => {
+            const promptText = document.querySelector('.code-block').textContent;
+
+            // Create temporary textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = promptText;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                // Show success feedback
+                copyPromptBtn.innerHTML = `
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>已复制</span>
+                `;
+                lucide.createIcons();
+
+                setTimeout(() => {
+                    copyPromptBtn.innerHTML = `
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                        <span>复制 Prompt</span>
+                    `;
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+
+            document.body.removeChild(textarea);
+        });
+    </script>
+</body>
+</html>
