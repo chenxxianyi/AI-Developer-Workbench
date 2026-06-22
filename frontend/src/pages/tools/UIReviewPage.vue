@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { runUIReview } from '@/api/tools'
 import type { Report, UIReviewResult } from '@/types/report'
+import { getScoreDisplayName, getSeverityDisplayName } from '@/utils/uiReviewDisplay'
 import {
   Eye,
   Upload,
@@ -92,7 +93,7 @@ async function handleSubmit() {
     if (codeInput.value) formData.append('code', codeInput.value)
     if (screenshotFile.value) formData.append('screenshot', screenshotFile.value)
 
-    result.value = await runUIReview(formData) as Report<UIReviewResult>
+    result.value = await runUIReview(formData) as unknown as Report<UIReviewResult>
   } catch (err: any) {
     error.value = err.message || '分析失败'
   } finally {
@@ -165,7 +166,7 @@ const canSubmit = computed(() => {
         class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4"
       >
         <ArrowLeft :size="20" />
-        <span>返回 Dashboard</span>
+        <span>返回工作台</span>
       </button>
 
       <div class="flex items-center gap-3">
@@ -173,8 +174,8 @@ const canSubmit = computed(() => {
           <Eye :size="24" class="text-white" />
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-text-primary">UI Review</h1>
-          <p class="text-text-secondary">AI-powered UI/UX review with screenshot or code analysis</p>
+          <h1 class="text-2xl font-bold text-text-primary">UI 质量审查</h1>
+          <p class="text-text-secondary">基于截图或代码的 AI UI/UX 质量分析</p>
         </div>
       </div>
     </div>
@@ -388,7 +389,7 @@ const canSubmit = computed(() => {
                 :key="score.name"
                 class="flex items-center justify-between p-2 bg-surface-muted rounded"
               >
-                <span class="text-text-secondary">{{ score.name }}</span>
+                <span class="text-text-secondary">{{ getScoreDisplayName(score.name) }}</span>
                 <div class="flex items-center gap-2">
                   <span :class="getScoreColor(score.score, score.max_score)">{{ score.score }}/{{ score.max_score }}</span>
                 </div>
@@ -403,7 +404,7 @@ const canSubmit = computed(() => {
               <div v-for="(issue, idx) in result.report_data.issues" :key="idx" class="p-3 bg-surface-muted rounded">
                 <div class="flex items-center justify-between mb-1">
                   <span class="font-medium text-text-primary">{{ issue.title }}</span>
-                  <span :class="getSeverityColor(issue.severity)" class="text-sm">{{ issue.severity }}</span>
+                  <span :class="getSeverityColor(issue.severity)" class="text-sm">{{ getSeverityDisplayName(issue.severity) }}</span>
                 </div>
                 <p class="text-text-secondary text-sm">{{ issue.problem }}</p>
                 <p class="text-accent text-sm mt-1">建议: {{ issue.suggestion }}</p>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"mime/multipart"
+	"path/filepath"
 
 	"ai-developer-workbench/internal/dto"
 	"ai-developer-workbench/internal/model"
@@ -19,11 +20,22 @@ type UIReviewService struct {
 	aiService     service.AIService
 	reportService service.ReportService
 	fileService   service.FileService
+	uploadDir     string
 }
 
 // NewUIReviewService creates a new UI Review service.
-func NewUIReviewService(aiService service.AIService, reportService service.ReportService, fileService service.FileService) *UIReviewService {
-	return &UIReviewService{aiService: aiService, reportService: reportService, fileService: fileService}
+func NewUIReviewService(
+	aiService service.AIService,
+	reportService service.ReportService,
+	fileService service.FileService,
+	uploadDir string,
+) *UIReviewService {
+	return &UIReviewService{
+		aiService:     aiService,
+		reportService: reportService,
+		fileService:   fileService,
+		uploadDir:     uploadDir,
+	}
 }
 
 // UIReviewFormInput holds multipart form data for UI Review.
@@ -68,7 +80,7 @@ func (s *UIReviewService) Run(ctx context.Context, input UIReviewFormInput) (*dt
 			_ = s.reportService.FailReport(ctx, report.ID, fmt.Sprintf("screenshot upload failed: %v", err))
 			return nil, fmt.Errorf("screenshot upload failed: %w", err)
 		}
-		imagePath = asset.RelativePath
+		imagePath = resolveUploadPath(s.uploadDir, asset.RelativePath)
 	}
 
 	// Truncate code if needed.
@@ -124,7 +136,7 @@ func (s *UIReviewService) Run(ctx context.Context, input UIReviewFormInput) (*dt
 		},
 	}
 
-	summary := fmt.Sprintf("UI review complete. Found %d issues.", len(result.Issues))
+	summary := fmt.Sprintf("UI 审查完成，发现 %d 个问题。", len(result.Issues))
 	reportJSON, _ := json.Marshal(result)
 
 	return s.reportService.SucceedReport(ctx, report.ID, reportJSON, summary, totalScore, grade, generatedFiles)
@@ -177,26 +189,30 @@ func (s *UIReviewService) normalizeResult(result *dto.UIReviewResult) {
 
 func (s *UIReviewService) buildFallbackResult(input UIReviewFormInput) dto.UIReviewResult {
 	return dto.UIReviewResult{
-		Scores:         []dto.ScoreItem{{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"}},
-		Issues:         []dto.IssueItem{},
-		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:    "Retry UI review for " + input.ReviewMode + " mode",
+		Scores:          []dto.ScoreItem{{Name: "总体评分", Score: 0, MaxScore: 100, Comment: "AI 结果解析失败"}},
+		Issues:          []dto.IssueItem{},
+		Recommendations: []string{"AI 结果解析失败，请重试。"},
+		CodexPrompt:     "请重新执行 " + input.ReviewMode + " 模式的 UI 审查。",
 	}
 }
 
 func (s *UIReviewService) buildMarkdownReport(result dto.UIReviewResult, input UIReviewFormInput) string {
-	md := "# UI Review Report\n\n"
-	md += "## Scores\n\n"
+	md := "# UI 审查报告\n\n"
+	md += "## 评分\n\n"
 	for _, s := range result.Scores {
 		md += fmt.Sprintf("- **%s**: %d/100 - %s\n", s.Name, s.Score, s.Comment)
 	}
-	md += "\n## Issues\n\n"
+	md += "\n## 发现的问题\n\n"
 	for _, i := range result.Issues {
 		md += fmt.Sprintf("- **[%s] %s** (%s): %s\n", i.Severity, i.Title, i.Category, i.Problem)
 	}
-	md += "\n## Recommendations\n\n"
+	md += "\n## 改进建议\n\n"
 	for _, r := range result.Recommendations {
 		md += fmt.Sprintf("- %s\n", r)
 	}
 	return md
+}
+
+func resolveUploadPath(uploadDir, relativePath string) string {
+	return filepath.Join(uploadDir, filepath.FromSlash(relativePath))
 }

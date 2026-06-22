@@ -8,6 +8,8 @@ import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useSystemStore } from '@/stores/systemStore'
 import { useToolStore } from '@/stores/toolStore'
+import { getToolDisplayMeta } from '@/utils/toolDisplay'
+import type { ToolType } from '@/types/tool'
 import {
   Wrench,
   Eye,
@@ -68,8 +70,12 @@ const toolIconMap: Record<string, any> = {
   db_schema: Database,
 }
 
-function getToolIcon(toolType: string) {
+function getToolIcon(toolType: ToolType | string) {
   return toolIconMap[toolType] || Wrench
+}
+
+function getToolDisplay(toolType: ToolType) {
+  return getToolDisplayMeta(toolType)
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -141,11 +147,17 @@ function getScoreColorClass(score: number | null): string {
               <component :is="getToolIcon(tool.tool_type)" :size="24" :class="`text-${tool.color}`" />
             </div>
             <div class="flex-1">
-              <h3 class="text-xl font-semibold mb-1 text-text-primary">{{ tool.name }}</h3>
-              <p class="text-sm text-text-muted">{{ tool.description.slice(0, 20) }}...</p>
+              <h3 class="text-xl font-semibold mb-1 text-text-primary">
+                {{ getToolDisplay(tool.tool_type).name }}
+              </h3>
+              <p class="text-sm text-text-muted">
+                {{ getToolDisplay(tool.tool_type).shortDescription }}
+              </p>
             </div>
           </div>
-          <p class="text-text-secondary mb-4 leading-relaxed">{{ tool.description }}</p>
+          <p class="text-text-secondary mb-4 leading-relaxed">
+            {{ getToolDisplay(tool.tool_type).description }}
+          </p>
           <div class="flex items-center justify-between pt-4 border-t border-border">
             <div class="flex items-center gap-2 text-sm text-text-muted">
               <component :is="getToolIcon(tool.tool_type)" :size="16" />

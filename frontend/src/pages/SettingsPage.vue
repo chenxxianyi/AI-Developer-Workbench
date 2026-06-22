@@ -47,7 +47,7 @@ const uploadLimits = systemStore.uploadLimits
 
         <div class="space-y-2 text-sm">
           <div class="flex items-center justify-between">
-            <span class="text-text-secondary">AI Provider</span>
+            <span class="text-text-secondary">AI 服务商</span>
             <span class="font-medium text-text-primary">{{ systemStore.status?.provider }}</span>
           </div>
           <div class="flex items-center justify-between">

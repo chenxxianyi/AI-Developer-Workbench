@@ -85,7 +85,7 @@ async function handleSubmit() {
     if (apiDescription.value) formData.append('api_description', apiDescription.value)
     if (projectFile.value) formData.append('project_zip', projectFile.value)
 
-    result.value = await runAPIDoc(formData) as Report<APIDocResult>
+    result.value = await runAPIDoc(formData) as unknown as Report<APIDocResult>
   } catch (err: any) {
     error.value = err.message || '生成失败'
   } finally {
@@ -131,15 +131,15 @@ const canSubmit = computed(() => {
     <div class="mb-6">
       <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
         <ArrowLeft :size="20" />
-        <span>返回 Dashboard</span>
+        <span>返回工作台</span>
       </button>
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 bg-danger rounded-xl flex items-center justify-center">
           <FileText :size="24" class="text-white" />
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-text-primary">API Doc Builder</h1>
-          <p class="text-text-secondary">Auto-generate API documentation from code or descriptions</p>
+          <h1 class="text-2xl font-bold text-text-primary">API 文档生成</h1>
+          <p class="text-text-secondary">根据代码或接口描述自动生成 API 文档</p>
         </div>
       </div>
     </div>
@@ -172,7 +172,7 @@ const canSubmit = computed(() => {
         <!-- Code Input -->
         <div v-if="sourceType === 'code'" class="mb-4">
           <label class="block text-sm font-medium text-text-secondary mb-2">API 代码 *</label>
-          <textarea v-model="codeInput" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none font-mono text-sm" rows="10" placeholder="粘贴 API handler/controller 代码..."></textarea>
+          <textarea v-model="codeInput" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none font-mono text-sm" rows="10" placeholder="粘贴 API 处理器或控制器代码..."></textarea>
         </div>
 
         <!-- ZIP Upload -->
@@ -256,7 +256,7 @@ const canSubmit = computed(() => {
             <div class="space-y-2">
               <div v-for="module in result.report_data.modules" :key="module.name" class="p-3 bg-surface-muted rounded">
                 <span class="font-medium text-text-primary">{{ module.name }}</span>
-                <span class="text-text-muted text-sm ml-2">{{ module.endpoints?.length || 0 }} endpoints</span>
+                <span class="text-text-muted text-sm ml-2">{{ module.endpoints?.length || 0 }} 个端点</span>
               </div>
             </div>
           </div>

@@ -59,7 +59,7 @@ async function handleSubmit() {
       target_goal: targetGoal.value || undefined,
     }
 
-    result.value = await runDBSchema(payload) as Report<DBSchemaResult>
+    result.value = await runDBSchema(payload) as unknown as Report<DBSchemaResult>
   } catch (err: any) {
     error.value = err.message || '分析失败'
   } finally {
@@ -119,15 +119,15 @@ const canSubmit = computed(() => title.value.trim() && schemaContent.value.trim(
     <div class="mb-6">
       <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
         <ArrowLeft :size="20" />
-        <span>返回 Dashboard</span>
+        <span>返回工作台</span>
       </button>
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 bg-accent rounded-xl flex items-center justify-center">
           <Database :size="24" class="text-white" />
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-text-primary">DB Schema Review</h1>
-          <p class="text-text-secondary">Review and optimize database schema with AI analysis</p>
+          <h1 class="text-2xl font-bold text-text-primary">数据库结构审查</h1>
+          <p class="text-text-secondary">通过 AI 分析审查并优化数据库结构</p>
         </div>
       </div>
     </div>

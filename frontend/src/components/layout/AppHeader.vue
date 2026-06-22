@@ -7,6 +7,7 @@
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { Menu, ArrowLeft, Trash2, ExternalLink } from '@lucide/vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 
 const emit = defineEmits(['toggle-sidebar'])
 
@@ -58,6 +59,8 @@ const showDeleteButton = computed(() => {
 
       <!-- Actions -->
       <div class="flex items-center gap-3">
+        <LanguageSwitcher />
+
         <!-- Back Button -->
         <RouterLink
           v-if="showBackButton"

@@ -67,13 +67,13 @@ async function handleSubmit() {
   try {
     const formData = new FormData()
     formData.append('title', title.value)
-    formData.append('project_name', projectName.value || 'Unknown Project')
+    formData.append('project_name', projectName.value || '未命名项目')
     formData.append('analysis_depth', analysisDepth.value)
     if (techStack.value) formData.append('tech_stack', techStack.value)
     if (projectDescription.value) formData.append('project_description', projectDescription.value)
     formData.append('project_zip', projectFile.value)
 
-    result.value = await runProjectDoctor(formData) as Report<ProjectDoctorResult>
+    result.value = await runProjectDoctor(formData) as unknown as Report<ProjectDoctorResult>
   } catch (err: any) {
     error.value = err.message || '诊断失败'
   } finally {
@@ -134,15 +134,15 @@ const canSubmit = computed(() => title.value.trim() && projectFile.value)
     <div class="mb-6">
       <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
         <ArrowLeft :size="20" />
-        <span>返回 Dashboard</span>
+        <span>返回工作台</span>
       </button>
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 bg-success rounded-xl flex items-center justify-center">
           <Stethoscope :size="24" class="text-white" />
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-text-primary">Project Doctor</h1>
-          <p class="text-text-secondary">Comprehensive project health check and engineering quality analysis</p>
+          <h1 class="text-2xl font-bold text-text-primary">项目诊断</h1>
+          <p class="text-text-secondary">全面检查项目健康度和工程质量</p>
         </div>
       </div>
     </div>

@@ -65,7 +65,7 @@ async function handleSubmit() {
       strict_rules: strictRules.value || undefined,
     }
 
-    result.value = await runAgentConfig(payload) as Report<AgentConfigResult>
+    result.value = await runAgentConfig(payload) as unknown as Report<AgentConfigResult>
   } catch (err: any) {
     error.value = err.message || '生成失败'
   } finally {
@@ -106,15 +106,15 @@ const canSubmit = computed(() => title.value.trim() && projectName.value.trim())
     <div class="mb-6">
       <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
         <ArrowLeft :size="20" />
-        <span>返回 Dashboard</span>
+        <span>返回工作台</span>
       </button>
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 bg-warning rounded-xl flex items-center justify-center">
           <Bot :size="24" class="text-white" />
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-text-primary">Agent Config Studio</h1>
-          <p class="text-text-secondary">Generate AI agent configuration files for your project</p>
+          <h1 class="text-2xl font-bold text-text-primary">Agent 配置生成</h1>
+          <p class="text-text-secondary">为项目生成 AI Agent 配置文件</p>
         </div>
       </div>
     </div>
