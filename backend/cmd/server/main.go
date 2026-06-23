@@ -144,6 +144,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		aiService,
 		reportService,
 		fileService,
+		zipService,
 		cfg.Upload.Dir,
 	)
 	projectDoctorService := toolservice.NewProjectDoctorService(

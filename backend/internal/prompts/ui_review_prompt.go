@@ -21,7 +21,7 @@ Language requirements:
 `
 
 // BuildUIReviewPrompt creates the prompt for UI Review.
-func BuildUIReviewPrompt(reviewMode, pageType, targetStyle, description, code string) (string, string) {
+func BuildUIReviewPrompt(reviewMode, codeSource, pageType, targetStyle, description, code, projectSummary string) (string, string) {
 	systemPrompt := `You are an expert UI/UX designer reviewing interfaces.
 Your task is to analyze the provided UI screenshot or code for design quality.
 All explanations, issue descriptions, comments, and recommendations must be written in Simplified Chinese unless they are proper nouns or technical terms.
@@ -36,12 +36,16 @@ Scoring dimensions, use these Chinese names exactly:
 
 	userPrompt := `评审信息:
 - 模式: ` + reviewMode + ` (screenshot, code, or screenshot_code)
+- 代码来源: ` + codeSource + ` (paste or project_zip)
 - 页面类型: ` + pageType + `
 - 目标风格: ` + targetStyle + `
 - 补充说明: ` + description + `
 
 代码（如有）:
 ` + code + `
+
+前端项目 ZIP 源码摘要（如有）:
+` + projectSummary + `
 
 请分析该 UI，并用简体中文提供评分、发现的问题和可执行的改进建议。`
 

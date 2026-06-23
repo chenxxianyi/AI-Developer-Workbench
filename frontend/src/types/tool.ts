@@ -24,11 +24,13 @@ export interface ToolMeta {
 export interface UIReviewInput {
   title: string
   review_mode: 'screenshot' | 'code' | 'screenshot_code'
+  code_source?: 'paste' | 'project_zip'
   page_type?: string
   target_style?: string
   description?: string
   code?: string
   screenshot?: File
+  project_zip?: File
 }
 
 export interface ProjectDoctorInput {

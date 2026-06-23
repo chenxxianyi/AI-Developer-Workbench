@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import UIReviewPage from './UIReviewPage.vue'
+import { runUIReview } from '@/api/tools'
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
@@ -72,5 +73,59 @@ describe('UIReviewPage screenshot paste upload', () => {
     expect(wrapper.text()).toContain('评分维度')
     expect(wrapper.text()).toContain('问题优先级')
     expect(wrapper.text()).toContain('改进建议')
+  })
+
+  it('submits a frontend project ZIP as the code source in code mode', async () => {
+    vi.mocked(runUIReview).mockResolvedValue({
+      id: 'report-1',
+      tool_type: 'ui_review',
+      title: 'ZIP 审查',
+      input_mode: 'code',
+      status: 'succeeded',
+      summary: 'done',
+      total_score: 80,
+      grade: 'B',
+      input_data: {},
+      report_data: {},
+      generated_files: [],
+      created_at: '2026-06-23T00:00:00Z',
+      updated_at: '2026-06-23T00:00:00Z',
+    } as any)
+
+    const wrapper = mount(UIReviewPage)
+
+    await wrapper.get('input[placeholder="输入分析标题..."]').setValue('ZIP 审查')
+    await wrapper.get('button[data-testid="review-mode-code"]').trigger('click')
+    await wrapper.get('button[data-testid="code-source-project-zip"]').trigger('click')
+
+    expect(wrapper.text()).toContain('上传前端项目 ZIP')
+    expect(wrapper.text()).toContain('系统只做静态读取，不执行代码')
+
+    const zip = new File(['zip-bytes'], 'frontend.zip', { type: 'application/zip' })
+    Object.defineProperty(wrapper.get('input[data-testid="project-zip-input"]').element, 'files', {
+      value: [zip],
+    })
+    await wrapper.get('input[data-testid="project-zip-input"]').trigger('change')
+
+    await wrapper.get('button[data-testid="ui-review-submit"]').trigger('click')
+
+    const formData = vi.mocked(runUIReview).mock.calls[0][0] as FormData
+    expect(formData.get('review_mode')).toBe('code')
+    expect(formData.get('code_source')).toBe('project_zip')
+    expect(formData.get('project_zip')).toBe(zip)
+  })
+
+  it('opens the ZIP file picker when the project ZIP dropzone is clicked', async () => {
+    const wrapper = mount(UIReviewPage)
+
+    await wrapper.get('button[data-testid="review-mode-code"]').trigger('click')
+    await wrapper.get('button[data-testid="code-source-project-zip"]').trigger('click')
+
+    const input = wrapper.get('input[data-testid="project-zip-input"]').element as HTMLInputElement
+    const click = vi.spyOn(input, 'click').mockImplementation(() => {})
+
+    await wrapper.get('[data-testid="project-zip-upload-zone"]').trigger('click')
+
+    expect(click).toHaveBeenCalledOnce()
   })
 })

@@ -75,6 +75,7 @@ func (h *ToolRunHandler) RunUIReview(c *gin.Context) {
 	input := tools.UIReviewFormInput{
 		Title:       c.PostForm("title"),
 		ReviewMode:  c.PostForm("review_mode"),
+		CodeSource:  c.PostForm("code_source"),
 		PageType:    c.PostForm("page_type"),
 		TargetStyle: c.PostForm("target_style"),
 		Description: c.PostForm("description"),
@@ -84,6 +85,9 @@ func (h *ToolRunHandler) RunUIReview(c *gin.Context) {
 	// Handle screenshot file.
 	if file, err := c.FormFile("screenshot"); err == nil {
 		input.Screenshot = file
+	}
+	if file, err := c.FormFile("project_zip"); err == nil {
+		input.ProjectZip = file
 	}
 
 	report, err := h.uiReviewService.Run(c.Request.Context(), input)

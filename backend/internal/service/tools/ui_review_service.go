@@ -20,6 +20,7 @@ type UIReviewService struct {
 	aiService     service.AIService
 	reportService service.ReportService
 	fileService   service.FileService
+	zipService    service.ZipService
 	uploadDir     string
 }
 
@@ -28,12 +29,14 @@ func NewUIReviewService(
 	aiService service.AIService,
 	reportService service.ReportService,
 	fileService service.FileService,
+	zipService service.ZipService,
 	uploadDir string,
 ) *UIReviewService {
 	return &UIReviewService{
 		aiService:     aiService,
 		reportService: reportService,
 		fileService:   fileService,
+		zipService:    zipService,
 		uploadDir:     uploadDir,
 	}
 }
@@ -42,11 +45,13 @@ func NewUIReviewService(
 type UIReviewFormInput struct {
 	Title       string
 	ReviewMode  string
+	CodeSource  string
 	PageType    string
 	TargetStyle string
 	Description string
 	Code        string
 	Screenshot  *multipart.FileHeader
+	ProjectZip  *multipart.FileHeader
 }
 
 // Run executes the UI Review tool.
@@ -60,6 +65,7 @@ func (s *UIReviewService) Run(ctx context.Context, input UIReviewFormInput) (*dt
 	req := dto.UIReviewRequest{
 		Title:       input.Title,
 		ReviewMode:  input.ReviewMode,
+		CodeSource:  normalizeUIReviewCodeSource(input.CodeSource),
 		PageType:    input.PageType,
 		TargetStyle: input.TargetStyle,
 		Description: input.Description,
@@ -83,13 +89,33 @@ func (s *UIReviewService) Run(ctx context.Context, input UIReviewFormInput) (*dt
 		imagePath = resolveUploadPath(s.uploadDir, asset.RelativePath)
 	}
 
+	var projectSummaryText string
+	if normalizeUIReviewCodeSource(input.CodeSource) == "project_zip" && input.ProjectZip != nil {
+		asset, err := s.fileService.SaveUpload(ctx, report.ID, input.ProjectZip, model.AssetTypeProjectZip, service.AllowedArchiveTypes())
+		if err != nil {
+			_ = s.reportService.FailReport(ctx, report.ID, fmt.Sprintf("project zip upload failed: %v", err))
+			return nil, fmt.Errorf("project zip upload failed: %w", err)
+		}
+
+		zipPath := resolveUploadPath(s.uploadDir, asset.RelativePath)
+		limits := service.DefaultZipLimits(120, 100, 12000, 300000)
+		summary, err := s.zipService.ExtractAndAnalyze(zipPath, limits)
+		if err != nil {
+			_ = s.reportService.FailReport(ctx, report.ID, fmt.Sprintf("project zip analysis failed: %v", err))
+			return nil, fmt.Errorf("project zip analysis failed: %w", err)
+		}
+		projectSummaryJSON, _ := json.Marshal(summary)
+		projectSummaryText = util.TruncateText(string(projectSummaryJSON), 300000)
+	}
+
 	// Truncate code if needed.
 	code := util.TruncateText(input.Code, 12000)
 
 	// Build prompt.
 	systemPrompt, userPrompt := prompts.BuildUIReviewPrompt(
-		input.ReviewMode, input.PageType, input.TargetStyle,
-		input.Description, code,
+		input.ReviewMode, normalizeUIReviewCodeSource(input.CodeSource),
+		input.PageType, input.TargetStyle,
+		input.Description, code, projectSummaryText,
 	)
 
 	// Call AI.
@@ -155,20 +181,27 @@ func (s *UIReviewService) validateInput(input UIReviewFormInput) error {
 			return fmt.Errorf("screenshot is required for screenshot mode")
 		}
 	case "code":
-		if input.Code == "" {
-			return fmt.Errorf("code is required for code mode")
+		if input.Code == "" && input.ProjectZip == nil {
+			return fmt.Errorf("code or project_zip is required for code mode")
 		}
 	case "screenshot_code":
 		if input.Screenshot == nil {
 			return fmt.Errorf("screenshot is required for screenshot_code mode")
 		}
-		if input.Code == "" {
-			return fmt.Errorf("code is required for screenshot_code mode")
+		if input.Code == "" && input.ProjectZip == nil {
+			return fmt.Errorf("code or project_zip is required for screenshot_code mode")
 		}
 	default:
 		return fmt.Errorf("invalid review_mode: %s", input.ReviewMode)
 	}
 	return nil
+}
+
+func normalizeUIReviewCodeSource(codeSource string) string {
+	if codeSource == "project_zip" {
+		return "project_zip"
+	}
+	return "paste"
 }
 
 func (s *UIReviewService) normalizeResult(result *dto.UIReviewResult) {

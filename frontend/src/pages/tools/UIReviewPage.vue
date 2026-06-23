@@ -23,12 +23,16 @@ import {
 // Form state
 const title = ref('')
 const reviewMode = ref<'screenshot' | 'code' | 'screenshot_code'>('screenshot')
+const codeSource = ref<'paste' | 'project_zip'>('paste')
 const pageType = ref('')
 const targetStyle = ref('')
 const description = ref('')
 const codeInput = ref('')
 const screenshotFile = ref<File | null>(null)
 const screenshotPreview = ref<string | null>(null)
+const projectZipFile = ref<File | null>(null)
+const projectZipName = ref('')
+const projectZipInput = ref<HTMLInputElement | null>(null)
 
 // Result state
 const loading = ref(false)
@@ -74,6 +78,34 @@ function clearFile() {
   screenshotPreview.value = null
 }
 
+function handleProjectZipSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files?.length) {
+    projectZipFile.value = target.files[0]
+    projectZipName.value = target.files[0].name
+  }
+}
+
+function clearProjectZip() {
+  projectZipFile.value = null
+  projectZipName.value = ''
+}
+
+function triggerProjectZipInput() {
+  projectZipInput.value?.click()
+}
+
+function handleProjectZipZoneKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  triggerProjectZipInput()
+}
+
+function hasCodeSourceInput(): boolean {
+  if (codeSource.value === 'project_zip') return !!projectZipFile.value
+  return !!codeInput.value.trim()
+}
+
 // Submit
 async function handleSubmit() {
   if (!title.value.trim()) {
@@ -86,13 +118,13 @@ async function handleSubmit() {
     return
   }
 
-  if (reviewMode.value === 'code' && !codeInput.value.trim()) {
-    error.value = '请输入代码'
+  if (reviewMode.value === 'code' && !hasCodeSourceInput()) {
+    error.value = '请粘贴代码或上传前端项目 ZIP'
     return
   }
 
-  if (reviewMode.value === 'screenshot_code' && !screenshotFile.value && !codeInput.value.trim()) {
-    error.value = '请上传截图或输入代码'
+  if (reviewMode.value === 'screenshot_code' && (!screenshotFile.value || !hasCodeSourceInput())) {
+    error.value = '请上传截图，并粘贴代码或上传前端项目 ZIP'
     return
   }
 
@@ -104,10 +136,12 @@ async function handleSubmit() {
     const formData = new FormData()
     formData.append('title', title.value)
     formData.append('review_mode', reviewMode.value)
+    formData.append('code_source', codeSource.value)
     if (pageType.value) formData.append('page_type', pageType.value)
     if (targetStyle.value) formData.append('target_style', targetStyle.value)
     if (description.value) formData.append('description', description.value)
-    if (codeInput.value) formData.append('code', codeInput.value)
+    if (codeSource.value === 'paste' && codeInput.value) formData.append('code', codeInput.value)
+    if (codeSource.value === 'project_zip' && projectZipFile.value) formData.append('project_zip', projectZipFile.value)
     if (screenshotFile.value) formData.append('screenshot', screenshotFile.value)
 
     result.value = await runUIReview(formData) as unknown as Report<UIReviewResult>
@@ -162,6 +196,9 @@ function resetForm() {
   codeInput.value = ''
   screenshotFile.value = null
   screenshotPreview.value = null
+  codeSource.value = 'paste'
+  projectZipFile.value = null
+  projectZipName.value = ''
   result.value = null
   error.value = null
 }
@@ -169,8 +206,8 @@ function resetForm() {
 const canSubmit = computed(() => {
   if (!title.value.trim()) return false
   if (reviewMode.value === 'screenshot') return !!screenshotFile.value
-  if (reviewMode.value === 'code') return !!codeInput.value.trim()
-  return !!screenshotFile.value || !!codeInput.value.trim()
+  if (reviewMode.value === 'code') return hasCodeSourceInput()
+  return !!screenshotFile.value && hasCodeSourceInput()
 })
 </script>
 
@@ -223,6 +260,7 @@ const canSubmit = computed(() => {
           <p class="text-sm text-text-muted mb-3">选择最贴近当前材料的分析方式。</p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
+              data-testid="review-mode-screenshot"
               @click="reviewMode = 'screenshot'"
               :class="[
                 'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
@@ -238,6 +276,7 @@ const canSubmit = computed(() => {
               </span>
             </button>
             <button
+              data-testid="review-mode-code"
               @click="reviewMode = 'code'"
               :class="[
                 'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
@@ -253,6 +292,7 @@ const canSubmit = computed(() => {
               </span>
             </button>
             <button
+              data-testid="review-mode-screenshot-code"
               @click="reviewMode = 'screenshot_code'"
               :class="[
                 'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
@@ -310,13 +350,88 @@ const canSubmit = computed(() => {
 
         <!-- Code Input -->
         <div v-if="reviewMode === 'code' || reviewMode === 'screenshot_code'" class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">前端代码</label>
-          <textarea
-            v-model="codeInput"
-            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none font-mono text-sm text-text-primary placeholder:text-text-muted"
-            rows="8"
-            placeholder="粘贴 Vue/React/HTML/CSS 代码..."
-          ></textarea>
+          <label class="block text-sm font-medium text-text-secondary mb-2">代码来源</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            <button
+              data-testid="code-source-paste"
+              type="button"
+              @click="codeSource = 'paste'"
+              :class="[
+                'rounded-lg px-4 py-3 text-left transition-smooth focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
+                codeSource === 'paste'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-muted text-text-secondary hover:bg-border',
+              ]"
+            >
+              <span class="block font-semibold">粘贴代码</span>
+              <span class="block text-xs opacity-85 mt-1">适合单文件或代码片段</span>
+            </button>
+            <button
+              data-testid="code-source-project-zip"
+              type="button"
+              @click="codeSource = 'project_zip'"
+              :class="[
+                'rounded-lg px-4 py-3 text-left transition-smooth focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
+                codeSource === 'project_zip'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-muted text-text-secondary hover:bg-border',
+              ]"
+            >
+              <span class="block font-semibold">上传前端 ZIP</span>
+              <span class="block text-xs opacity-85 mt-1">适合完整前端项目</span>
+            </button>
+          </div>
+
+          <div v-if="codeSource === 'paste'">
+            <label class="block text-sm font-medium text-text-secondary mb-2">前端代码</label>
+            <textarea
+              v-model="codeInput"
+              class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none font-mono text-sm text-text-primary placeholder:text-text-muted"
+              rows="8"
+              placeholder="粘贴 Vue/React/HTML/CSS 代码..."
+            ></textarea>
+          </div>
+
+          <div v-else>
+            <label class="block text-sm font-medium text-text-secondary mb-2">上传前端项目 ZIP</label>
+            <div
+              v-if="!projectZipName"
+              data-testid="project-zip-upload-zone"
+              role="button"
+              tabindex="0"
+              class="border-2 border-dashed border-border/80 rounded-lg p-6 text-center hover:border-accent focus-visible:ring-2 focus-visible:ring-accent focus:outline-none transition-smooth bg-surface-muted/40 cursor-pointer"
+              @click="triggerProjectZipInput"
+              @keydown="handleProjectZipZoneKeydown"
+            >
+              <Upload :size="30" class="text-accent mx-auto mb-2" />
+              <p class="text-text-primary font-medium">上传前端项目 ZIP</p>
+              <p class="text-text-secondary text-sm mt-1">支持 Vue / React / HTML / CSS 等前端项目</p>
+              <p class="text-text-secondary text-sm mt-1">系统只做静态读取，不执行代码</p>
+              <p class="text-text-muted text-xs mt-1">建议删除 node_modules、dist、.git，最大 20MB</p>
+              <input
+                data-testid="project-zip-input"
+                ref="projectZipInput"
+                type="file"
+                accept=".zip,application/zip,application/x-zip-compressed"
+                class="hidden"
+                @change="handleProjectZipSelect"
+              />
+            </div>
+            <div v-else class="flex items-center justify-between gap-3 p-3 bg-surface-muted rounded-lg">
+              <div class="flex items-center gap-2 min-w-0">
+                <FileText :size="18" class="text-accent" />
+                <span class="text-text-primary truncate">{{ projectZipName }}</span>
+              </div>
+              <button
+                type="button"
+                aria-label="移除前端项目 ZIP"
+                @click="clearProjectZip"
+                class="p-1 text-danger hover:text-danger/80 rounded focus-visible:ring-2 focus-visible:ring-danger focus:outline-none"
+              >
+                <AlertCircle :size="16" />
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Optional Fields -->
@@ -368,6 +483,7 @@ const canSubmit = computed(() => {
           </p>
           <div class="flex gap-3 sm:justify-end">
             <button
+              data-testid="ui-review-submit"
               @click="handleSubmit"
               :disabled="loading || !canSubmit"
               :class="[
