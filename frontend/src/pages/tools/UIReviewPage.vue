@@ -5,7 +5,6 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { runUIReview } from '@/api/tools'
 import type { Report, UIReviewResult } from '@/types/report'
 import { getScoreDisplayName, getSeverityDisplayName } from '@/utils/uiReviewDisplay'
@@ -18,11 +17,8 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
-  ArrowLeft,
   Download,
 } from '@lucide/vue'
-
-const router = useRouter()
 
 // Form state
 const title = ref('')
@@ -182,21 +178,21 @@ const canSubmit = computed(() => {
   <div class="max-w-6xl mx-auto">
     <!-- Header -->
     <div class="mb-6">
-      <button
-        @click="router.push('/dashboard')"
-        class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4"
-      >
-        <ArrowLeft :size="20" />
-        <span>返回工作台</span>
-      </button>
-
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-accent rounded-xl flex items-center justify-center">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-12 bg-accent rounded-xl flex items-center justify-center shrink-0 shadow-sm">
           <Eye :size="24" class="text-white" />
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight text-text-primary">UI 质量审查</h1>
+            <p class="text-text-secondary mt-1 max-w-2xl">
+              上传截图或前端代码，快速获得视觉层级、一致性、可访问性与改进建议。
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-2xl font-bold text-text-primary">UI 质量审查</h1>
-          <p class="text-text-secondary">基于截图或代码的 AI UI/UX 质量分析</p>
+
+        <div class="inline-flex items-center rounded-full border border-accent/20 bg-accent-soft px-4 py-2 text-sm font-medium text-accent">
+          填写输入 → 上传素材 → 开始分析 → 查看结果
         </div>
       </div>
     </div>
@@ -204,8 +200,11 @@ const canSubmit = computed(() => {
     <!-- Main Content -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Input Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">输入参数</h2>
+      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div class="mb-5">
+          <h2 class="text-lg font-semibold text-text-primary">1. 输入与素材</h2>
+          <p class="text-sm text-text-secondary mt-1">提供最关键的上下文，AI 会按当前材料生成审查报告。</p>
+        </div>
 
         <!-- Title -->
         <div class="mb-4">
@@ -213,7 +212,7 @@ const canSubmit = computed(() => {
           <input
             v-model="title"
             type="text"
-            class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none text-text-primary placeholder:text-text-muted"
             placeholder="输入分析标题..."
           />
         </div>
@@ -221,42 +220,52 @@ const canSubmit = computed(() => {
         <!-- Review Mode -->
         <div class="mb-4">
           <label class="block text-sm font-medium text-text-secondary mb-2">分析模式 *</label>
-          <div class="flex gap-2">
+          <p class="text-sm text-text-muted mb-3">选择最贴近当前材料的分析方式。</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               @click="reviewMode = 'screenshot'"
               :class="[
-                'flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth',
+                'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
                 reviewMode === 'screenshot'
                   ? 'bg-accent text-white'
                   : 'bg-surface-muted text-text-secondary hover:bg-border',
               ]"
             >
-              <Image :size="18" />
-              <span>截图</span>
+              <Image :size="18" class="mt-0.5 shrink-0" />
+              <span>
+                <span class="block font-semibold">截图</span>
+                <span class="block text-xs opacity-85 mt-1">仅上传截图，快速评估视觉质量</span>
+              </span>
             </button>
             <button
               @click="reviewMode = 'code'"
               :class="[
-                'flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth',
+                'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
                 reviewMode === 'code'
                   ? 'bg-accent text-white'
                   : 'bg-surface-muted text-text-secondary hover:bg-border',
               ]"
             >
-              <Code :size="18" />
-              <span>代码</span>
+              <Code :size="18" class="mt-0.5 shrink-0" />
+              <span>
+                <span class="block font-semibold">代码</span>
+                <span class="block text-xs opacity-85 mt-1">仅粘贴前端代码，审查结构与样式</span>
+              </span>
             </button>
             <button
               @click="reviewMode = 'screenshot_code'"
               :class="[
-                'flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth',
+                'flex items-start gap-2 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
                 reviewMode === 'screenshot_code'
                   ? 'bg-accent text-white'
                   : 'bg-surface-muted text-text-secondary hover:bg-border',
               ]"
             >
-              <Eye :size="18" />
-              <span>两者</span>
+              <Eye :size="18" class="mt-0.5 shrink-0" />
+              <span>
+                <span class="block font-semibold">两者</span>
+                <span class="block text-xs opacity-85 mt-1">截图 + 代码，获得更完整建议</span>
+              </span>
             </button>
           </div>
         </div>
@@ -269,13 +278,13 @@ const canSubmit = computed(() => {
             data-testid="screenshot-upload-zone"
             role="button"
             tabindex="0"
-            class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent focus:border-accent focus:outline-none transition-smooth cursor-pointer"
+            class="border-2 border-dashed border-border/80 rounded-lg p-8 text-center hover:border-accent focus-visible:ring-2 focus-visible:ring-accent focus:border-accent focus:outline-none transition-smooth cursor-pointer bg-surface-muted/40"
             @click="($refs.fileInput as HTMLInputElement).click()"
             @paste="handleScreenshotPaste"
           >
-            <Upload :size="32" class="text-text-muted mx-auto mb-2" />
-            <p class="text-text-secondary">点击、拖拽或 Ctrl+V 粘贴截图</p>
-            <p class="text-text-muted text-sm mt-1">支持 PNG, JPG, WebP (最大 20MB)</p>
+            <Upload :size="32" class="text-accent mx-auto mb-2" />
+            <p class="text-text-primary font-medium">点击、拖拽或 Ctrl+V 粘贴截图</p>
+            <p class="text-text-secondary text-sm mt-1">支持 PNG, JPG, WebP (最大 20MB)</p>
             <input
               ref="fileInput"
               type="file"
@@ -304,7 +313,7 @@ const canSubmit = computed(() => {
           <label class="block text-sm font-medium text-text-secondary mb-2">前端代码</label>
           <textarea
             v-model="codeInput"
-            class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none font-mono text-sm"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none font-mono text-sm text-text-primary placeholder:text-text-muted"
             rows="8"
             placeholder="粘贴 Vue/React/HTML/CSS 代码..."
           ></textarea>
@@ -316,7 +325,7 @@ const canSubmit = computed(() => {
           <input
             v-model="pageType"
             type="text"
-            class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none text-text-primary placeholder:text-text-muted"
             placeholder="如: 登录页、Dashboard、表单页..."
           />
         </div>
@@ -326,7 +335,7 @@ const canSubmit = computed(() => {
           <input
             v-model="targetStyle"
             type="text"
-            class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none text-text-primary placeholder:text-text-muted"
             placeholder="如: 简洁现代、Material Design..."
           />
         </div>
@@ -335,7 +344,7 @@ const canSubmit = computed(() => {
           <label class="block text-sm font-medium text-text-secondary mb-2">补充说明 (可选)</label>
           <textarea
             v-model="description"
-            class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent focus:outline-none text-text-primary placeholder:text-text-muted"
             rows="3"
             placeholder="描述设计目标、用户场景等..."
           ></textarea>
@@ -350,39 +359,73 @@ const canSubmit = computed(() => {
         </div>
 
         <!-- Submit -->
-        <div class="flex gap-3">
-          <button
-            @click="handleSubmit"
-            :disabled="loading || !canSubmit"
-            :class="[
-              'flex items-center gap-2 px-6 py-2 rounded-lg transition-smooth',
-              loading || !canSubmit
-                ? 'bg-surface-muted text-text-muted cursor-not-allowed'
-                : 'bg-accent text-white hover:bg-accent/80',
-            ]"
-          >
-            <Loader2 v-if="loading" :size="18" class="animate-spin" />
-            <Eye v-else :size="18" />
-            <span>{{ loading ? '分析中...' : '开始分析' }}</span>
-          </button>
-
+        <div class="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p v-if="!canSubmit && !loading" class="text-sm text-text-secondary">
+            请先填写标题并提供截图或代码。
+          </p>
+          <p v-else class="text-sm text-text-muted">
+            准备好后开始分析，结果会显示在右侧。
+          </p>
+          <div class="flex gap-3 sm:justify-end">
+            <button
+              @click="handleSubmit"
+              :disabled="loading || !canSubmit"
+              :class="[
+                'flex items-center gap-2 px-7 py-3 rounded-lg font-semibold shadow-sm transition-smooth focus-visible:ring-2 focus-visible:ring-accent focus:outline-none',
+                loading || !canSubmit
+                  ? 'bg-surface-muted text-text-muted cursor-not-allowed shadow-none'
+                  : 'bg-accent text-white hover:bg-accent/80 cursor-pointer',
+              ]"
+            >
+              <Loader2 v-if="loading" :size="18" class="animate-spin" />
+              <Eye v-else :size="18" />
+              <span>{{ loading ? '分析中...' : '开始分析' }}</span>
+            </button>
           <button
             @click="resetForm"
-            class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth"
+              class="px-4 py-3 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
           >
             重置
           </button>
+          </div>
         </div>
       </div>
 
       <!-- Result Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">分析结果</h2>
+      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-semibold text-text-primary mb-4">2. 分析结果</h2>
 
         <!-- No Result -->
-        <div v-if="!result && !loading" class="text-center py-12">
-          <Eye :size="48" class="text-text-muted mx-auto mb-4" />
-          <p class="text-text-secondary">提交输入后开始分析</p>
+        <div v-if="!result && !loading" class="py-8">
+          <div class="rounded-xl border border-accent/20 bg-accent-soft/60 p-5">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-accent text-white flex items-center justify-center">
+                <Eye :size="20" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-text-primary">将输出哪些内容</h3>
+                <p class="text-sm text-text-secondary">提交后会在这里生成可执行的 UI 审查结论。</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="rounded-lg bg-surface border border-border p-3">
+                <p class="font-medium text-text-primary">评分维度</p>
+                <p class="text-sm text-text-secondary mt-1">视觉层级、一致性、可访问性、对比度等。</p>
+              </div>
+              <div class="rounded-lg bg-surface border border-border p-3">
+                <p class="font-medium text-text-primary">问题优先级</p>
+                <p class="text-sm text-text-secondary mt-1">按 high / medium / low 聚焦关键问题。</p>
+              </div>
+              <div class="rounded-lg bg-surface border border-border p-3">
+                <p class="font-medium text-text-primary">改进建议</p>
+                <p class="text-sm text-text-secondary mt-1">给出可落地的设计和实现建议。</p>
+              </div>
+              <div class="rounded-lg bg-surface border border-border p-3">
+                <p class="font-medium text-text-primary">报告文件</p>
+                <p class="text-sm text-text-secondary mt-1">分析完成后可导出 Markdown 报告。</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Loading -->

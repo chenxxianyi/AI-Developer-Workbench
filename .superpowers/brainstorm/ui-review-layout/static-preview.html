@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UI Review 页面优化方向</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --muted: #f1f5f9;
+      --border: #dbe3ef;
+      --text: #0f172a;
+      --subtle: #475569;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --success: #16a34a;
+      --shadow: 0 20px 60px rgba(15, 23, 42, .10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      padding: 40px;
+    }
+    .shell { max-width: 1180px; margin: 0 auto; }
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      margin-bottom: 24px;
+    }
+    h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.04em; }
+    .subtitle { color: var(--subtle); margin: 0; line-height: 1.65; max-width: 760px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,.75);
+      color: var(--subtle);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: rgba(255,255,255,.84);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: #93c5fd;
+      box-shadow: 0 24px 70px rgba(37, 99, 235, .16);
+    }
+    .preview { padding: 14px; background: #f8fafc; min-height: 280px; }
+    .body { padding: 18px; }
+    .body h2 { margin: 0 0 8px; font-size: 18px; }
+    .body p { margin: 0; color: var(--subtle); line-height: 1.65; font-size: 14px; }
+    .recommend {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      background: #dcfce7;
+      color: #166534;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mock {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 252px;
+    }
+    .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .kicker { font-size: 11px; color: #64748b; }
+    .title { font-size: 20px; font-weight: 850; letter-spacing: -0.04em; }
+    .desc { font-size: 12px; color: var(--subtle); line-height: 1.5; }
+    .btn {
+      border: 0;
+      border-radius: 11px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .grid2 { display: grid; grid-template-columns: 1.05fr .95fr; gap: 10px; margin-top: 12px; }
+    .panel { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: #fff; }
+    .panel-title { font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 9px; }
+    .tab { padding: 6px 9px; border-radius: 10px; background: var(--muted); color: #334155; font-size: 12px; }
+    .tab.active { background: var(--accent); color: white; }
+    .input { height: 32px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 10px; margin-bottom: 8px; }
+    .drop {
+      height: 72px;
+      border: 2px dashed var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--subtle);
+      font-size: 12px;
+      text-align: center;
+    }
+    .info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .skeleton { height: 10px; background: #e2e8f0; border-radius: 999px; margin-top: 10px; }
+    .step { background: var(--muted); border-radius: 10px; padding: 9px; margin-bottom: 8px; font-size: 12px; }
+    .step.active { background: var(--accent-soft); color: #1d4ed8; font-weight: 800; }
+    .dark-mock {
+      background: #0f172a;
+      color: #f8fafc;
+      border-color: #334155;
+    }
+    .dark-mock .panel { background: #1e293b; border-color: #334155; }
+    .dark-mock .input { background: #0f172a; border-color: #475569; }
+    .dark-mock .drop { border-color: #22c55e; color: #bbf7d0; }
+    .dark-mock .btn { background: #22c55e; color: #052e16; }
+    .summary {
+      margin-top: 22px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .summary h2 { margin: 0 0 8px; font-size: 20px; }
+    .summary ul { margin: 10px 0 0; color: var(--subtle); line-height: 1.75; }
+    @media (max-width: 980px) {
+      body { padding: 24px; }
+      .cards { grid-template-columns: 1fr; }
+      .hero { display: block; }
+      .badge { margin-top: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <h1>UI Review 页面优化方向</h1>
+        <p class="subtitle">基于报告里的问题，我把方案收敛成 3 个方向。建议选 A：它最稳，能快速提升视觉层级、可访问性和移动端表现。</p>
+      </div>
+      <div class="badge">静态预览 · 无需 localhost 服务</div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <div class="preview">
+          <div class="mock">
+            <div class="row">
+              <div>
+                <div class="kicker">分析工具 / UI 审查</div>
+                <div class="title">UI 质量审查</div>
+                <div class="desc">上传截图或代码，获得视觉层级、一致性和可访问性建议。</div>
+              </div>
+              <button class="btn">开始分析</button>
+            </div>
+            <div class="grid2">
+              <div class="panel">
+                <div class="panel-title">1. 输入与素材</div>
+                <div class="tabs"><span class="tab active">截图</span><span class="tab">代码</span><span class="tab">两者</span></div>
+                <div class="input"></div>
+                <div class="drop">选择文件 / 拖拽 / Ctrl+V 粘贴</div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">2. 结果预览</div>
+                <div class="info">将输出：评分、问题清单、优先级、改进建议</div>
+                <div class="skeleton"></div>
+                <div class="skeleton" style="width:78%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <h2>A. 聚焦任务流 <span class="recommend">推荐</span></h2>
+          <p>保留双栏，但强化页面唯一 H1、主 CTA、模式说明、空状态和焦点态。改动集中，风险低，最贴合报告。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="preview">
+          <div class="mock">
+            <div class="title">UI 质量审查</div>
+            <div class="desc">按步骤完成分析</div>
+            <div class="grid2" style="grid-template-columns:160px 1fr;">
+              <div class="panel">
+                <div class="step active">① 基本信息</div>
+                <div class="step">② 素材上传</div>
+                <div class="step">③ 查看结果</div>
+              </div>
+              <div class="panel">
+                <div class="input"></div>
+                <div class="drop" style="border-color:#cbd5e1;">表单步骤内容</div>
+                <button class="btn" style="margin-top:10px;">下一步</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <h2>B. 分步向导</h2>
+          <p>把输入、上传、结果拆成步骤。新手友好，但会增加交互复杂度，也可能降低熟练用户效率。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="preview">
+          <div class="mock dark-mock">
+            <div class="row">
+              <div>
+                <div class="title">UI 质量审查</div>
+                <div class="desc" style="color:#cbd5e1;">开发者工具深色工作台风格</div>
+              </div>
+              <button class="btn">Run Review</button>
+            </div>
+            <div class="grid2">
+              <div class="panel">
+                <div class="input"></div>
+                <div class="drop">Paste screenshot</div>
+              </div>
+              <div class="panel">
+                <div style="color:#22c55e;font-weight:800;">Result Preview</div>
+                <div class="skeleton" style="background:#334155;"></div>
+                <div class="skeleton" style="background:#334155;width:72%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <h2>C. 深色开发者工作台</h2>
+          <p>更酷、更有产品记忆点，但会牵动全局主题、对比度和更多页面，适合作为后续大版本。</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="summary">
+      <h2>我建议先做 A 的具体范围</h2>
+      <ul>
+        <li>去掉 UI Review 页内重复返回入口，保留全局 Header 的返回工作台。</li>
+        <li>强化主 CTA：固定在表单底部，文案和禁用态更清晰。</li>
+        <li>给“截图 / 代码 / 两者”补用途说明，降低新用户选择成本。</li>
+        <li>优化结果区空状态，预告会输出哪些维度。</li>
+        <li>统一 focus-visible、浅灰文字/边框对比度、上传区可操作感。</li>
+        <li>移动端保持单栏：表单在上，结果在下。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -34,6 +34,17 @@ const fileName = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const result = ref<Report<ProjectDoctorResult> | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const analysisDepthOptions: Array<{
+  value: 'basic' | 'standard' | 'deep'
+  label: string
+  description: string
+}> = [
+  { value: 'basic', label: '基础', description: '快速扫描关键风险' },
+  { value: 'standard', label: '标准', description: '平衡速度与覆盖面' },
+  { value: 'deep', label: '深度', description: '更全面的工程审查' },
+]
 
 // File handling
 function handleFileSelect(event: Event) {
@@ -42,6 +53,16 @@ function handleFileSelect(event: Event) {
     projectFile.value = target.files[0]
     fileName.value = target.files[0].name
   }
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function handleUploadZoneKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  triggerFileInput()
 }
 
 function clearFile() {
@@ -93,6 +114,19 @@ function getSeverityColor(severity: string): string {
   if (severity === 'high') return 'text-danger'
   if (severity === 'medium') return 'text-warning'
   return 'text-accent'
+}
+
+function getSeverityBadgeClass(severity: string): string {
+  if (severity === 'high') return 'bg-danger/10 text-danger border-danger/20'
+  if (severity === 'medium') return 'bg-warning/10 text-warning border-warning/20'
+  return 'bg-accent-soft text-accent border-accent/20'
+}
+
+function getSeverityDisplayName(severity: string): string {
+  if (severity === 'high') return '高'
+  if (severity === 'medium') return '中'
+  if (severity === 'low') return '低'
+  return severity
 }
 
 function getGradeColor(grade: string | null): string {
@@ -153,58 +187,115 @@ const canSubmit = computed(() => title.value.trim() && projectFile.value)
         <h2 class="text-lg font-semibold text-text-primary mb-4">输入参数</h2>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">标题 *</label>
-          <input v-model="title" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="输入诊断标题..." />
+          <label for="project-doctor-title" class="block text-sm font-medium text-text-secondary mb-2">标题 *</label>
+          <input
+            id="project-doctor-title"
+            v-model="title"
+            type="text"
+            required
+            aria-describedby="project-doctor-title-help"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+            placeholder="输入诊断标题..."
+          />
+          <p id="project-doctor-title-help" class="text-xs text-text-secondary mt-1">用于区分本次诊断报告。</p>
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">项目名称</label>
-          <input v-model="projectName" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: AI Workbench..." />
+          <label for="project-doctor-name" class="block text-sm font-medium text-text-secondary mb-2">项目名称</label>
+          <input
+            id="project-doctor-name"
+            v-model="projectName"
+            type="text"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+            placeholder="如: AI Workbench..."
+          />
         </div>
 
         <!-- File Upload -->
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">项目 ZIP 文件 *</label>
-          <div v-if="!fileName" class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent transition-smooth cursor-pointer" @click="($refs.fileInput as HTMLInputElement).click()">
-            <Upload :size="32" class="text-text-muted mx-auto mb-2" />
-            <p class="text-text-secondary">点击或拖拽上传 ZIP</p>
-            <p class="text-text-muted text-sm mt-1">最大 20MB</p>
-            <input ref="fileInput" type="file" accept=".zip" class="hidden" @change="handleFileSelect" />
+          <label for="project-doctor-zip" class="block text-sm font-medium text-text-secondary mb-2">项目 ZIP 文件 *</label>
+          <div
+            v-if="!fileName"
+            data-testid="project-zip-upload-zone"
+            role="button"
+            tabindex="0"
+            aria-describedby="project-doctor-zip-help"
+            class="border-2 border-dashed border-border/80 rounded-lg p-8 text-center hover:border-success focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none transition-smooth cursor-pointer bg-surface-muted/40"
+            @click="triggerFileInput"
+            @keydown="handleUploadZoneKeydown"
+          >
+            <Upload :size="32" class="text-success mx-auto mb-2" />
+            <p class="text-text-primary font-medium">点击、拖拽或按 Enter / 空格上传 ZIP</p>
+            <p id="project-doctor-zip-help" class="text-text-secondary text-sm mt-1">按 Enter 或空格选择文件，支持 .zip，最大 20MB</p>
+            <input
+              id="project-doctor-zip"
+              ref="fileInput"
+              type="file"
+              accept=".zip"
+              required
+              class="hidden"
+              @change="handleFileSelect"
+            />
           </div>
-          <div v-else class="flex items-center justify-between p-3 bg-surface-muted rounded-lg">
-            <div class="flex items-center gap-2">
+          <div v-else class="flex items-center justify-between gap-3 p-3 bg-surface-muted rounded-lg">
+            <div class="flex items-center gap-2 min-w-0">
               <FileText :size="18" class="text-accent" />
-              <span class="text-text-primary">{{ fileName }}</span>
+              <span class="text-text-primary truncate">{{ fileName }}</span>
             </div>
-            <button @click="clearFile" class="p-1 text-danger hover:text-danger/80">
+            <button
+              type="button"
+              aria-label="移除已上传的项目 ZIP 文件"
+              @click="clearFile"
+              class="p-1 text-danger hover:text-danger/80 focus-visible:ring-2 focus-visible:ring-danger focus:outline-none rounded cursor-pointer"
+            >
               <AlertCircle :size="16" />
             </button>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">技术栈</label>
-          <input v-model="techStack" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: Vue 3 + Go + MySQL..." />
+          <label for="project-doctor-tech-stack" class="block text-sm font-medium text-text-secondary mb-2">技术栈</label>
+          <input
+            id="project-doctor-tech-stack"
+            v-model="techStack"
+            type="text"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+            placeholder="如: Vue 3 + Go + MySQL..."
+          />
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">分析深度 *</label>
-          <div class="flex gap-2">
-            <button @click="analysisDepth = 'basic'" :class="['flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth', analysisDepth === 'basic' ? 'bg-accent text-white' : 'bg-surface-muted text-text-secondary hover:bg-border']">
-              <span>基础</span>
-            </button>
-            <button @click="analysisDepth = 'standard'" :class="['flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth', analysisDepth === 'standard' ? 'bg-accent text-white' : 'bg-surface-muted text-text-secondary hover:bg-border']">
-              <span>标准</span>
-            </button>
-            <button @click="analysisDepth = 'deep'" :class="['flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth', analysisDepth === 'deep' ? 'bg-accent text-white' : 'bg-surface-muted text-text-secondary hover:bg-border']">
-              <span>深度</span>
+          <span class="block text-sm font-medium text-text-secondary mb-2">分析深度 *</span>
+          <div role="radiogroup" aria-label="分析深度" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              v-for="option in analysisDepthOptions"
+              :key="option.value"
+              type="button"
+              role="radio"
+              :aria-checked="analysisDepth === option.value"
+              @click="analysisDepth = option.value"
+              :class="[
+                'flex flex-col items-start gap-1 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-success focus:outline-none',
+                analysisDepth === option.value
+                  ? 'bg-success text-white'
+                  : 'bg-surface-muted text-text-secondary hover:bg-border',
+              ]"
+            >
+              <span class="font-semibold">{{ option.label }}</span>
+              <span class="text-xs opacity-85">{{ option.description }}</span>
             </button>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">项目描述</label>
-          <textarea v-model="projectDescription" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" rows="3" placeholder="描述项目功能和目标..."></textarea>
+          <label for="project-doctor-description" class="block text-sm font-medium text-text-secondary mb-2">项目描述</label>
+          <textarea
+            id="project-doctor-description"
+            v-model="projectDescription"
+            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+            rows="3"
+            placeholder="描述项目功能和目标..."
+          ></textarea>
         </div>
 
         <!-- Error -->
@@ -217,12 +308,12 @@ const canSubmit = computed(() => title.value.trim() && projectFile.value)
 
         <!-- Submit -->
         <div class="flex gap-3">
-          <button @click="handleSubmit" :disabled="loading || !canSubmit" :class="['flex items-center gap-2 px-6 py-2 rounded-lg transition-smooth', loading || !canSubmit ? 'bg-surface-muted text-text-muted cursor-not-allowed' : 'bg-success text-white hover:bg-success/80']">
+          <button @click="handleSubmit" :disabled="loading || !canSubmit" :class="['flex items-center gap-2 px-6 py-2 rounded-lg transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none', loading || !canSubmit ? 'bg-surface-muted text-text-muted cursor-not-allowed' : 'bg-success text-white hover:bg-success/80 cursor-pointer']">
             <Loader2 v-if="loading" :size="18" class="animate-spin" />
             <Stethoscope v-else :size="18" />
             <span>{{ loading ? '诊断中...' : '开始诊断' }}</span>
           </button>
-          <button @click="resetForm" class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth">重置</button>
+          <button @click="resetForm" class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none cursor-pointer">重置</button>
         </div>
       </div>
 
@@ -257,7 +348,7 @@ const canSubmit = computed(() => title.value.trim() && projectFile.value)
           <div v-if="result.report_data?.scores?.length" class="mb-6">
             <h3 class="text-md font-semibold text-text-primary mb-3">评分详情</h3>
             <div class="space-y-2">
-              <div v-for="score in result.report_data.scores" :key="score.name" class="flex items-center justify-between p-2 bg-surface-muted rounded">
+              <div v-for="score in result.report_data.scores" :key="score.name" class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between p-2 bg-surface-muted rounded">
                 <span class="text-text-secondary">{{ score.name }}</span>
                 <span :class="getScoreColor(score.score, score.max_score)">{{ score.score }}/{{ score.max_score }}</span>
               </div>
@@ -269,9 +360,11 @@ const canSubmit = computed(() => title.value.trim() && projectFile.value)
             <h3 class="text-md font-semibold text-text-primary mb-3">发现的问题</h3>
             <div class="space-y-2">
               <div v-for="(issue, idx) in result.report_data.issues" :key="idx" class="p-3 bg-surface-muted rounded">
-                <div class="flex items-center justify-between mb-1">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1">
                   <span class="font-medium text-text-primary">{{ issue.title }}</span>
-                  <span :class="getSeverityColor(issue.severity)" class="text-sm">{{ issue.severity }}</span>
+                  <span :class="[getSeverityColor(issue.severity), getSeverityBadgeClass(issue.severity)]" class="inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold">
+                    {{ getSeverityDisplayName(issue.severity) }}
+                  </span>
                 </div>
                 <p class="text-text-secondary text-sm">{{ issue.problem }}</p>
                 <p class="text-accent text-sm mt-1">建议: {{ issue.suggestion }}</p>

@@ -58,4 +58,19 @@ describe('UIReviewPage screenshot paste upload', () => {
 
     vi.unstubAllGlobals()
   })
+
+  it('presents the approved focused task flow and result preview guidance', () => {
+    const wrapper = mount(UIReviewPage)
+
+    expect(wrapper.get('h1').text()).toBe('UI 质量审查')
+    expect(wrapper.text()).toContain('填写输入 → 上传素材 → 开始分析 → 查看结果')
+    expect(wrapper.text()).not.toContain('返回工作台')
+    expect(wrapper.text()).toContain('仅上传截图，快速评估视觉质量')
+    expect(wrapper.text()).toContain('仅粘贴前端代码，审查结构与样式')
+    expect(wrapper.text()).toContain('截图 + 代码，获得更完整建议')
+    expect(wrapper.text()).toContain('将输出哪些内容')
+    expect(wrapper.text()).toContain('评分维度')
+    expect(wrapper.text()).toContain('问题优先级')
+    expect(wrapper.text()).toContain('改进建议')
+  })
 })
