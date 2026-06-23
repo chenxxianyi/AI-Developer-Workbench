@@ -40,15 +40,36 @@ const error = ref<string | null>(null)
 const result = ref<Report<UIReviewResult> | null>(null)
 
 // File handling
+function setScreenshotFile(file: File) {
+  screenshotFile.value = file
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    screenshotPreview.value = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files?.length) {
-    screenshotFile.value = target.files[0]
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      screenshotPreview.value = e.target?.result as string
-    }
-    reader.readAsDataURL(target.files[0])
+    setScreenshotFile(target.files[0])
+  }
+}
+
+function handleScreenshotPaste(event: ClipboardEvent) {
+  const items = event.clipboardData?.items
+  if (!items?.length) return
+
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index]
+    if (!item.type.startsWith('image/')) continue
+
+    const file = item.getAsFile()
+    if (!file) return
+
+    event.preventDefault()
+    setScreenshotFile(file)
+    return
   }
 }
 
@@ -245,11 +266,15 @@ const canSubmit = computed(() => {
           <label class="block text-sm font-medium text-text-secondary mb-2">上传截图</label>
           <div
             v-if="!screenshotPreview"
-            class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent transition-smooth cursor-pointer"
+            data-testid="screenshot-upload-zone"
+            role="button"
+            tabindex="0"
+            class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent focus:border-accent focus:outline-none transition-smooth cursor-pointer"
             @click="($refs.fileInput as HTMLInputElement).click()"
+            @paste="handleScreenshotPaste"
           >
             <Upload :size="32" class="text-text-muted mx-auto mb-2" />
-            <p class="text-text-secondary">点击或拖拽上传截图</p>
+            <p class="text-text-secondary">点击、拖拽或 Ctrl+V 粘贴截图</p>
             <p class="text-text-muted text-sm mt-1">支持 PNG, JPG, WebP (最大 20MB)</p>
             <input
               ref="fileInput"
