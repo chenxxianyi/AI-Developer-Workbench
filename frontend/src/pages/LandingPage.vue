@@ -11,6 +11,7 @@ import {
   Zap,
   LayoutDashboard,
   ArrowDown,
+  ArrowRight,
   Eye,
   Stethoscope,
   Bot,
@@ -23,6 +24,7 @@ import {
   Terminal,
   ExternalLink,
   BookOpen,
+  ShieldCheck,
 } from '@lucide/vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { getLandingNavLinkClass } from '@/utils/landingNav'
@@ -30,8 +32,6 @@ import { getLandingNavLinkClass } from '@/utils/landingNav'
 const { t } = useI18n()
 const route = useRoute()
 
-// Stats data (used in template)
-// Tools data
 const tools = computed(() => [
   {
     name: t('landing.tools.items.uiReview.name'),
@@ -75,7 +75,6 @@ const tools = computed(() => [
   },
 ])
 
-// Workflow steps
 const workflowSteps = computed(() => [
   { num: 1, title: t('landing.workflow.steps.choose.title'), description: t('landing.workflow.steps.choose.description') },
   { num: 2, title: t('landing.workflow.steps.analyze.title'), description: t('landing.workflow.steps.analyze.description') },
@@ -83,13 +82,25 @@ const workflowSteps = computed(() => [
   { num: 4, title: t('landing.workflow.steps.export.title'), description: t('landing.workflow.steps.export.description') },
 ])
 
-// Features
 const features = computed(() => [
   { title: t('landing.features.items.product.title'), description: t('landing.features.items.product.description') },
   { title: t('landing.features.items.safety.title'), description: t('landing.features.items.safety.description') },
   { title: t('landing.features.items.output.title'), description: t('landing.features.items.output.description') },
   { title: t('landing.features.items.integration.title'), description: t('landing.features.items.integration.description') },
 ])
+
+const statItems = computed(() => [
+  { icon: Wrench, label: t('landing.stats.tools') },
+  { icon: FileCheck, label: t('landing.stats.analysis') },
+  { icon: Download, label: t('landing.stats.export') },
+])
+
+const colorClassMap: Record<string, string> = {
+  accent: 'bg-accent-soft text-accent border-accent/10',
+  success: 'bg-success/10 text-success border-success/15',
+  warning: 'bg-warning/10 text-warning border-warning/15',
+  danger: 'bg-danger/10 text-danger border-danger/15',
+}
 
 function getIconComponent(iconName: string) {
   const iconMap: Record<string, any> = {
@@ -105,39 +116,37 @@ function getIconComponent(iconName: string) {
   return iconMap[iconName] || Zap
 }
 
-function getColorClass(color: string) {
-  return `bg-${color}-soft`
-}
-
-function getIconColorClass(color: string) {
-  return `text-${color}`
+function getToolIconClass(color: string) {
+  return colorClassMap[color] || colorClassMap.accent
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-background">
+  <div class="min-h-screen overflow-x-hidden bg-background text-text-primary">
     <!-- Navigation -->
-    <nav class="fixed top-4 left-4 right-4 z-50 bg-surface/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-smooth">
-      <div class="max-w-content mx-auto px-6 md:px-8 py-3 flex items-center justify-between">
-        <RouterLink to="/" class="flex items-center gap-3 hover:opacity-80 transition-smooth">
-          <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+    <nav class="fixed left-3 right-3 top-3 z-50 overflow-hidden rounded-xl border border-border bg-surface/90 shadow-sm backdrop-blur-md transition-smooth md:left-4 md:right-4 md:top-4">
+      <div class="mx-auto flex max-w-content items-center justify-between gap-3 px-3 py-2.5 md:gap-4 md:px-5">
+        <RouterLink to="/" class="flex min-w-0 items-center gap-3 transition-smooth hover:opacity-80">
+          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent">
             <Zap :size="20" class="text-white" />
           </div>
-          <span class="text-lg font-semibold text-text-primary">AI Workbench</span>
+          <span class="hidden truncate text-lg font-semibold text-text-primary sm:inline">AI Workbench</span>
         </RouterLink>
 
-        <div class="hidden md:flex items-center gap-6">
+        <div class="hidden items-center gap-1 md:flex">
           <RouterLink to="/" :class="getLandingNavLinkClass(route.hash, '')">{{ t('landing.nav.home') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#tools' }" :class="getLandingNavLinkClass(route.hash, '#tools')">{{ t('landing.nav.tools') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#workflow' }" :class="getLandingNavLinkClass(route.hash, '#workflow')">{{ t('landing.nav.workflow') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#features' }" :class="getLandingNavLinkClass(route.hash, '#features')">{{ t('landing.nav.features') }}</RouterLink>
         </div>
 
-        <div class="flex items-center gap-3">
-          <LanguageSwitcher />
+        <div class="flex flex-shrink-0 items-center gap-2">
+          <div class="landing-language-switcher">
+            <LanguageSwitcher />
+          </div>
           <RouterLink
             to="/dashboard"
-            class="px-4 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-smooth"
+            class="hidden items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition-smooth hover:bg-accent/90 sm:inline-flex"
           >
             {{ t('landing.nav.start') }}
           </RouterLink>
@@ -146,47 +155,124 @@ function getIconColorClass(color: string) {
     </nav>
 
     <!-- Hero Section -->
-    <section class="min-h-screen pt-32 pb-20 px-4 md:px-8 flex items-center">
-      <div class="max-w-content mx-auto">
-        <div class="text-center max-w-3xl mx-auto">
-          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-text-primary">
-            {{ t('landing.hero.title') }}
-          </h1>
+    <section class="relative overflow-hidden px-4 pb-12 pt-20 md:px-8 md:pb-14 md:pt-24">
+      <div class="landing-grid-pattern absolute inset-0" aria-hidden="true"></div>
 
-          <p class="text-lg md:text-xl text-text-secondary mb-8 leading-relaxed">
-            {{ t('landing.hero.description') }}
-          </p>
+      <div class="relative mx-auto max-w-content">
+        <div class="grid min-h-[auto] items-center gap-10 md:min-h-[620px] lg:grid-cols-[minmax(0,0.82fr)_minmax(520px,1.08fr)] lg:gap-14">
+          <div class="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
+            <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-sm font-semibold text-text-secondary shadow-sm">
+              <ShieldCheck :size="16" class="text-success" />
+              <span>AI Developer Workbench</span>
+            </div>
 
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <RouterLink
-              to="/dashboard"
-              class="w-full sm:w-auto px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-smooth flex items-center justify-center gap-2"
-            >
-              <LayoutDashboard :size="20" />
-              {{ t('landing.hero.enter') }}
-            </RouterLink>
-            <a
-              href="#tools"
-              class="w-full sm:w-auto px-8 py-3 bg-surface border border-border text-text-primary rounded-lg font-semibold hover:bg-surface-muted transition-smooth flex items-center justify-center gap-2"
-            >
-              <ArrowDown :size="20" />
-              {{ t('landing.hero.learnMore') }}
-            </a>
+            <h1 class="mx-auto max-w-[10em] text-2xl font-bold leading-tight text-text-primary sm:max-w-[12em] sm:text-4xl md:max-w-none md:text-5xl lg:mx-0 lg:text-6xl">
+              {{ t('landing.hero.title') }}
+            </h1>
+
+            <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary md:text-xl lg:mx-0">
+              {{ t('landing.hero.description') }}
+            </p>
+
+            <div class="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row lg:justify-start">
+              <RouterLink
+                to="/dashboard"
+                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-accent px-7 py-3 font-semibold text-white shadow-sm transition-smooth hover:bg-accent/90 hover:shadow-md"
+              >
+                <LayoutDashboard :size="20" />
+                {{ t('landing.hero.enter') }}
+              </RouterLink>
+              <a
+                href="#tools"
+                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-7 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:border-accent/30 hover:bg-surface-muted"
+              >
+                <ArrowDown :size="20" />
+                {{ t('landing.hero.learnMore') }}
+              </a>
+            </div>
+
+            <div class="mt-9 grid gap-3 text-sm text-text-muted sm:grid-cols-3">
+              <div
+                v-for="item in statItems"
+                :key="item.label"
+                class="flex items-center justify-center gap-2 rounded-lg border border-border bg-surface/70 px-3 py-3 lg:justify-start"
+              >
+                <component :is="item.icon" :size="16" class="text-accent" />
+                <span>{{ item.label }}</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Stats -->
-          <div class="flex items-center justify-center gap-8 md:gap-12 text-sm text-text-muted">
-            <div class="flex items-center gap-2">
-              <Wrench :size="16" />
-              <span>{{ t('landing.stats.tools') }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <FileCheck :size="16" />
-              <span>{{ t('landing.stats.analysis') }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <Download :size="16" />
-              <span>{{ t('landing.stats.export') }}</span>
+          <div class="terminal-showcase relative mx-auto w-full max-w-xl min-w-0 lg:max-w-none">
+            <p class="mb-5 text-left text-sm font-medium tracking-wide text-text-muted md:text-base">
+              图 01 — 一场 AI 项目交付会话，缓存依然温热
+            </p>
+
+            <div class="terminal-window overflow-hidden rounded-[28px] bg-[#202326] shadow-[0_28px_80px_rgba(24,24,27,0.22)] ring-1 ring-black/10">
+              <div class="relative flex h-14 items-center justify-center border-b border-white/8 px-5 md:h-16">
+                <div class="absolute left-5 flex items-center gap-2.5">
+                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
+                </div>
+                <div class="flex items-center gap-2 font-mono text-sm font-semibold text-white/38 md:text-lg">
+                  <Terminal :size="18" />
+                  <span>~/workspace — ai-workbench</span>
+                </div>
+              </div>
+
+              <div class="min-h-[320px] px-5 py-7 font-mono text-sm leading-relaxed text-white/76 md:min-h-[390px] md:px-9 md:py-10 md:text-base lg:text-lg">
+                <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span class="text-accent">◆</span>
+                  <span class="font-bold text-white/86">ai-workbench</span>
+                  <span class="text-white/35">v0.1.0 · codex · ~/project</span>
+                </div>
+
+                <div class="mb-4 flex items-start gap-3">
+                  <span class="text-[#8b5cf6]">›</span>
+                  <span class="font-semibold text-white/90">review UI quality and project structure</span>
+                </div>
+
+                <div class="mb-3 flex items-start gap-3">
+                  <span class="text-[#5fd18a]">✓</span>
+                  <span>
+                    scan
+                    <span class="text-white/38">frontend/src/pages/LandingPage.vue</span>
+                    <span class="font-semibold text-[#5fd18a]"> ok</span>
+                  </span>
+                </div>
+
+                <div class="mb-3 flex items-start gap-3">
+                  <span class="text-[#5fd18a]">✓</span>
+                  <span>
+                    generate
+                    <span class="text-white/38">AGENTS.md prompt</span>
+                    <span class="font-semibold text-[#5fd18a]"> ready</span>
+                  </span>
+                </div>
+
+                <div class="mb-3 flex items-start gap-3">
+                  <span class="text-[#5fd18a]">✓</span>
+                  <span>
+                    run
+                    <span class="text-white/38">npm run build</span>
+                    <span class="font-semibold text-[#5fd18a]"> passed</span>
+                    <span class="text-white/36"> (0.74s)</span>
+                  </span>
+                </div>
+
+                <div class="flex items-start gap-3 text-white/10">
+                  <span>●</span>
+                  <span>5 tools · cache 92.4% → 96.8%</span>
+                </div>
+              </div>
+
+              <div class="grid gap-3 border-t border-white/8 px-5 py-4 font-mono text-sm text-white/42 sm:grid-cols-4 md:px-9 md:text-base">
+                <div>cache <span class="font-bold text-white/82">96.8%</span></div>
+                <div>session <span class="font-bold text-white/82">4m</span></div>
+                <div>model <span class="font-bold text-white/82">codex</span></div>
+                <div class="sm:text-right">cost <span class="font-bold text-white/82">$0.002</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -194,115 +280,106 @@ function getIconColorClass(color: string) {
     </section>
 
     <!-- Tools Section -->
-    <section id="tools" class="py-20 px-4 md:px-8 bg-surface">
-      <div class="max-w-content mx-auto">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold mb-4 text-text-primary">{{ t('landing.tools.title') }}</h2>
-          <p class="text-lg text-text-secondary max-w-2xl mx-auto">
+    <section id="tools" class="border-y border-border bg-surface px-4 py-16 md:px-8 md:py-20">
+      <div class="mx-auto max-w-content">
+        <div class="mb-10 grid gap-4 md:grid-cols-[0.8fr_1fr] md:items-end">
+          <h2 class="text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.tools.title') }}</h2>
+          <p class="text-lg leading-relaxed text-text-secondary">
             {{ t('landing.tools.description') }}
           </p>
         </div>
 
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <RouterLink
-            v-for="tool in tools"
+            v-for="(tool, index) in tools"
             :key="tool.name"
             :to="tool.route"
-            class="group p-6 bg-background border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth"
+            class="group rounded-lg border border-border bg-background p-5 transition-smooth hover:border-accent/40 hover:bg-surface hover:shadow-md md:p-6"
+            :class="index < 3 ? 'lg:col-span-2' : 'lg:col-span-3'"
           >
-            <div class="flex items-start gap-4 mb-4">
-              <div
-                :class="[
-                  'w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0',
-                  getColorClass(tool.color),
-                ]"
-              >
+            <div class="mb-5 flex items-start justify-between gap-4">
+              <div :class="['flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border', getToolIconClass(tool.color)]">
                 <component
                   :is="getIconComponent(tool.icon)"
                   :size="24"
-                  :class="getIconColorClass(tool.color)"
                 />
               </div>
-              <div>
-                <h3 class="text-xl font-semibold mb-2 text-text-primary">{{ tool.name }}</h3>
-                <p class="text-text-secondary">{{ tool.subtitle }}</p>
-              </div>
+              <ArrowRight :size="18" class="mt-1 text-text-muted transition-smooth group-hover:translate-x-1 group-hover:text-accent" />
             </div>
-            <p class="text-text-secondary leading-relaxed">{{ tool.description }}</p>
-          </RouterLink>
 
-          <!-- Empty slot for grid alignment -->
-          <div class="hidden lg:block"></div>
+            <h3 class="mb-2 text-xl font-semibold text-text-primary">{{ tool.name }}</h3>
+            <p class="mb-4 text-sm font-semibold text-text-muted">{{ tool.subtitle }}</p>
+            <p class="leading-relaxed text-text-secondary">{{ tool.description }}</p>
+          </RouterLink>
         </div>
       </div>
     </section>
 
     <!-- Workflow Section -->
-    <section id="workflow" class="py-20 px-4 md:px-8">
-      <div class="max-w-content mx-auto">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold mb-4 text-text-primary">{{ t('landing.workflow.title') }}</h2>
-          <p class="text-lg text-text-secondary max-w-2xl mx-auto">
+    <section id="workflow" class="px-4 py-16 md:px-8 md:py-20">
+      <div class="mx-auto max-w-content">
+        <div class="mx-auto mb-12 max-w-3xl text-center">
+          <h2 class="mb-4 text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.workflow.title') }}</h2>
+          <p class="text-lg leading-relaxed text-text-secondary">
             {{ t('landing.workflow.description') }}
           </p>
         </div>
 
-        <div class="max-w-3xl mx-auto">
-          <div class="space-y-6">
-            <div
-              v-for="step in workflowSteps"
-              :key="step.num"
-              class="flex items-start gap-4 p-6 bg-surface border border-border rounded-lg"
-            >
-              <div class="w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+        <div class="grid gap-4 md:grid-cols-4">
+          <div
+            v-for="step in workflowSteps"
+            :key="step.num"
+            class="rounded-lg border border-border bg-surface p-5 shadow-sm"
+          >
+            <div class="mb-5 flex items-center justify-between">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
                 {{ step.num }}
               </div>
-              <div>
-                <h3 class="text-xl font-semibold mb-2 text-text-primary">{{ step.title }}</h3>
-                <p class="text-text-secondary">{{ step.description }}</p>
-              </div>
+              <div class="hidden h-px flex-1 bg-border md:ml-4 md:block"></div>
             </div>
+            <h3 class="mb-2 text-lg font-semibold text-text-primary">{{ step.title }}</h3>
+            <p class="leading-relaxed text-text-secondary">{{ step.description }}</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-20 px-4 md:px-8 bg-surface">
-      <div class="max-w-content mx-auto">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
+    <section id="features" class="border-y border-border bg-surface px-4 py-16 md:px-8 md:py-20">
+      <div class="mx-auto max-w-content">
+        <div class="grid gap-10 md:grid-cols-[0.9fr_1.1fr] md:items-center">
           <div>
-            <h2 class="text-3xl md:text-4xl font-bold mb-6 text-text-primary">{{ t('landing.features.title') }}</h2>
-            <div class="space-y-4">
+            <h2 class="mb-6 text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.features.title') }}</h2>
+            <div class="space-y-5">
               <div v-for="feature in features" :key="feature.title" class="flex items-start gap-3">
-                <CheckCircle2 :size="24" class="text-success flex-shrink-0" />
+                <CheckCircle2 :size="24" class="mt-0.5 flex-shrink-0 text-success" />
                 <div>
-                  <h3 class="font-semibold mb-1 text-text-primary">{{ feature.title }}</h3>
-                  <p class="text-text-secondary">{{ feature.description }}</p>
+                  <h3 class="mb-1 font-semibold text-text-primary">{{ feature.title }}</h3>
+                  <p class="leading-relaxed text-text-secondary">{{ feature.description }}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="bg-background border border-border rounded-lg p-6">
-            <div class="flex items-center gap-2 mb-4">
+          <div class="rounded-lg border border-border bg-background p-4 shadow-sm md:p-6">
+            <div class="mb-4 flex items-center gap-2">
               <Terminal :size="20" class="text-accent" />
               <span class="font-semibold text-text-primary">{{ t('landing.sampleReport.title') }}</span>
             </div>
-            <div class="bg-surface-muted rounded p-4 text-sm font-mono leading-relaxed">
-              <div class="text-text-muted mb-2"># UI 审查报告</div>
+            <div class="rounded-lg bg-text-primary p-4 font-mono text-sm leading-relaxed text-white/85">
+              <div class="mb-2 text-white/50"># UI Review Report</div>
               <div class="mb-3">
-                <span class="text-warning font-semibold">{{ t('landing.sampleReport.score') }}:</span>
-                <span class="text-text-primary"> 78/100</span>
+                <span class="font-semibold text-warning">{{ t('landing.sampleReport.score') }}:</span>
+                <span> 78/100</span>
               </div>
               <div class="mb-3">
-                <span class="text-danger font-semibold">{{ t('landing.sampleReport.issues') }}:</span>
-                <span class="text-text-primary"> 5</span>
+                <span class="font-semibold text-danger">{{ t('landing.sampleReport.issues') }}:</span>
+                <span> 5</span>
               </div>
-              <div class="text-text-secondary">
-                <div class="mb-2">• {{ t('landing.sampleReport.high') }}</div>
-                <div class="mb-2">• {{ t('landing.sampleReport.medium') }}</div>
-                <div>• {{ t('landing.sampleReport.low') }}</div>
+              <div class="text-white/70">
+                <div class="mb-2">- {{ t('landing.sampleReport.high') }}</div>
+                <div class="mb-2">- {{ t('landing.sampleReport.medium') }}</div>
+                <div>- {{ t('landing.sampleReport.low') }}</div>
               </div>
             </div>
           </div>
@@ -311,30 +388,33 @@ function getIconColorClass(color: string) {
     </section>
 
     <!-- CTA Section -->
-    <section class="py-20 px-4 md:px-8">
-      <div class="max-w-content mx-auto">
-        <div class="bg-surface border border-border rounded-lg p-8 md:p-12 text-center">
-          <h2 class="text-3xl md:text-4xl font-bold mb-4 text-text-primary">{{ t('landing.cta.title') }}</h2>
-          <p class="text-lg text-text-secondary mb-8 max-w-2xl mx-auto">
-            {{ t('landing.cta.description') }}
-          </p>
+    <section class="bg-text-primary px-4 py-16 text-white md:px-8 md:py-20">
+      <div class="mx-auto max-w-content">
+        <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <h2 class="mb-4 text-3xl font-bold md:text-4xl">{{ t('landing.cta.title') }}</h2>
+            <p class="max-w-2xl text-lg leading-relaxed text-white/70">
+              {{ t('landing.cta.description') }}
+            </p>
+          </div>
           <RouterLink
             to="/dashboard"
-            class="inline-flex items-center gap-2 px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/90 transition-smooth"
+            class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:bg-background"
           >
             <LayoutDashboard :size="20" />
             {{ t('landing.cta.button') }}
+            <ArrowRight :size="18" />
           </RouterLink>
         </div>
       </div>
     </section>
 
     <!-- Footer -->
-    <footer class="py-12 px-4 md:px-8 bg-surface border-t border-border">
-      <div class="max-w-content mx-auto">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer class="border-t border-border bg-surface px-4 py-10 md:px-8">
+      <div class="mx-auto max-w-content">
+        <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
               <Zap :size="20" class="text-white" />
             </div>
             <span class="text-lg font-semibold text-text-primary">AI Developer Workbench</span>
@@ -345,10 +425,10 @@ function getIconColorClass(color: string) {
           </div>
 
           <div class="flex items-center gap-4">
-            <a href="#" class="text-text-secondary hover:text-accent transition-smooth">
+            <a href="#" class="text-text-secondary transition-smooth hover:text-accent">
               <ExternalLink :size="20" />
             </a>
-            <a href="#" class="text-text-secondary hover:text-accent transition-smooth">
+            <a href="#" class="text-text-secondary transition-smooth hover:text-accent">
               <BookOpen :size="20" />
             </a>
           </div>
@@ -357,3 +437,41 @@ function getIconColorClass(color: string) {
     </footer>
   </div>
 </template>
+
+<style scoped>
+.landing-grid-pattern {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+}
+
+.terminal-showcase {
+  filter: drop-shadow(0 18px 36px rgba(15, 23, 42, 0.08));
+}
+
+.terminal-window {
+  color-scheme: dark;
+}
+
+@media (max-width: 479px) {
+  :global(html),
+  :global(body) {
+    overflow-x: hidden;
+  }
+
+  .terminal-window {
+    border-radius: 1.25rem;
+  }
+
+  .landing-language-switcher :deep(svg) {
+    display: none;
+  }
+
+  .landing-language-switcher :deep(button) {
+    min-width: 2rem;
+    padding-inline: 0.4rem;
+  }
+}
+</style>
