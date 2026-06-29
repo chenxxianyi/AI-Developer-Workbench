@@ -87,6 +87,7 @@ export const messages = {
       },
       features: {
         title: '专为开发者设计',
+        kicker: '质量交付系统',
         items: {
           product: {
             title: '真实产品感',
@@ -108,6 +109,8 @@ export const messages = {
       },
       sampleReport: {
         title: '示例报告',
+        promptReady: 'Codex Prompt 已就绪',
+        qualityLabel: '质量',
         score: '总分',
         issues: '发现问题',
         high: '高：检测到 AI 模板化风险',
@@ -118,6 +121,7 @@ export const messages = {
         title: '开始提升你的 AI 项目质量',
         description: '立即进入工作台，体验智能分析工具带来的效率提升',
         button: '进入 Dashboard',
+        command: 'ai-workbench --ship',
       },
       footer: {
         tagline: 'MVP 0.1.0 · 专为 AI Coding 开发者设计',
@@ -200,6 +204,7 @@ export const messages = {
       },
       features: {
         title: 'Designed for Developers',
+        kicker: 'Quality delivery system',
         items: {
           product: {
             title: 'Real Product Feel',
@@ -221,6 +226,8 @@ export const messages = {
       },
       sampleReport: {
         title: 'Sample Report',
+        promptReady: 'Codex Prompt ready',
+        qualityLabel: 'Quality',
         score: 'Total Score',
         issues: 'Issues Found',
         high: 'High: AI template risk detected',
@@ -231,6 +238,7 @@ export const messages = {
         title: 'Start improving your AI project quality',
         description: 'Enter the workbench now and experience the efficiency of intelligent analysis tools.',
         button: 'Enter Dashboard',
+        command: 'ai-workbench --ship',
       },
       footer: {
         tagline: 'MVP 0.1.0 · Designed for AI Coding Developers',

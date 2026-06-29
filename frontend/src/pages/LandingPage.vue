@@ -83,16 +83,28 @@ const workflowSteps = computed(() => [
 ])
 
 const features = computed(() => [
-  { title: t('landing.features.items.product.title'), description: t('landing.features.items.product.description') },
-  { title: t('landing.features.items.safety.title'), description: t('landing.features.items.safety.description') },
-  { title: t('landing.features.items.output.title'), description: t('landing.features.items.output.description') },
-  { title: t('landing.features.items.integration.title'), description: t('landing.features.items.integration.description') },
+  { title: t('landing.features.items.product.title'), description: t('landing.features.items.product.description'), icon: LayoutDashboard },
+  { title: t('landing.features.items.safety.title'), description: t('landing.features.items.safety.description'), icon: ShieldCheck },
+  { title: t('landing.features.items.output.title'), description: t('landing.features.items.output.description'), icon: FileCheck },
+  { title: t('landing.features.items.integration.title'), description: t('landing.features.items.integration.description'), icon: Bot },
 ])
 
 const statItems = computed(() => [
   { icon: Wrench, label: t('landing.stats.tools') },
   { icon: FileCheck, label: t('landing.stats.analysis') },
   { icon: Download, label: t('landing.stats.export') },
+])
+
+const qualityMetrics = computed(() => [
+  { label: t('landing.sampleReport.score'), value: '78', suffix: '/100', tone: 'text-warning' },
+  { label: t('landing.sampleReport.issues'), value: '5', suffix: '', tone: 'text-danger' },
+  { label: t('landing.stats.tools'), value: '5', suffix: '', tone: 'text-accent' },
+])
+
+const sampleIssues = computed(() => [
+  { level: 'H', text: t('landing.sampleReport.high'), levelClass: 'border-danger/30 bg-danger/15 text-red-200', barClass: 'w-4/5 bg-danger' },
+  { level: 'M', text: t('landing.sampleReport.medium'), levelClass: 'border-warning/30 bg-warning/15 text-amber-200', barClass: 'w-3/5 bg-warning' },
+  { level: 'L', text: t('landing.sampleReport.low'), levelClass: 'border-success/30 bg-success/15 text-emerald-200', barClass: 'w-2/5 bg-success' },
 ])
 
 const terminalTiltStyle = ref<Record<string, string>>({
@@ -433,41 +445,109 @@ function resetHeroGridGlow() {
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="border-y border-border bg-surface px-4 py-16 md:px-8 md:py-20">
-      <div class="mx-auto max-w-content">
-        <div class="grid gap-10 md:grid-cols-[0.9fr_1.1fr] md:items-center">
+    <section id="features" class="features-lab relative overflow-hidden border-y border-border px-4 py-16 md:px-8 md:py-24">
+      <div class="relative mx-auto max-w-content">
+        <div class="mb-10 grid gap-5 lg:grid-cols-[0.82fr_1fr] lg:items-end">
           <div>
-            <h2 class="mb-6 text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.features.title') }}</h2>
-            <div class="space-y-5">
-              <div v-for="feature in features" :key="feature.title" class="flex items-start gap-3">
-                <CheckCircle2 :size="24" class="mt-0.5 flex-shrink-0 text-success" />
-                <div>
-                  <h3 class="mb-1 font-semibold text-text-primary">{{ feature.title }}</h3>
-                  <p class="leading-relaxed text-text-secondary">{{ feature.description }}</p>
+            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/15 bg-surface/80 px-3 py-1 text-sm font-semibold text-accent shadow-sm">
+              <Terminal :size="15" />
+              <span>{{ t('landing.features.kicker') }}</span>
+            </div>
+            <h2 class="max-w-2xl text-3xl font-bold leading-tight text-text-primary md:text-4xl">
+              {{ t('landing.features.title') }}
+            </h2>
+          </div>
+          <p class="max-w-2xl text-lg leading-relaxed text-text-secondary lg:justify-self-end">
+            {{ t('landing.tools.description') }}
+          </p>
+        </div>
+
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)] lg:items-stretch">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div
+              v-for="feature in features"
+              :key="feature.title"
+              class="feature-card group relative overflow-hidden rounded-lg border border-border bg-surface/85 p-5 shadow-sm backdrop-blur transition-smooth hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
+            >
+              <div class="mb-5 flex items-center justify-between gap-4">
+                <div class="flex h-11 w-11 items-center justify-center rounded-lg border border-accent/10 bg-accent-soft text-accent transition-smooth group-hover:border-accent/25 group-hover:bg-accent group-hover:text-white">
+                  <component :is="feature.icon" :size="22" />
                 </div>
+                <CheckCircle2 :size="18" class="text-success/80" />
               </div>
+              <h3 class="mb-2 text-lg font-semibold text-text-primary">{{ feature.title }}</h3>
+              <p class="leading-relaxed text-text-secondary">{{ feature.description }}</p>
             </div>
           </div>
 
-          <div class="rounded-lg border border-border bg-background p-4 shadow-sm md:p-6">
-            <div class="mb-4 flex items-center gap-2">
-              <Terminal :size="20" class="text-accent" />
-              <span class="font-semibold text-text-primary">{{ t('landing.sampleReport.title') }}</span>
-            </div>
-            <div class="rounded-lg bg-text-primary p-4 font-mono text-sm leading-relaxed text-white/85">
-              <div class="mb-2 text-white/50"># UI Review Report</div>
-              <div class="mb-3">
-                <span class="font-semibold text-warning">{{ t('landing.sampleReport.score') }}:</span>
-                <span> 78/100</span>
+          <div class="quality-panel relative overflow-hidden rounded-lg border border-slate-800 bg-[#151a21] p-4 text-white shadow-[0_24px_70px_rgba(15,23,42,0.28)] md:p-6">
+            <div class="relative z-10">
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
+                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
+                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
+                  </div>
+                  <div class="font-mono text-sm font-semibold text-white/72">{{ t('landing.sampleReport.title') }}</div>
+                </div>
+                <div class="inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                  <CheckCircle2 :size="14" />
+                  <span>{{ t('landing.sampleReport.promptReady') }}</span>
+                </div>
               </div>
-              <div class="mb-3">
-                <span class="font-semibold text-danger">{{ t('landing.sampleReport.issues') }}:</span>
-                <span> 5</span>
+
+              <div class="grid gap-5 md:grid-cols-[170px_1fr]">
+                <div class="quality-score-orb flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] md:aspect-square md:h-auto">
+                  <div class="text-center">
+                    <div class="font-mono text-5xl font-bold leading-none text-white">78</div>
+                    <div class="mt-2 text-xs font-semibold text-white/42">{{ t('landing.sampleReport.qualityLabel') }}</div>
+                  </div>
+                </div>
+
+                <div class="min-w-0">
+                  <div class="mb-4 grid grid-cols-3 gap-2">
+                    <div
+                      v-for="metric in qualityMetrics"
+                      :key="metric.label"
+                      class="rounded-md border border-white/10 bg-white/[0.035] px-3 py-3"
+                    >
+                      <div class="mb-1 truncate text-xs font-medium text-white/42">{{ metric.label }}</div>
+                      <div class="font-mono text-xl font-bold text-white">
+                        <span :class="metric.tone">{{ metric.value }}</span><span class="text-sm text-white/42">{{ metric.suffix }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div
+                      v-for="issue in sampleIssues"
+                      :key="issue.text"
+                      class="grid grid-cols-[auto_1fr] items-center gap-3 rounded-md border border-white/10 bg-black/12 px-3 py-3 sm:grid-cols-[auto_1fr_84px]"
+                    >
+                      <span :class="['flex h-7 w-7 items-center justify-center rounded-md border font-mono text-xs font-bold', issue.levelClass]">
+                        {{ issue.level }}
+                      </span>
+                      <span class="min-w-0 text-sm leading-relaxed text-white/72">{{ issue.text }}</span>
+                      <span class="col-span-2 h-1.5 overflow-hidden rounded-full bg-white/10 sm:col-span-1">
+                        <span :class="['block h-full rounded-full', issue.barClass]"></span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="text-white/70">
-                <div class="mb-2">- {{ t('landing.sampleReport.high') }}</div>
-                <div class="mb-2">- {{ t('landing.sampleReport.medium') }}</div>
-                <div>- {{ t('landing.sampleReport.low') }}</div>
+
+              <div class="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:grid-cols-4">
+                <div
+                  v-for="step in workflowSteps"
+                  :key="step.num"
+                  class="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] px-3 py-3"
+                >
+                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-white/10 font-mono text-xs font-bold text-white">
+                    0{{ step.num }}
+                  </span>
+                  <span class="truncate text-sm font-semibold text-white/70">{{ step.title }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -476,23 +556,33 @@ function resetHeroGridGlow() {
     </section>
 
     <!-- CTA Section -->
-    <section class="bg-text-primary px-4 py-16 text-white md:px-8 md:py-20">
-      <div class="mx-auto max-w-content">
-        <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+    <section class="cta-command relative overflow-hidden px-4 py-14 text-white md:px-8 md:py-16">
+      <div class="relative mx-auto max-w-content">
+        <div class="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <h2 class="mb-4 text-3xl font-bold md:text-4xl">{{ t('landing.cta.title') }}</h2>
-            <p class="max-w-2xl text-lg leading-relaxed text-white/70">
+            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-white/62">
+              <Terminal :size="15" />
+              <span>{{ t('landing.cta.command') }}</span>
+            </div>
+            <h2 class="max-w-2xl text-3xl font-bold leading-tight md:text-4xl">{{ t('landing.cta.title') }}</h2>
+            <p class="mt-4 max-w-2xl text-lg leading-relaxed text-white/68">
               {{ t('landing.cta.description') }}
             </p>
           </div>
-          <RouterLink
-            to="/dashboard"
-            class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:bg-background"
-          >
-            <LayoutDashboard :size="20" />
-            {{ t('landing.cta.button') }}
-            <ArrowRight :size="18" />
-          </RouterLink>
+          <div class="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
+            <RouterLink
+              to="/dashboard"
+              class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:bg-accent hover:text-white"
+            >
+              <LayoutDashboard :size="20" />
+              {{ t('landing.cta.button') }}
+              <ArrowRight :size="18" />
+            </RouterLink>
+            <div class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-5 py-3 font-mono text-sm text-white/64">
+              <CheckCircle2 :size="16" class="text-success" />
+              <span>{{ t('landing.stats.analysis') }} · {{ t('landing.stats.export') }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -622,6 +712,91 @@ function resetHeroGridGlow() {
   transform: translateZ(18px);
 }
 
+.features-lab {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 247, 245, 0.92)),
+    linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    36px 36px,
+    36px 36px;
+}
+
+.features-lab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(37, 99, 235, 0.12), transparent 26%),
+    radial-gradient(circle at 86% 54%, rgba(22, 163, 74, 0.1), transparent 24%);
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.11), transparent 38%);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+.quality-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 86%);
+}
+
+.quality-panel::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 76% 18%, rgba(37, 99, 235, 0.26), transparent 24%),
+    radial-gradient(circle at 28% 78%, rgba(22, 163, 74, 0.18), transparent 24%);
+  opacity: 0.86;
+}
+
+.quality-score-orb {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(37, 99, 235, 0.26), transparent 46%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.cta-command {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.3), transparent 26%),
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    #111827;
+  background-size:
+    100% 100%,
+    40px 40px,
+    40px 40px,
+    100% 100%;
+}
+
+.cta-command::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(21, 26, 33, 0.08), rgba(17, 24, 39, 0.88));
+}
+
 @media (max-width: 479px) {
   :global(html),
   :global(body) {
@@ -640,6 +815,10 @@ function resetHeroGridGlow() {
     min-width: 2rem;
     padding-inline: 0.4rem;
   }
+
+  .quality-panel {
+    padding: 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -653,6 +832,10 @@ function resetHeroGridGlow() {
   }
 
   .terminal-window {
+    transform: none;
+  }
+
+  .feature-card {
     transform: none;
   }
 }
