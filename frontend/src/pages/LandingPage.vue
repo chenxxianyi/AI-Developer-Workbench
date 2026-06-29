@@ -4,7 +4,7 @@
  * Standalone layout (no AppShell)
  */
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 import {
@@ -95,6 +95,22 @@ const statItems = computed(() => [
   { icon: Download, label: t('landing.stats.export') },
 ])
 
+const terminalTiltStyle = ref<Record<string, string>>({
+  '--terminal-rotate-x': '0deg',
+  '--terminal-rotate-y': '0deg',
+  '--terminal-lift': '0px',
+  '--terminal-shadow-x': '0px',
+  '--terminal-shadow-y': '28px',
+  '--terminal-glow-x': '50%',
+  '--terminal-glow-y': '50%',
+})
+
+const heroGridStyle = ref<Record<string, string>>({
+  '--hero-grid-x': '50%',
+  '--hero-grid-y': '42%',
+  '--hero-grid-opacity': '0',
+})
+
 const colorClassMap: Record<string, string> = {
   accent: 'bg-accent-soft text-accent border-accent/10',
   success: 'bg-success/10 text-success border-success/15',
@@ -118,6 +134,65 @@ function getIconComponent(iconName: string) {
 
 function getToolIconClass(color: string) {
   return colorClassMap[color] || colorClassMap.accent
+}
+
+function handleTerminalPointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return
+  }
+
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const x = (event.clientX - rect.left) / rect.width - 0.5
+  const y = (event.clientY - rect.top) / rect.height - 0.5
+  const rotateX = y * -8
+  const rotateY = x * 10
+
+  terminalTiltStyle.value = {
+    '--terminal-rotate-x': `${rotateX.toFixed(2)}deg`,
+    '--terminal-rotate-y': `${rotateY.toFixed(2)}deg`,
+    '--terminal-lift': '-6px',
+    '--terminal-shadow-x': `${(-x * 24).toFixed(1)}px`,
+    '--terminal-shadow-y': `${(30 + Math.abs(y) * 14).toFixed(1)}px`,
+    '--terminal-glow-x': `${((x + 0.5) * 100).toFixed(1)}%`,
+    '--terminal-glow-y': `${((y + 0.5) * 100).toFixed(1)}%`,
+  }
+}
+
+function resetTerminalTilt() {
+  terminalTiltStyle.value = {
+    '--terminal-rotate-x': '0deg',
+    '--terminal-rotate-y': '0deg',
+    '--terminal-lift': '0px',
+    '--terminal-shadow-x': '0px',
+    '--terminal-shadow-y': '28px',
+    '--terminal-glow-x': '50%',
+    '--terminal-glow-y': '50%',
+  }
+}
+
+function handleHeroPointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return
+  }
+
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const x = ((event.clientX - rect.left) / rect.width) * 100
+  const y = ((event.clientY - rect.top) / rect.height) * 100
+
+  heroGridStyle.value = {
+    '--hero-grid-x': `${Math.max(0, Math.min(100, x)).toFixed(2)}%`,
+    '--hero-grid-y': `${Math.max(0, Math.min(100, y)).toFixed(2)}%`,
+    '--hero-grid-opacity': '1',
+  }
+}
+
+function resetHeroGridGlow() {
+  heroGridStyle.value = {
+    ...heroGridStyle.value,
+    '--hero-grid-opacity': '0',
+  }
 }
 </script>
 
@@ -155,8 +230,15 @@ function getToolIconClass(color: string) {
     </nav>
 
     <!-- Hero Section -->
-    <section class="relative overflow-hidden px-4 pb-12 pt-20 md:px-8 md:pb-14 md:pt-24">
+    <section
+      class="relative overflow-hidden px-4 pb-12 pt-20 md:px-8 md:pb-14 md:pt-24"
+      :style="heroGridStyle"
+      @pointermove="handleHeroPointerMove"
+      @pointerleave="resetHeroGridGlow"
+      @pointercancel="resetHeroGridGlow"
+    >
       <div class="landing-grid-pattern absolute inset-0" aria-hidden="true"></div>
+      <div class="landing-grid-glow absolute inset-0" aria-hidden="true"></div>
 
       <div class="relative mx-auto max-w-content">
         <div class="grid min-h-[auto] items-center gap-10 md:min-h-[620px] lg:grid-cols-[minmax(0,0.82fr)_minmax(520px,1.08fr)] lg:gap-14">
@@ -203,7 +285,13 @@ function getToolIconClass(color: string) {
             </div>
           </div>
 
-          <div class="terminal-showcase relative mx-auto w-full max-w-xl min-w-0 lg:max-w-none">
+          <div
+            class="terminal-showcase relative mx-auto w-full max-w-xl min-w-0 lg:max-w-none"
+            :style="terminalTiltStyle"
+            @pointermove="handleTerminalPointerMove"
+            @pointerleave="resetTerminalTilt"
+            @pointercancel="resetTerminalTilt"
+          >
             <p class="mb-5 text-left text-sm font-medium tracking-wide text-text-muted md:text-base">
               图 01 — 一场 AI 项目交付会话，缓存依然温热
             </p>
@@ -447,12 +535,91 @@ function getToolIconClass(color: string) {
   mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 
+.landing-grid-glow {
+  pointer-events: none;
+  opacity: var(--hero-grid-opacity);
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.38) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.38) 1px, transparent 1px),
+    radial-gradient(
+      circle at var(--hero-grid-x) var(--hero-grid-y),
+      rgba(37, 99, 235, 0.24),
+      rgba(37, 99, 235, 0.1) 28%,
+      transparent 56%
+    );
+  background-position:
+    0 0,
+    0 0,
+    0 0;
+  background-size:
+    44px 44px,
+    44px 44px,
+    100% 100%;
+  mask-image:
+    radial-gradient(
+      circle 280px at var(--hero-grid-x) var(--hero-grid-y),
+      black 0%,
+      rgba(0, 0, 0, 0.9) 36%,
+      transparent 76%
+    ),
+    linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+  mask-composite: intersect;
+  transition: opacity 180ms ease-out;
+}
+
 .terminal-showcase {
-  filter: drop-shadow(0 18px 36px rgba(15, 23, 42, 0.08));
+  --terminal-rotate-x: 0deg;
+  --terminal-rotate-y: 0deg;
+  --terminal-lift: 0px;
+  --terminal-shadow-x: 0px;
+  --terminal-shadow-y: 28px;
+  --terminal-glow-x: 50%;
+  --terminal-glow-y: 50%;
+  perspective: 1200px;
 }
 
 .terminal-window {
   color-scheme: dark;
+  position: relative;
+  transform:
+    translateY(var(--terminal-lift))
+    rotateX(var(--terminal-rotate-x))
+    rotateY(var(--terminal-rotate-y));
+  transform-style: preserve-3d;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    var(--terminal-shadow-x) var(--terminal-shadow-y) 70px rgba(15, 23, 42, 0.24),
+    0 10px 24px rgba(15, 23, 42, 0.14);
+  will-change: transform, box-shadow;
+}
+
+.terminal-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at var(--terminal-glow-x) var(--terminal-glow-y),
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.04) 28%,
+      transparent 55%
+    );
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.terminal-showcase:hover .terminal-window::before {
+  opacity: 1;
+}
+
+.terminal-window > * {
+  position: relative;
+  z-index: 2;
+  transform: translateZ(18px);
 }
 
 @media (max-width: 479px) {
@@ -472,6 +639,21 @@ function getToolIconClass(color: string) {
   .landing-language-switcher :deep(button) {
     min-width: 2rem;
     padding-inline: 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-grid-glow {
+    display: none;
+  }
+
+  .terminal-window,
+  .terminal-window::before {
+    transition: none;
+  }
+
+  .terminal-window {
+    transform: none;
   }
 }
 </style>
