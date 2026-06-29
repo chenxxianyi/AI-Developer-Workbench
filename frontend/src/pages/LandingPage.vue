@@ -211,29 +211,29 @@ function resetHeroGridGlow() {
 <template>
   <div class="min-h-screen overflow-x-hidden bg-background text-text-primary">
     <!-- Navigation -->
-    <nav class="fixed left-3 right-3 top-3 z-50 overflow-hidden rounded-xl border border-border bg-surface/90 shadow-sm backdrop-blur-md transition-smooth md:left-4 md:right-4 md:top-4">
-      <div class="mx-auto flex max-w-content items-center justify-between gap-3 px-3 py-2.5 md:gap-4 md:px-5">
-        <RouterLink to="/" class="flex min-w-0 items-center gap-3 transition-smooth hover:opacity-80">
-          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent">
-            <Zap :size="20" class="text-white" />
+    <nav class="fixed left-3 right-3 top-3 z-50 overflow-hidden rounded-xl border border-border/80 bg-surface/92 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-md transition-smooth md:left-5 md:right-5 md:top-5">
+      <div class="mx-auto flex min-h-[64px] max-w-content items-center justify-between gap-4 px-4 py-3 md:min-h-[72px] md:gap-6 md:px-7">
+        <RouterLink to="/" class="flex min-w-0 items-center gap-3.5 transition-smooth hover:opacity-85">
+          <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-accent shadow-[0_10px_24px_rgba(37,99,235,0.28)] md:h-12 md:w-12">
+            <Zap :size="24" class="text-white" />
           </div>
-          <span class="hidden truncate text-lg font-semibold text-text-primary sm:inline">AI Workbench</span>
+          <span class="hidden truncate text-xl font-bold text-text-primary sm:inline md:text-2xl">AI Workbench</span>
         </RouterLink>
 
-        <div class="hidden items-center gap-1 md:flex">
+        <div class="hidden items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 p-1 md:flex">
           <RouterLink to="/" :class="getLandingNavLinkClass(route.hash, '')">{{ t('landing.nav.home') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#tools' }" :class="getLandingNavLinkClass(route.hash, '#tools')">{{ t('landing.nav.tools') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#workflow' }" :class="getLandingNavLinkClass(route.hash, '#workflow')">{{ t('landing.nav.workflow') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#features' }" :class="getLandingNavLinkClass(route.hash, '#features')">{{ t('landing.nav.features') }}</RouterLink>
         </div>
 
-        <div class="flex flex-shrink-0 items-center gap-2">
+        <div class="flex flex-shrink-0 items-center gap-3">
           <div class="landing-language-switcher">
             <LanguageSwitcher />
           </div>
           <RouterLink
             to="/dashboard"
-            class="hidden items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition-smooth hover:bg-accent/90 sm:inline-flex"
+            class="hidden min-h-11 items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-base font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] transition-smooth hover:-translate-y-0.5 hover:bg-accent/90 hover:shadow-[0_14px_28px_rgba(37,99,235,0.30)] sm:inline-flex"
           >
             {{ t('landing.nav.start') }}
           </RouterLink>
