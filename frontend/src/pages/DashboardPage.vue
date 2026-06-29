@@ -4,7 +4,7 @@
  * Stats, tool grid, and recent reports
  */
 
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useSystemStore } from '@/stores/systemStore'
 import { useToolStore } from '@/stores/toolStore'
@@ -19,6 +19,11 @@ import {
   Database,
   ArrowRight,
   ChevronRight,
+  FileStack,
+  BarChart3,
+  Activity,
+  CheckCircle2,
+  Sparkles,
 } from '@lucide/vue'
 
 const systemStore = useSystemStore()
@@ -30,36 +35,102 @@ onMounted(async () => {
   await toolStore.fetchTools()
 })
 
-// Stats cards data
-const stats = [
+const toolToneMap: Record<string, { icon: string; card: string; text: string; soft: string; border: string }> = {
+  accent: {
+    icon: 'bg-accent-soft text-accent border-accent/10',
+    card: 'hover:border-accent/35 hover:shadow-[0_14px_34px_rgba(37,99,235,0.12)]',
+    text: 'text-accent',
+    soft: 'bg-accent-soft',
+    border: 'border-accent/25',
+  },
+  success: {
+    icon: 'bg-success/10 text-success border-success/15',
+    card: 'hover:border-success/30 hover:shadow-[0_14px_34px_rgba(22,163,74,0.10)]',
+    text: 'text-success',
+    soft: 'bg-success/10',
+    border: 'border-success/25',
+  },
+  warning: {
+    icon: 'bg-warning/10 text-warning border-warning/15',
+    card: 'hover:border-warning/30 hover:shadow-[0_14px_34px_rgba(217,119,6,0.10)]',
+    text: 'text-warning',
+    soft: 'bg-warning/10',
+    border: 'border-warning/25',
+  },
+  danger: {
+    icon: 'bg-danger/10 text-danger border-danger/15',
+    card: 'hover:border-danger/30 hover:shadow-[0_14px_34px_rgba(220,38,38,0.10)]',
+    text: 'text-danger',
+    soft: 'bg-danger/10',
+    border: 'border-danger/25',
+  },
+}
+
+const stats = computed(() => [
   {
     label: '总报告数',
     value: systemStore.dashboardStats?.total_reports ?? 0,
-    icon: 'file-stack',
+    icon: FileStack,
     color: 'accent',
   },
   {
     label: '平均评分',
     value: systemStore.dashboardStats?.average_score ?? '暂无',
     suffix: '/100',
-    icon: 'bar-chart-2',
+    icon: BarChart3,
     color: 'success',
   },
   {
     label: '工具使用',
     value: Object.keys(systemStore.dashboardStats?.tool_usage ?? {}).length,
     suffix: '/5',
-    icon: 'wrench',
+    icon: Wrench,
     color: 'warning',
   },
   {
     label: '最近活动',
-    value: '2小时前',
+    value: latestActivityLabel.value,
     suffix: '',
-    icon: 'activity',
+    icon: Activity,
     color: 'danger',
   },
-]
+])
+
+const recentReports = computed(() => systemStore.dashboardStats?.recent_reports?.slice(0, 4) ?? [])
+
+const latestActivityLabel = computed(() => {
+  const latestReport = systemStore.dashboardStats?.recent_reports?.[0]
+  return latestReport ? formatRelativeTime(latestReport.created_at) : '暂无'
+})
+
+const totalToolUsage = computed(() => {
+  const usage = systemStore.dashboardStats?.tool_usage ?? {}
+  return (Object.values(usage) as number[]).reduce((sum, count) => sum + count, 0)
+})
+
+const mostUsedTool = computed(() => {
+  const tools = [...toolStore.tools]
+  if (!tools.length) return null
+
+  return tools.sort((a, b) => b.usage_count - a.usage_count)[0]
+})
+
+const fallbackTools = computed(() => {
+  const usage: Partial<Record<ToolType, number>> = systemStore.dashboardStats?.tool_usage ?? {}
+  const toolTypes: ToolType[] = ['ui_review', 'project_doctor', 'agent_config', 'api_doc', 'db_schema']
+  const colors = ['accent', 'success', 'warning', 'danger', 'accent']
+
+  return toolTypes.map((toolType, index) => ({
+    tool_type: toolType,
+    color: colors[index],
+    usage_count: usage[toolType] ?? 0,
+  }))
+})
+
+const dashboardTools = computed(() => {
+  if (toolStore.tools.length) return toolStore.tools
+  return fallbackTools.value
+})
 
 // Tool icon mapping
 const toolIconMap: Record<string, any> = {
@@ -76,6 +147,10 @@ function getToolIcon(toolType: ToolType | string) {
 
 function getToolDisplay(toolType: ToolType) {
   return getToolDisplayMeta(toolType)
+}
+
+function getToolTone(color: string) {
+  return toolToneMap[color] || toolToneMap.accent
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -104,137 +179,198 @@ function getScoreColorClass(score: number | null): string {
 </script>
 
 <template>
-  <div>
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div
-        v-for="stat in stats"
-        :key="stat.label"
-        class="p-6 bg-surface border border-border rounded-lg"
-      >
-        <div class="flex items-center gap-3 mb-3">
-          <component :is="stat.icon" :size="20" :class="`text-${stat.color}`" />
-          <span class="text-sm text-text-muted">{{ stat.label }}</span>
-        </div>
-        <div class="text-3xl font-bold text-text-primary">
-          {{ stat.value
-          }}<span v-if="stat.suffix" class="text-lg text-text-muted">{{ stat.suffix }}</span>
-        </div>
-      </div>
-    </div>
+  <div class="space-y-8">
+    <section class="dashboard-overview overflow-hidden rounded-lg border border-border bg-surface">
+      <div class="grid gap-6 p-5 md:p-6 lg:grid-cols-[1fr_340px] lg:items-stretch">
+        <div class="min-w-0">
+          <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-accent/15 bg-accent-soft px-3 py-1 text-sm font-semibold text-accent">
+            <Sparkles :size="15" />
+            <span>AI Developer Workbench</span>
+          </div>
+          <h2 class="text-2xl font-bold leading-tight text-text-primary md:text-3xl">
+            选择工具，完成一次清晰的项目分析
+          </h2>
+          <p class="mt-3 max-w-3xl leading-relaxed text-text-secondary">
+            聚合 UI、工程结构、Agent 配置、API 文档和数据库审查，把分析入口、报告记录和系统状态放在同一个工作台里。
+          </p>
 
-    <!-- Tools Grid -->
-    <div class="mb-8">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-text-primary">分析工具</h2>
-        <span class="text-sm text-text-muted">选择工具开始分析</span>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <RouterLink
-          v-for="tool in toolStore.tools"
-          :key="tool.tool_type"
-          :to="`/tools/${tool.tool_type.replace('_', '-')}`"
-          class="group p-6 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-md transition-smooth"
-        >
-          <div class="flex items-start gap-4 mb-4">
+          <div class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div
+              v-for="stat in stats"
+              :key="stat.label"
+              class="rounded-lg border border-border/80 bg-background/70 px-4 py-4 max-sm:px-3 max-sm:py-3"
+            >
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <span class="text-sm font-medium text-text-muted">{{ stat.label }}</span>
+                <component :is="stat.icon" :size="18" :class="getToolTone(stat.color).text" />
+              </div>
+              <div class="truncate text-2xl font-bold text-text-primary max-sm:text-xl">
+                {{ stat.value }}<span v-if="stat.suffix" class="ml-1 text-base font-semibold text-text-muted">{{ stat.suffix }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="rounded-lg border border-border/80 bg-background/75 p-5 max-sm:p-4">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-semibold text-text-primary">当前状态</h3>
+              <p class="mt-1 text-sm text-text-muted">服务、模型和最近使用概览</p>
+            </div>
+            <span
               :class="[
-                'w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0',
-                `bg-${tool.color}-soft`,
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold',
+                systemStore.status?.healthy ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger',
               ]"
             >
-              <component :is="getToolIcon(tool.tool_type)" :size="24" :class="`text-${tool.color}`" />
+              <CheckCircle2 :size="15" />
+              {{ systemStore.status?.healthy ? '正常' : '异常' }}
+            </span>
+          </div>
+
+          <div class="grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
+            <div class="flex items-center justify-between gap-4 rounded-md bg-surface px-3 py-3 max-sm:py-2.5">
+              <span class="text-text-muted">模型</span>
+              <span class="truncate font-semibold text-text-primary">{{ systemStore.providerInfo }}</span>
             </div>
-            <div class="flex-1">
-              <h3 class="text-xl font-semibold mb-1 text-text-primary">
-                {{ getToolDisplay(tool.tool_type).name }}
-              </h3>
-              <p class="text-sm text-text-muted">
-                {{ getToolDisplay(tool.tool_type).shortDescription }}
-              </p>
+            <div class="flex items-center justify-between gap-4 rounded-md bg-surface px-3 py-3 max-sm:py-2.5">
+              <span class="text-text-muted">总使用</span>
+              <span class="font-semibold text-text-primary">{{ totalToolUsage }} 次</span>
+            </div>
+            <div class="flex items-center justify-between gap-4 rounded-md bg-surface px-3 py-3 max-sm:py-2.5">
+              <span class="text-text-muted">常用工具</span>
+            <span class="truncate font-semibold text-text-primary">
+                {{ mostUsedTool ? getToolDisplay(mostUsedTool.tool_type).name : '暂无' }}
+              </span>
             </div>
           </div>
-          <p class="text-text-secondary mb-4 leading-relaxed">
-            {{ getToolDisplay(tool.tool_type).description }}
-          </p>
-          <div class="flex items-center justify-between pt-4 border-t border-border">
-            <div class="flex items-center gap-2 text-sm text-text-muted">
-              <component :is="getToolIcon(tool.tool_type)" :size="16" />
-              <span>{{ tool.usage_count }} 次使用</span>
-            </div>
-            <ArrowRight :size="20" class="text-text-muted group-hover:text-accent transition-smooth" />
+        </aside>
+      </div>
+    </section>
+
+    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section>
+        <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-text-primary">分析工具</h2>
+            <p class="mt-1 text-sm text-text-muted">选择一个入口开始分析，结果会自动沉淀为报告。</p>
           </div>
-        </RouterLink>
+          <span class="text-sm font-medium text-text-muted">{{ dashboardTools.length }} 个工具可用</span>
+        </div>
 
-        <!-- Empty slot for grid alignment -->
-        <div class="hidden lg:block"></div>
-      </div>
-    </div>
-
-    <!-- Recent Reports -->
-    <div>
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-text-primary">最近报告</h2>
-        <RouterLink
-          to="/reports"
-          class="flex items-center gap-2 text-accent hover:underline transition-smooth"
-        >
-          <span>查看全部</span>
-          <ArrowRight :size="16" />
-        </RouterLink>
-      </div>
-
-      <div v-if="systemStore.statsLoading" class="text-center py-8">
-        <div class="text-text-muted">加载中...</div>
-      </div>
-
-      <div v-else-if="!systemStore.dashboardStats?.recent_reports?.length" class="text-center py-8">
-        <div class="text-text-muted">暂无报告</div>
-      </div>
-
-      <div v-else class="space-y-4">
-        <RouterLink
-          v-for="report in systemStore.dashboardStats?.recent_reports?.slice(0, 3)"
-          :key="report.id"
-          :to="`/reports/${report.id}`"
-          class="block p-4 bg-surface border border-border rounded-lg hover:border-accent hover:shadow-sm transition-smooth"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-3">
-              <div
-                :class="[
-                  'w-8 h-8 rounded flex items-center justify-center',
-                  `bg-${getToolIcon(report.tool_type) ? 'accent-soft' : 'surface-muted'}`,
-                ]"
-              >
-                <component :is="getToolIcon(report.tool_type)" :size="16" class="text-accent" />
+        <div class="grid gap-4 md:grid-cols-2">
+          <RouterLink
+            v-for="tool in dashboardTools"
+            :key="tool.tool_type"
+            :to="`/tools/${tool.tool_type.replace('_', '-')}`"
+            :class="[
+              'group flex min-h-[190px] flex-col rounded-lg border border-border bg-surface p-5 transition-smooth hover:-translate-y-0.5',
+              getToolTone(tool.color).card,
+            ]"
+          >
+            <div class="mb-4 flex items-start justify-between gap-4">
+              <div class="flex items-start gap-4">
+                <div :class="['flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg border', getToolTone(tool.color).icon]">
+                  <component :is="getToolIcon(tool.tool_type)" :size="22" />
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-lg font-bold text-text-primary">{{ getToolDisplay(tool.tool_type).name }}</h3>
+                  <p class="mt-1 text-sm font-medium text-text-muted">
+                    {{ getToolDisplay(tool.tool_type).shortDescription }}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-semibold text-text-primary">{{ report.title }}</h3>
-                <p class="text-sm text-text-muted">
-                  {{ report.tool_type === 'ui_review' ? 'UI 审查' :
-                     report.tool_type === 'project_doctor' ? '项目诊断' :
-                     report.tool_type === 'agent_config' ? 'Agent 配置' :
-                     report.tool_type === 'api_doc' ? 'API 文档' :
-                     report.tool_type === 'db_schema' ? '数据库审查' : report.tool_type
-                  }} · {{ formatRelativeTime(report.created_at) }}
-                </p>
-              </div>
+              <ArrowRight :size="20" class="mt-1 flex-shrink-0 text-text-muted transition-smooth group-hover:translate-x-1 group-hover:text-accent" />
             </div>
-            <div class="flex items-center gap-3">
-              <div
-                :class="['px-3 py-1 rounded-full text-sm font-medium', getScoreColorClass(report.total_score)]"
-              >
-                {{ report.total_score !== null ? report.total_score + '分' : '暂无评分'
-                }}
+
+            <p class="flex-1 leading-relaxed text-text-secondary">
+              {{ getToolDisplay(tool.tool_type).description }}
+            </p>
+
+            <div class="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm">
+              <span class="text-text-muted">{{ tool.usage_count }} 次使用</span>
+              <span :class="['rounded-full border px-2.5 py-1 font-semibold', getToolTone(tool.color).soft, getToolTone(tool.color).border, getToolTone(tool.color).text]">
+                开始分析
+              </span>
+            </div>
+          </RouterLink>
+        </div>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-lg border border-border bg-surface p-5">
+          <div class="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-bold text-text-primary">最近报告</h2>
+              <p class="mt-1 text-sm text-text-muted">最近 4 条分析结果</p>
+            </div>
+            <RouterLink to="/reports" class="inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline">
+              查看全部
+              <ArrowRight :size="15" />
+            </RouterLink>
+          </div>
+
+          <div v-if="systemStore.statsLoading" class="rounded-lg border border-dashed border-border py-8 text-center text-text-muted">
+            加载中...
+          </div>
+
+          <div v-else-if="!recentReports.length" class="rounded-lg border border-dashed border-border py-8 text-center text-text-muted">
+            暂无报告
+          </div>
+
+          <div v-else class="space-y-3">
+            <RouterLink
+              v-for="report in recentReports"
+              :key="report.id"
+              :to="`/reports/${report.id}`"
+              class="group block rounded-lg border border-border bg-background/70 px-4 py-3 transition-smooth hover:border-accent/35 hover:bg-surface"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-start gap-3">
+                  <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                    <component :is="getToolIcon(report.tool_type)" :size="17" />
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="truncate font-semibold text-text-primary">{{ report.title }}</h3>
+                    <p class="mt-1 truncate text-sm text-text-muted">
+                      {{ getToolDisplay(report.tool_type).name }} · {{ formatRelativeTime(report.created_at) }}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight :size="18" class="mt-1 flex-shrink-0 text-text-muted transition-smooth group-hover:text-accent" />
               </div>
-              <ChevronRight :size="20" class="text-text-muted" />
+              <div class="mt-3 flex items-center justify-between gap-3">
+                <p class="line-clamp-1 min-w-0 text-sm text-text-secondary">{{ report.summary }}</p>
+                <span :class="['flex-shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold', getScoreColorClass(report.total_score)]">
+                  {{ report.total_score !== null ? report.total_score + '分' : '暂无' }}
+                </span>
+              </div>
+            </RouterLink>
+          </div>
+        </section>
+
+        <section class="rounded-lg border border-border bg-surface p-5">
+          <h2 class="text-xl font-bold text-text-primary">建议流程</h2>
+          <div class="mt-4 space-y-3">
+            <div class="flex gap-3">
+              <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-accent-soft text-sm font-bold text-accent">1</span>
+              <p class="text-sm leading-relaxed text-text-secondary">先用项目诊断看结构风险，再进入单项工具处理具体问题。</p>
+            </div>
+            <div class="flex gap-3">
+              <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-accent-soft text-sm font-bold text-accent">2</span>
+              <p class="text-sm leading-relaxed text-text-secondary">把报告中的 Prompt 或建议复制到 AI Coding 工具继续迭代。</p>
             </div>
           </div>
-          <p class="text-sm text-text-secondary">{{ report.summary }}</p>
-        </RouterLink>
-      </div>
+        </section>
+      </aside>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-overview {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.06), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 247, 245, 0.92));
+}
+</style>

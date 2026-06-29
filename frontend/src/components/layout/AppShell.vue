@@ -45,7 +45,7 @@ function closeMobileSidebar() {
       <AppHeader @toggle-sidebar="toggleMobileSidebar" />
 
       <!-- Page Content -->
-      <div class="max-w-content mx-auto px-4 md:px-8 py-8">
+      <div class="mx-auto max-w-dashboard px-4 py-6 md:px-8 md:py-8">
         <slot />
       </div>
     </main>
