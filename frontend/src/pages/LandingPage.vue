@@ -4,7 +4,7 @@
  * Standalone layout (no AppShell)
  */
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 import {
@@ -123,6 +123,9 @@ const heroGridStyle = ref<Record<string, string>>({
   '--hero-grid-opacity': '0',
 })
 
+const isLandingNavCompact = ref(false)
+let landingNavScrollFrame: number | null = null
+
 const colorClassMap: Record<string, string> = {
   accent: 'bg-accent-soft text-accent border-accent/10',
   success: 'bg-success/10 text-success border-success/15',
@@ -206,13 +209,53 @@ function resetHeroGridGlow() {
     '--hero-grid-opacity': '0',
   }
 }
+
+function updateLandingNavState() {
+  const scrollY = window.scrollY
+
+  if (!isLandingNavCompact.value && scrollY > 72) {
+    isLandingNavCompact.value = true
+    return
+  }
+
+  if (isLandingNavCompact.value && scrollY < 24) {
+    isLandingNavCompact.value = false
+  }
+}
+
+function handleLandingNavScroll() {
+  if (landingNavScrollFrame !== null) {
+    return
+  }
+
+  landingNavScrollFrame = window.requestAnimationFrame(() => {
+    landingNavScrollFrame = null
+    updateLandingNavState()
+  })
+}
+
+onMounted(() => {
+  updateLandingNavState()
+  window.addEventListener('scroll', handleLandingNavScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleLandingNavScroll)
+
+  if (landingNavScrollFrame !== null) {
+    window.cancelAnimationFrame(landingNavScrollFrame)
+  }
+})
 </script>
 
 <template>
   <div class="min-h-screen overflow-x-hidden bg-background text-text-primary">
     <!-- Navigation -->
-    <nav class="fixed left-3 right-3 top-3 z-50 overflow-hidden rounded-xl border border-border/80 bg-surface/92 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-md transition-smooth md:left-5 md:right-5 md:top-5">
-      <div class="mx-auto flex min-h-[64px] max-w-content items-center justify-between gap-4 px-4 py-3 md:min-h-[72px] md:gap-6 md:px-7">
+    <nav
+      class="landing-nav fixed z-50 overflow-hidden rounded-xl border border-border/80 bg-surface/92 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-md"
+      :class="{ 'landing-nav--compact': isLandingNavCompact }"
+    >
+      <div class="landing-nav__inner mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-3 md:gap-6 md:px-7">
         <RouterLink to="/" class="flex min-w-0 items-center gap-3.5 transition-smooth hover:opacity-85">
           <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-accent shadow-[0_10px_24px_rgba(37,99,235,0.28)] md:h-12 md:w-12">
             <Zap :size="24" class="text-white" />
@@ -617,6 +660,69 @@ function resetHeroGridGlow() {
 </template>
 
 <style scoped>
+.landing-nav {
+  top: 0.75rem;
+  left: 50%;
+  width: calc(100vw - 1.5rem);
+  transform: translateX(-50%) translateZ(0);
+  transition:
+    width 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 720ms ease-out,
+    background-color 720ms ease-out;
+}
+
+.landing-nav__inner {
+  min-height: 64px;
+  transition:
+    min-height 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-nav--compact {
+  width: min(1120px, calc(100vw - 4rem));
+  transform: translateX(-50%) translateZ(0);
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.14);
+}
+
+.landing-nav--compact .landing-nav__inner {
+  min-height: 60px;
+  padding-block: 0.625rem;
+}
+
+@media (min-width: 768px) {
+  .landing-nav {
+    top: 1.25rem;
+    width: calc(100vw - 2.5rem);
+  }
+
+  .landing-nav__inner {
+    min-height: 72px;
+  }
+
+  .landing-nav--compact {
+    width: min(1040px, calc(100vw - 7.5rem));
+    transform: translateX(-50%) translateZ(0);
+  }
+
+  .landing-nav--compact .landing-nav__inner {
+    min-height: 62px;
+    padding-inline: 1.25rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-nav--compact {
+    width: calc(100vw - 1.5rem);
+  }
+
+  .landing-nav--compact .landing-nav__inner {
+    min-height: 64px;
+    padding-block: 0.75rem;
+  }
+}
+
 .landing-grid-pattern {
   background-image:
     linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px),
@@ -826,6 +932,8 @@ function resetHeroGridGlow() {
     display: none;
   }
 
+  .landing-nav,
+  .landing-nav__inner,
   .terminal-window,
   .terminal-window::before {
     transition: none;
