@@ -77,6 +77,8 @@ export const useSystemStore = defineStore('system', () => {
     return `${status.value.provider} (${status.value.text_model})`
   })
 
+  const isMockMode = computed(() => status.value?.mock_mode ?? false)
+
   return {
     // State
     health,
@@ -95,5 +97,6 @@ export const useSystemStore = defineStore('system', () => {
     // Getters
     uploadLimits,
     providerInfo,
+    isMockMode,
   }
 })

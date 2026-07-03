@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Report, ReportListParams } from '@/types/report'
+import type { Report, ReportListParams, ReportStatus } from '@/types/report'
 import type { ToolType } from '@/types/tool'
 import { listReports, getReport, deleteReport } from '@/api/reports'
 import type { PaginatedData } from '@/types/api'
@@ -18,6 +18,7 @@ export const useReportStore = defineStore('report', () => {
   const pageSize = ref(10)
 
   const toolFilter = ref<ToolType | ''>('')
+  const statusFilter = ref<ReportStatus | ''>('')
   const sort = ref<'newest' | 'oldest' | 'score_desc' | 'score_asc'>('newest')
 
   const loading = ref(false)
@@ -44,6 +45,10 @@ export const useReportStore = defineStore('report', () => {
         params.tool_type = toolFilter.value
       }
 
+      if (statusFilter.value) {
+        params.status = statusFilter.value
+      }
+
       const response: PaginatedData<Report> = await listReports(params)
       reports.value = response.items
       total.value = response.total
@@ -64,6 +69,12 @@ export const useReportStore = defineStore('report', () => {
 
   function setFilter(filter: ToolType | '') {
     toolFilter.value = filter
+    currentPage.value = 1
+    fetchReports()
+  }
+
+  function setStatusFilter(filter: ReportStatus | '') {
+    statusFilter.value = filter
     currentPage.value = 1
     fetchReports()
   }
@@ -127,6 +138,7 @@ export const useReportStore = defineStore('report', () => {
     currentPage,
     pageSize,
     toolFilter,
+    statusFilter,
     sort,
     loading,
     error,
@@ -139,6 +151,7 @@ export const useReportStore = defineStore('report', () => {
     // Actions - List
     fetchReports,
     setFilter,
+    setStatusFilter,
     setSort,
     setPage,
 

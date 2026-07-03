@@ -11,6 +11,7 @@ type PaginatedResponse[T any] struct {
 // ListReportsQuery holds query parameters for listing reports.
 type ListReportsQuery struct {
 	ToolType string `form:"tool_type"`
+	Status   string `form:"status"`
 	Sort     string `form:"sort"`
 	Page     int    `form:"page"`
 	PageSize int    `form:"page_size"`
@@ -36,5 +37,15 @@ func ValidSortValues() map[string]string {
 		"oldest":     "created_at ASC",
 		"score_desc": "total_score DESC",
 		"score_asc":  "total_score ASC",
+	}
+}
+
+// ValidStatusValues returns the set of allowed report status filters.
+func ValidStatusValues() map[string]bool {
+	return map[string]bool{
+		"processing": true,
+		"succeeded":  true,
+		"fallback":   true,
+		"failed":     true,
 	}
 }

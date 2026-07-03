@@ -54,6 +54,7 @@ type SystemStatusDTO struct {
 	Provider     string           `json:"provider"`
 	TextModel    string           `json:"text_model"`
 	VisionModel  string           `json:"vision_model"`
+	MockMode     bool             `json:"mock_mode"`
 	UploadLimits UploadLimitsDTO  `json:"upload_limits"`
 }
 

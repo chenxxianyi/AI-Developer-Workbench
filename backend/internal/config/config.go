@@ -74,6 +74,7 @@ type AIConfig struct {
 	APIKey         string
 	Model          string
 	VisionModel    string
+	MockMode       bool
 	TimeoutSeconds int
 	MaxRetries     int
 }
@@ -129,6 +130,7 @@ func LoadConfig(envFile string) (*Config, error) {
 			APIKey:         getEnv("AI_API_KEY", ""),
 			Model:          getEnv("AI_MODEL", "gpt-4.1"),
 			VisionModel:    getEnv("AI_VISION_MODEL", "gpt-4.1"),
+			MockMode:       getEnvBool("AI_MOCK_MODE", false),
 			TimeoutSeconds: getEnvInt("AI_TIMEOUT_SECONDS", 90),
 			MaxRetries:     getEnvInt("AI_MAX_RETRIES", 1),
 		},
@@ -155,11 +157,23 @@ func (c *Config) validate() error {
 			return fmt.Errorf("DATABASE_PASSWORD is required")
 		}
 	}
-	// API key is required for AI operations.
+
+	// Normalize mock mode: explicit MockMode=true forces mock; empty API key auto-mocks.
+	if c.AI.MockMode || c.AI.APIKey == "" {
+		c.AI.MockMode = true
+		return nil
+	}
+
+	// Only validate API key when NOT in mock mode.
 	if c.AI.APIKey == "" {
 		return fmt.Errorf("AI_API_KEY is required")
 	}
 	return nil
+}
+
+// IsMockMode returns true when the AI is running in mock mode.
+func (c *Config) IsMockMode() bool {
+	return c.AI.MockMode
 }
 
 // IsDevelopment returns true if running in development mode.

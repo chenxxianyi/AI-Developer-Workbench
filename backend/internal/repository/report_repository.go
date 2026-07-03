@@ -64,6 +64,11 @@ func (r *reportRepository) List(ctx context.Context, query dto.ListReportsQuery)
 		q = q.Where("tool_type = ?", query.ToolType)
 	}
 
+	// Apply status filter with whitelist.
+	if query.Status != "" && dto.ValidStatusValues()[query.Status] {
+		q = q.Where("status = ?", query.Status)
+	}
+
 	// Count total before pagination.
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err

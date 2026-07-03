@@ -70,32 +70,41 @@ func (s *reportService) CreateProcessingReport(ctx context.Context, toolType, ti
 	return report, nil
 }
 
-// SucceedReport updates a report to succeeded status with results.
+// SucceedReport updates a report to succeeded status, saves generated files in a transaction.
 func (s *reportService) SucceedReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string, totalScore *int, grade *string, generatedFiles []model.GeneratedFile) (*dto.ReportDTO, error) {
-	report, err := s.reportRepo.GetByID(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("report not found: %w", err)
-	}
-
-	report.Status = model.StatusSucceeded
-	report.ReportJSON = datatypes.JSON(reportJSON)
-	report.Summary = summary
-	report.TotalScore = totalScore
-	report.Grade = grade
-
-	if err := s.reportRepo.Update(ctx, report); err != nil {
-		return nil, fmt.Errorf("failed to update report: %w", err)
-	}
-
-	// Save generated files.
-	for i := range generatedFiles {
-		generatedFiles[i].ReportID = id
-		generatedFiles[i].SizeBytes = uint64(len(generatedFiles[i].Content))
-	}
-	if len(generatedFiles) > 0 {
-		if err := s.fileRepo.CreateBatch(ctx, generatedFiles); err != nil {
-			slog.Warn("Failed to save generated files", "report_id", id, "error", err)
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Lock and read the report within the transaction.
+		var report model.Report
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&report, "id = ?", id).Error; err != nil {
+			return fmt.Errorf("report not found: %w", err)
 		}
+
+		report.Status = model.StatusSucceeded
+		report.ReportJSON = datatypes.JSON(reportJSON)
+		report.Summary = summary
+		report.TotalScore = totalScore
+		report.Grade = grade
+
+		if err := tx.Save(&report).Error; err != nil {
+			return fmt.Errorf("failed to update report: %w", err)
+		}
+
+		// Save generated files within the same transaction.
+		for i := range generatedFiles {
+			generatedFiles[i].ReportID = id
+			generatedFiles[i].SizeBytes = uint64(len(generatedFiles[i].Content))
+		}
+		if len(generatedFiles) > 0 {
+			if err := tx.Create(&generatedFiles).Error; err != nil {
+				return fmt.Errorf("failed to save generated files: %w", err)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return s.GetReport(ctx, id)

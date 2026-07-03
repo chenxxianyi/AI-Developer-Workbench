@@ -115,6 +115,7 @@ export interface DBSchemaResult {
 
 export interface ReportListParams {
   tool_type?: ToolType
+  status?: ReportStatus
   sort?: 'newest' | 'oldest' | 'score_desc' | 'score_asc'
   page?: number
   page_size?: number

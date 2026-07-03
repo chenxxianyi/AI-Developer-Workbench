@@ -11,6 +11,7 @@ export interface SystemStatus {
   provider: string
   text_model: string
   vision_model: string
+  mock_mode: boolean
   upload_limits: {
     image_max_bytes: number
     zip_max_bytes: number

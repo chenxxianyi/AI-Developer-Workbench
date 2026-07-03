@@ -25,6 +25,7 @@ func (h *SystemHandler) GetStatus(c *gin.Context) {
 		Provider:    h.cfg.AI.Provider,
 		TextModel:   h.cfg.AI.Model,
 		VisionModel: h.cfg.AI.VisionModel,
+		MockMode:    h.cfg.IsMockMode(),
 		UploadLimits: dto.UploadLimitsDTO{
 			ImageMaxBytes:    int64(h.cfg.Upload.MaxUploadSizeMB) * 1024 * 1024,
 			ZipMaxBytes:      int64(h.cfg.Upload.MaxUploadSizeMB) * 1024 * 1024,

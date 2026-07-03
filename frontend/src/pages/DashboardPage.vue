@@ -24,6 +24,7 @@ import {
   Activity,
   CheckCircle2,
   Sparkles,
+  FlaskConical,
 } from '@lucide/vue'
 
 const systemStore = useSystemStore()
@@ -232,6 +233,32 @@ function getScoreColorClass(score: number | null): string {
             <div class="flex items-center justify-between gap-4 rounded-md bg-surface px-3 py-3 max-sm:py-2.5">
               <span class="text-text-muted">模型</span>
               <span class="truncate font-semibold text-text-primary">{{ systemStore.providerInfo }}</span>
+            </div>
+            <div
+              :class="[
+                'flex items-center justify-between gap-4 rounded-md px-3 py-3 max-sm:py-2.5',
+                systemStore.isMockMode
+                  ? 'bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/40'
+                  : 'bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700/40',
+              ]"
+            >
+              <div class="flex items-center gap-2">
+                <FlaskConical
+                  :size="15"
+                  :class="systemStore.isMockMode ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'"
+                />
+                <span class="text-text-muted">模式</span>
+              </div>
+              <span
+                :class="[
+                  'font-semibold text-sm',
+                  systemStore.isMockMode
+                    ? 'text-amber-800 dark:text-amber-200'
+                    : 'text-emerald-800 dark:text-emerald-200',
+                ]"
+              >
+                {{ systemStore.isMockMode ? '演示' : '真实 AI' }}
+              </span>
             </div>
             <div class="flex items-center justify-between gap-4 rounded-md bg-surface px-3 py-3 max-sm:py-2.5">
               <span class="text-text-muted">总使用</span>

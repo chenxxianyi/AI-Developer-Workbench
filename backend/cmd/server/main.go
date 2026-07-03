@@ -135,7 +135,14 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	)
 	fileService := service.NewFileService(cfg, reportAssetRepo)
 	zipService := service.NewZipService(cfg.Upload.TempDir)
-	aiService := service.NewOpenAICompatibleService(&cfg.AI)
+
+	var aiService service.AIService
+	if cfg.AI.MockMode {
+		slog.Info("AI running in mock mode — no external API calls will be made")
+		aiService = service.NewMockAIService()
+	} else {
+		aiService = service.NewOpenAICompatibleService(&cfg.AI)
+	}
 	exportService := service.NewExportService(reportRepo, generatedFileRepo)
 
 	agentConfigService := toolservice.NewAgentConfigService(aiService, reportService)
