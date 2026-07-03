@@ -13,22 +13,22 @@ const statusConfig: Record<ReportStatus, { label: string; icon: any; classes: st
   processing: {
     label: '处理中',
     icon: Clock,
-    classes: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700/40',
+    classes: 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:text-white dark:border-blue-500',
   },
   succeeded: {
     label: '成功',
     icon: CheckCircle2,
-    classes: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700/40',
+    classes: 'bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:text-white dark:border-emerald-500',
   },
   fallback: {
     label: '降级',
     icon: AlertTriangle,
-    classes: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700/40',
+    classes: 'bg-amber-600 text-white border-amber-600 dark:bg-amber-500 dark:text-white dark:border-amber-500',
   },
   failed: {
     label: '失败',
     icon: XCircle,
-    classes: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700/40',
+    classes: 'bg-red-600 text-white border-red-600 dark:bg-red-500 dark:text-white dark:border-red-500',
   },
 }
 </script>
@@ -36,7 +36,7 @@ const statusConfig: Record<ReportStatus, { label: string; icon: any; classes: st
 <template>
   <span
     :class="[
-      'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+      'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold shadow-sm',
       statusConfig[status].classes,
     ]"
     role="status"

@@ -10,6 +10,16 @@ import ReportStatusBadge from './ReportStatusBadge.vue'
 defineProps<{
   report: Report
 }>()
+
+function getScoreBadgeClass(score: number): string {
+  if (score >= 80) {
+    return 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
+  }
+  if (score >= 60) {
+    return 'border-amber-600 bg-amber-600 text-white dark:border-amber-500 dark:bg-amber-500'
+  }
+  return 'border-red-600 bg-red-600 text-white dark:border-red-500 dark:bg-red-500'
+}
 </script>
 
 <template>
@@ -32,21 +42,17 @@ defineProps<{
       <div class="flex items-center gap-3 flex-shrink-0">
         <span
           v-if="report.total_score !== null"
-          class="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold"
-          :class="
-            report.total_score >= 80
-              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-              : report.total_score >= 60
-                ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-                : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-          "
+          :class="[
+            'inline-flex min-w-16 items-center justify-center rounded-lg border px-3 py-1.5 text-sm font-extrabold leading-none shadow-sm',
+            getScoreBadgeClass(report.total_score),
+          ]"
         >
           {{ report.total_score }}
-          <span class="text-xs font-normal opacity-70 ml-0.5">{{ report.grade }}</span>
+          <span class="ml-1 border-l border-white/35 pl-1 text-xs font-bold text-white/95">{{ report.grade }}</span>
         </span>
         <span
           v-else
-          class="text-xs font-medium text-text-muted px-2 py-1"
+          class="inline-flex items-center rounded-lg border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-text-secondary"
         >
           无需评分
         </span>
