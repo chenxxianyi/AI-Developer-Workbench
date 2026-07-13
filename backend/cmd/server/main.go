@@ -126,6 +126,8 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	generatedFileRepo := repository.NewGeneratedFileRepository(db)
 	reportAssetRepo := repository.NewReportAssetRepository(db)
 	projectRepo := repository.NewProjectRepository(db)
+	jobRepo := repository.NewJobRepository(db)
+	aiRunRepo := repository.NewAIRunRepository(db)
 
 	reportService := service.NewReportService(
 		cfg,
@@ -136,6 +138,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		db,
 	)
 	projectService := service.NewProjectService(projectRepo)
+	jobService := service.NewJobService(db, jobRepo)
 	fileService := service.NewFileService(cfg, reportAssetRepo)
 	zipService := service.NewZipService(cfg.Upload.TempDir)
 
@@ -146,6 +149,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	} else {
 		aiService = service.NewOpenAICompatibleService(&cfg.AI)
 	}
+	aiService = service.NewInstrumentedAIService(aiService, aiRunRepo)
 	exportService := service.NewExportService(reportRepo, generatedFileRepo)
 
 	agentConfigService := toolservice.NewAgentConfigService(aiService, reportService)
@@ -204,6 +208,8 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	handler.RegisterProjectRoutes(api, projectService)
 	handler.RegisterExportRoutes(api, exportService)
 	handler.RegisterToolRunRoutes(api, toolRunHandler)
+	handler.RegisterJobRoutes(api, jobService)
+	handler.RegisterObservabilityRoutes(api, aiRunRepo)
 
 	return router
 }

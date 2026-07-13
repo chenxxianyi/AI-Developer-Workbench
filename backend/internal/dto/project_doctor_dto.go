@@ -18,4 +18,25 @@ type ProjectDoctorResult struct {
 	Recommendations []string     `json:"recommendations"`
 	ActionItems     []ActionItem `json:"action_items,omitempty"`
 	CodexPrompt     string       `json:"codex_prompt"`
+	// Enhanced fields
+	EvidenceFiles   []EvidenceItem   `json:"evidence_files,omitempty"`
+	TechDebtItems   []TechDebtItem   `json:"tech_debt,omitempty"`
+}
+
+// EvidenceItem represents a detected project artifact.
+type EvidenceItem struct {
+	Path    string `json:"path"`
+	Type    string `json:"type"` // readme, agents_md, lockfile, dockerfile, ci, tests, docs
+	Present bool   `json:"present"`
+	Notes   string `json:"notes,omitempty"`
+}
+
+// TechDebtItem represents a prioritized technical debt item.
+type TechDebtItem struct {
+	Title       string `json:"title"`
+	Impact      string `json:"impact"` // high|medium|low
+	Cost        string `json:"cost"`   // high|medium|low
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	SuggestedFix string `json:"suggested_fix,omitempty"`
 }

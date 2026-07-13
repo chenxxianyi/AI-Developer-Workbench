@@ -47,7 +47,10 @@ func (d DatabaseConfig) DSN() string {
 	if d.Driver == "sqlite" {
 		return d.Name // For SQLite, Name is the file path
 	}
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=%s",
+	// multiStatements is required because the migration runner executes each
+	// versioned SQL file as a single Exec call, and the migration files contain
+	// multiple statements separated by semicolons.
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=%s&multiStatements=true",
 		d.User, d.Password, d.Host, d.Port, d.Name, d.Charset, d.Loc)
 }
 

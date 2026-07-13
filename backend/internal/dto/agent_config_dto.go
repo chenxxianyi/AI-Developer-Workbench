@@ -18,6 +18,8 @@ type AgentConfigRequest struct {
 // AgentConfigResult is the output for Agent Config Studio.
 type AgentConfigResult struct {
 	GeneratedFilesContent map[string]string `json:"generated_files_content"`
+	TargetFormat          string            `json:"target_format,omitempty"` // codex|copilot|cursor|windsurf
+	MissingConfirmations  []string          `json:"missing_confirmations,omitempty"` // items needing user verification
 	Recommendations       []string          `json:"recommendations"`
 	ActionItems           []ActionItem      `json:"action_items,omitempty"`
 	CodexPrompt           string            `json:"codex_prompt"`

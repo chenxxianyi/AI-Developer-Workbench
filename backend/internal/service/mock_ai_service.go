@@ -149,18 +149,27 @@ func (s *MockAIService) mockProjectDoctorData() interface{} {
 	return map[string]interface{}{
 		"scores": []mockScoreItem{
 			{Name: "结构清晰度", Score: 75, MaxScore: 100, Comment: "项目目录结构合理，但缺少明确的模块划分文档。"},
-			{Name: "可维护性", Score: 68, MaxScore: 100, Comment: "存在硬编码配置和重复代码。"},
-			{Name: "可测试性", Score: 55, MaxScore: 100, Comment: "测试覆盖率较低，缺少集成测试。"},
+			{Name: "可维护性", Score: 68, MaxScore: 100, Comment: "存在硬编码配置和重复代码。证据：多处直接使用环境变量字符串。"},
+			{Name: "可测试性", Score: 55, MaxScore: 100, Comment: "测试覆盖率较低，缺少集成测试。证据：仅有 1 个测试文件。"},
 			{Name: "可部署性", Score: 80, MaxScore: 100, Comment: "Dockerfile 存在，但缺少健康检查和 docker-compose。"},
-			{Name: "文档完整度", Score: 45, MaxScore: 100, Comment: "缺少 README 和 API 文档。"},
-			{Name: "Agent 可接手程度", Score: 60, MaxScore: 100, Comment: "项目缺少 AGENTS.md 和 AI Coding 配置。"},
+			{Name: "文档完整度", Score: 45, MaxScore: 100, Comment: "缺少 README，API 文档不完整。"},
+			{Name: "Agent 可接手程度", Score: 60, MaxScore: 100, Comment: "项目缺少 AGENTS.md，AI Coding 工具难以快速上手。"},
+		},
+		"evidence_files": []map[string]interface{}{
+			{"path": "README.md", "type": "readme", "present": false, "notes": "根目录缺少 README，建议补充安装和开发指南"},
+			{"path": "AGENTS.md", "type": "agents_md", "present": false, "notes": "需创建以帮助 AI Coding 工具理解项目"},
+			{"path": "backend/go.sum", "type": "lockfile", "present": true, "notes": "Go 依赖锁定文件已存在"},
+			{"path": "frontend/package-lock.json", "type": "lockfile", "present": true, "notes": "前端依赖已锁定"},
+			{"path": "backend/Dockerfile", "type": "dockerfile", "present": true, "notes": "后端已有 Dockerfile，前端缺失"},
+			{"path": ".github/workflows", "type": "ci", "present": false, "notes": "无 CI 配置，建议添加 GitHub Actions"},
+			{"path": ".env.example", "type": "docs", "present": true, "notes": "环境变量模板已存在"},
 		},
 		"issues": []mockIssueItem{
 			{
 				Title: "缺少 README 文档", Severity: "high", Category: "documentation",
 				Problem:    "项目中没有 README.md，新人无法快速了解项目。",
 				Suggestion: "创建 README.md，包含项目简介、安装步骤和开发指南。",
-				Action:     "编写完整的 README.md。",
+				Action:     "编写完整的 README.md，包含启动命令和架构说明。",
 			},
 			{
 				Title: "测试覆盖率不足", Severity: "high", Category: "testing",
@@ -175,16 +184,26 @@ func (s *MockAIService) mockProjectDoctorData() interface{} {
 				Action:     "将所有硬编码配置迁移到 .env 文件。",
 			},
 			{
-				Title: "缺少 Docker Compose", Severity: "medium", Category: "deploy",
-				Problem:    "仅有 Dockerfile，没有 docker-compose.yml。",
-				Suggestion: "创建 docker-compose.yml 编排前后端和数据库。",
-				Action:     "编写 docker-compose.yml 并验证一键启动。",
+				Title: "缺少 CI/CD 流程", Severity: "medium", Category: "deploy",
+				Problem:    "项目没有 .github/workflows 目录，缺少自动化构建和测试。",
+				Suggestion: "添加 GitHub Actions 或等效 CI 配置。",
+				Action:     "创建包含 build + test 的 CI 工作流。",
 			},
 		},
+		"tech_debt": []map[string]interface{}{
+			{"title": "补全前后端单元测试", "impact": "high", "cost": "high", "category": "testing",
+				"description": "核心业务逻辑未覆盖，回归风险高。", "suggested_fix": "优先为 service 层添加单元测试，使用 mock 隔离外部依赖。"},
+			{"title": "消除硬编码配置", "impact": "high", "cost": "medium", "category": "config",
+				"description": "多处数据库和 API 配置硬编码，不同环境切换困难。", "suggested_fix": "统一使用 config.LoadConfig() 读取环境变量，删除所有硬编码。"},
+			{"title": "补充项目文档", "impact": "medium", "cost": "low", "category": "documentation",
+				"description": "缺少 README 和 AGENTS.md，协作效率低。", "suggested_fix": "优先创建 README.md 和 AGENTS.md，后续补充 API 文档。"},
+			{"title": "前端组件单元测试", "impact": "medium", "cost": "medium", "category": "testing",
+				"description": "Vue 组件缺少 vitest 测试，UI 回归靠手动。", "suggested_fix": "使用 @vue/test-utils 为关键页面组件添加渲染和行为测试。"},
+		},
 		"recommendations": []string{
-			"优先补充 README.md 和 AGENTS.md。",
-			"提取所有硬编码配置到环境变量。",
-			"为关键路径添加测试。",
+			"优先补充 README.md 和 AGENTS.md 以提升 Agent Readiness。",
+			"提取所有硬编码配置到环境变量，避免多环境部署风险。",
+			"为 service 层添加单元测试，覆盖核心业务流程。",
 		},
 		"action_items": mockActionItems("project-doctor", "project-health", "项目诊断"),
 		"codex_prompt": "请修复项目的以下问题：1) 创建 README.md 包含项目介绍、安装和开发指南；2) 创建 AGENTS.md 提供 AI Coding 工具使用说明；3) 将所有硬编码配置迁移到环境变量。",
@@ -260,6 +279,10 @@ frontend/  - Vue 3 SPA
 - Integration tests for API endpoints
 - E2E tests for critical user flows
 `,
+		},
+		"target_format": "codex",
+		"missing_confirmations": []string{
+			"[CONFIRM] FRONTEND_STYLE_GUIDE.md has not been generated — provide frontend framework details for accurate style guide.",
 		},
 		"recommendations": []string{
 			"AGENTS.md 已生成，建议根据实际项目调整命令和路径。",
@@ -371,6 +394,15 @@ func (s *MockAIService) mockDBSchemaData() interface{} {
 			"阶段 1 (安全): 添加索引 ALTER TABLE reports ADD INDEX idx_tool_status_created (tool_type, status, created_at);",
 			"阶段 2 (低峰): 修改列约束 ALTER TABLE reports MODIFY COLUMN title VARCHAR(255) NOT NULL;",
 			"阶段 3 (评估): 评估 UUID 主键改为自增 ID 的迁移方案",
+		},
+		"er_diagram_mermaid": strPtr("erDiagram\n  reports ||--o{ generated_files : contains\n  reports {\n    char id PK\n    varchar tool_type\n    varchar title\n    varchar status\n    int total_score\n  }\n  generated_files {\n    char id PK\n    char report_id FK\n    varchar filename\n    text content\n  }"),
+		"index_recommendations": []map[string]interface{}{
+			{"table": "reports", "columns": "(tool_type, status, created_at)", "reason": "报告列表按工具和状态筛选时避免全表扫描", "impact": "high"},
+			{"table": "generated_files", "columns": "(report_id, filename)", "reason": "按报告 ID 和文件名检索时加速查询", "impact": "medium"},
+		},
+		"migration_risks": []map[string]interface{}{
+			{"operation": "ALTER TABLE reports MODIFY COLUMN title VARCHAR(255) NOT NULL", "risk": "medium", "description": "如果存在 NULL 值会导致语句失败，执行前需检查并填充默认值", "rollback_plan": "ALTER TABLE reports MODIFY COLUMN title VARCHAR(255);"},
+			{"operation": "ALTER TABLE reports ADD FOREIGN KEY (project_id) REFERENCES projects(id)", "risk": "high", "description": "外键约束可能阻塞现有报表写入，需在业务低峰期添加", "rollback_plan": "ALTER TABLE reports DROP FOREIGN KEY fk_reports_project;"},
 		},
 		"recommendations": []string{
 			"优先添加高频查询列的索引。",

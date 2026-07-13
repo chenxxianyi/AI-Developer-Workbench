@@ -157,7 +157,7 @@ func (s *ProjectDoctorService) Run(ctx context.Context, input ProjectDoctorFormI
 		},
 	}
 
-	summaryStr := fmt.Sprintf("Project health check complete. Found %d issues.", len(result.Issues))
+	summaryStr := fmt.Sprintf("Project health check complete. %d issues found, %d tech debt items identified.", len(result.Issues), len(result.TechDebtItems))
 	reportJSON, _ := json.Marshal(result)
 
 	return s.reportService.SucceedReport(ctx, report.ID, reportJSON, summaryStr, totalScore, grade, generatedFiles)
@@ -194,14 +194,44 @@ func (s *ProjectDoctorService) buildMarkdownReport(result dto.ProjectDoctorResul
 	md += "## Project: " + input.ProjectName + "\n\n"
 	if summary != nil && len(summary.DetectedStack) > 0 {
 		md += "## Detected Stack\n\n"
-		for _, s := range summary.DetectedStack {
-			md += fmt.Sprintf("- %s\n", s)
+		for _, st := range summary.DetectedStack {
+			md += fmt.Sprintf("- %s\n", st)
 		}
 	}
-	md += "\n## Scores\n\n"
-	for _, s := range result.Scores {
-		md += fmt.Sprintf("- **%s**: %d/100 - %s\n", s.Name, s.Score, s.Comment)
+
+	// Evidence files
+	if len(result.EvidenceFiles) > 0 {
+		md += "\n## Evidence Files\n\n"
+		md += "| Artifact | Present | Notes |\n"
+		md += "|----------|---------|-------|\n"
+		for _, ev := range result.EvidenceFiles {
+			status := "❌"
+			if ev.Present {
+				status = "✅"
+			}
+			md += fmt.Sprintf("| %s (%s) | %s | %s |\n", ev.Path, ev.Type, status, ev.Notes)
+		}
 	}
+
+	md += "\n## Scores\n\n"
+	for _, sc := range result.Scores {
+		md += fmt.Sprintf("- **%s**: %d/100 - %s\n", sc.Name, sc.Score, sc.Comment)
+	}
+
+	// Tech debt
+	if len(result.TechDebtItems) > 0 {
+		md += "\n## Technical Debt (Prioritized)\n\n"
+		md += "| Item | Impact | Cost | Category |\n"
+		md += "|------|--------|------|----------|\n"
+		for _, td := range result.TechDebtItems {
+			md += fmt.Sprintf("| %s | %s | %s | %s |\n", td.Title, td.Impact, td.Cost, td.Category)
+			md += fmt.Sprintf("  _Description:_ %s\n\n", td.Description)
+			if td.SuggestedFix != "" {
+				md += fmt.Sprintf("  _Fix:_ %s\n\n", td.SuggestedFix)
+			}
+		}
+	}
+
 	md += "\n## Issues\n\n"
 	for _, i := range result.Issues {
 		md += fmt.Sprintf("- **[%s] %s**: %s\n", i.Severity, i.Title, i.Problem)
@@ -210,5 +240,14 @@ func (s *ProjectDoctorService) buildMarkdownReport(result dto.ProjectDoctorResul
 	for _, r := range result.Recommendations {
 		md += fmt.Sprintf("- %s\n", r)
 	}
+
+	// Action items
+	if len(result.ActionItems) > 0 {
+		md += "\n## Action Items\n\n"
+		for _, a := range result.ActionItems {
+			md += fmt.Sprintf("- [%s] **%s** (_%s effort_): %s\n", a.Priority, a.Title, a.Effort, a.Reason)
+		}
+	}
+
 	return md
 }

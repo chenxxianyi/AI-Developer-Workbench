@@ -14,12 +14,15 @@ type APIDocRequest struct {
 
 // APIDocResult is the output for API Doc Builder.
 type APIDocResult struct {
-	Modules         []ModuleItem `json:"modules"`
-	MarkdownContent *string      `json:"markdown_content,omitempty"`
-	OpenAPIContent  *string      `json:"openapi_content,omitempty"`
-	Recommendations []string     `json:"recommendations"`
-	ActionItems     []ActionItem `json:"action_items,omitempty"`
-	CodexPrompt     string       `json:"codex_prompt"`
+	Modules           []ModuleItem `json:"modules"`
+	MarkdownContent   *string      `json:"markdown_content,omitempty"`
+	OpenAPIContent    *string      `json:"openapi_content,omitempty"`
+	CurlExamples      []string     `json:"curl_examples,omitempty"`
+	FrontendGuide     *string      `json:"frontend_guide,omitempty"`
+	DocumentationGaps []string     `json:"documentation_gaps,omitempty"`
+	Recommendations   []string     `json:"recommendations"`
+	ActionItems       []ActionItem `json:"action_items,omitempty"`
+	CodexPrompt       string       `json:"codex_prompt"`
 }
 
 // ModuleItem represents an API module.

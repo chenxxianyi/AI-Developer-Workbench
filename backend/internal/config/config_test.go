@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -116,5 +117,26 @@ func TestIsMockMode(t *testing.T) {
 				t.Errorf("IsMockMode()=%v, want %v", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestDatabaseConfig_DSNIncludesMultiStatements(t *testing.T) {
+	db := DatabaseConfig{
+		Driver:   "mysql",
+		Host:     "127.0.0.1",
+		Port:     "3306",
+		Name:     "ai_workbench",
+		User:     "workbench",
+		Password: "secret",
+		Charset:  "utf8mb4",
+		Loc:      "UTC",
+	}
+
+	got := db.DSN()
+	if !strings.Contains(got, "multiStatements=true") {
+		t.Fatalf("DSN() missing multiStatements=true: %s", got)
+	}
+	if !strings.Contains(got, "parseTime=True") {
+		t.Fatalf("DSN() missing parseTime=True: %s", got)
 	}
 }

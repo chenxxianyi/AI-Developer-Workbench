@@ -75,6 +75,11 @@ func RunMigrations(db *gorm.DB, autoMigrate bool) error {
 		&model.GeneratedFile{},
 		&model.ReportAsset{},
 		&model.Project{},
+		&model.Job{},
+		&model.AIRun{},
+		&model.RuleTemplate{},
+		&model.ModelPreset{},
+		&model.GitHubConnection{},
 	}
 	if err := RunVersionedMigrations(db, autoMigrate, models); err != nil {
 		return err
