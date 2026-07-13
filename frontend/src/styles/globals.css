@@ -1,29 +1,13 @@
 /* Import external resources FIRST - @import must precede all other statements */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
+/* Import unified design tokens */
+@import './tokens.css';
+
 /* Import Tailwind CSS */
 @import "tailwindcss";
 
-/* Custom theme with design tokens from demo */
-@theme {
-  --color-background: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f1f1ef;
-  --color-border: #e5e5e0;
-  --color-text-primary: #18181b;
-  --color-text-secondary: #52525b;
-  --color-text-muted: #71717a;
-  --color-accent: #2563eb;
-  --color-accent-soft: #dbeafe;
-  --color-danger: #dc2626;
-  --color-warning: #d97706;
-  --color-success: #16a34a;
-
-  --font-family-jakarta: 'Plus Jakarta Sans', sans-serif;
-
-  --max-width-content: 1180px;
-  --max-width-dashboard: 1280px;
-}
+/* Theme now defined in tokens.css */
 
 /* Base styles */
 body {
