@@ -18,6 +18,10 @@ const apiClient: AxiosInstance = axios.create({
 // Response interceptor: unwrap ApiResponse.data or throw normalized error
 apiClient.interceptors.response.use(
   (response) => {
+    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
+      return response as any
+    }
+
     const body = response.data as ApiResponse<unknown>
 
     // Check if business code is not 0 (error)
@@ -32,9 +36,21 @@ apiClient.interceptors.response.use(
     // Return just the data portion so callers get T directly
     return body.data as any
   },
-  (error: AxiosError<ApiErrorResponse>) => {
+  async (error: AxiosError<ApiErrorResponse | Blob>) => {
     // Handle backend error response
     if (error.response?.data) {
+      const contentType = error.response.headers['content-type']
+      if (error.response.data instanceof Blob && typeof contentType === 'string' && contentType.includes('application/json')) {
+        try {
+          const parsed = JSON.parse(await error.response.data.text()) as ApiErrorResponse
+          return Promise.reject(parsed)
+        } catch {
+          return Promise.reject({
+            code: error.response.status,
+            message: `服务器错误 (${error.response.status})`,
+          })
+        }
+      }
       return Promise.reject(error.response.data)
     }
 

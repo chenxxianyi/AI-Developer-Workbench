@@ -12,11 +12,11 @@ import (
 
 // ToolRunHandler handles tool execution requests.
 type ToolRunHandler struct {
-	agentConfigService    *tools.AgentConfigService
-	dbSchemaService       *tools.DBSchemaService
-	uiReviewService       *tools.UIReviewService
-	projectDoctorService  *tools.ProjectDoctorService
-	apiDocService         *tools.APIDocService
+	agentConfigService   *tools.AgentConfigService
+	dbSchemaService      *tools.DBSchemaService
+	uiReviewService      *tools.UIReviewService
+	projectDoctorService *tools.ProjectDoctorService
+	apiDocService        *tools.APIDocService
 }
 
 // NewToolRunHandler creates a new tool run handler.
@@ -28,11 +28,11 @@ func NewToolRunHandler(
 	apiDocService *tools.APIDocService,
 ) *ToolRunHandler {
 	return &ToolRunHandler{
-		agentConfigService:    agentConfigService,
-		dbSchemaService:       dbSchemaService,
-		uiReviewService:       uiReviewService,
-		projectDoctorService:  projectDoctorService,
-		apiDocService:         apiDocService,
+		agentConfigService:   agentConfigService,
+		dbSchemaService:      dbSchemaService,
+		uiReviewService:      uiReviewService,
+		projectDoctorService: projectDoctorService,
+		apiDocService:        apiDocService,
 	}
 }
 
@@ -73,18 +73,28 @@ func (h *ToolRunHandler) RunDBSchema(c *gin.Context) {
 // RunUIReview handles POST /api/tools/ui-review/run.
 func (h *ToolRunHandler) RunUIReview(c *gin.Context) {
 	input := tools.UIReviewFormInput{
-		Title:       c.PostForm("title"),
-		ReviewMode:  c.PostForm("review_mode"),
-		CodeSource:  c.PostForm("code_source"),
-		PageType:    c.PostForm("page_type"),
-		TargetStyle: c.PostForm("target_style"),
-		Description: c.PostForm("description"),
-		Code:        c.PostForm("code"),
+		Title:           c.PostForm("title"),
+		ReviewMode:      c.PostForm("review_mode"),
+		CodeSource:      c.PostForm("code_source"),
+		PageType:        c.PostForm("page_type"),
+		TargetStyle:     c.PostForm("target_style"),
+		Description:     c.PostForm("description"),
+		Code:            c.PostForm("code"),
+		ParentReportID:  c.PostForm("parent_report_id"),
+		ProjectID:       c.PostForm("project_id"),
+		DesktopViewport: c.PostForm("desktop_viewport"),
+		MobileViewport:  c.PostForm("mobile_viewport"),
 	}
 
 	// Handle screenshot file.
 	if file, err := c.FormFile("screenshot"); err == nil {
 		input.Screenshot = file
+	}
+	if file, err := c.FormFile("desktop_screenshot"); err == nil {
+		input.DesktopScreenshot = file
+	}
+	if file, err := c.FormFile("mobile_screenshot"); err == nil {
+		input.MobileScreenshot = file
 	}
 	if file, err := c.FormFile("project_zip"); err == nil {
 		input.ProjectZip = file
@@ -107,6 +117,8 @@ func (h *ToolRunHandler) RunProjectDoctor(c *gin.Context) {
 		TechStack:          c.PostForm("tech_stack"),
 		ProjectDescription: c.PostForm("project_description"),
 		AnalysisDepth:      c.PostForm("analysis_depth"),
+		ParentReportID:     c.PostForm("parent_report_id"),
+		ProjectID:          c.PostForm("project_id"),
 	}
 
 	if file, err := c.FormFile("project_zip"); err == nil {
@@ -131,6 +143,8 @@ func (h *ToolRunHandler) RunAPIDoc(c *gin.Context) {
 		Code:           c.PostForm("code"),
 		APIDescription: c.PostForm("api_description"),
 		OutputFormat:   c.PostForm("output_format"),
+		ParentReportID: c.PostForm("parent_report_id"),
+		ProjectID:      c.PostForm("project_id"),
 	}
 
 	if file, err := c.FormFile("project_zip"); err == nil {

@@ -97,8 +97,12 @@ export const useReportStore = defineStore('report', () => {
     try {
       currentReport.value = await getReport(id)
     } catch (err: any) {
-      detailError.value = err.message || '获取报告详情失败'
       currentReport.value = null
+      if (err?.code === 40401 || err?.code === 404) {
+        detailError.value = null
+      } else {
+        detailError.value = err.message || '获取报告详情失败'
+      }
     } finally {
       detailLoading.value = false
     }

@@ -26,6 +26,7 @@ import {
   Sparkles,
   FlaskConical,
 } from '@lucide/vue'
+import QualityTrend from '@/components/dashboard/QualityTrend.vue'
 
 const systemStore = useSystemStore()
 const toolStore = useToolStore()
@@ -82,27 +83,25 @@ const stats = computed(() => [
     color: 'success',
   },
   {
-    label: '工具使用',
-    value: Object.keys(systemStore.dashboardStats?.tool_usage ?? {}).length,
-    suffix: '/5',
-    icon: Wrench,
+    label: '本周分析',
+    value: systemStore.dashboardStats?.weekly_stats?.report_count_this_week ?? 0,
+    suffix: '',
+    icon: Activity,
     color: 'warning',
   },
   {
-    label: '最近活动',
-    value: latestActivityLabel.value,
+    label: '本周高危问题',
+    value: systemStore.dashboardStats?.weekly_stats?.high_severity_count_this_week ?? 0,
     suffix: '',
-    icon: Activity,
+    icon: CheckCircle2,
     color: 'danger',
   },
 ])
 
-const recentReports = computed(() => systemStore.dashboardStats?.recent_reports?.slice(0, 4) ?? [])
+const weekly = computed(() => systemStore.dashboardStats?.weekly_stats ?? null)
+const trendPoints = computed(() => systemStore.dashboardStats?.quality_trend ?? [])
 
-const latestActivityLabel = computed(() => {
-  const latestReport = systemStore.dashboardStats?.recent_reports?.[0]
-  return latestReport ? formatRelativeTime(latestReport.created_at) : '暂无'
-})
+const recentReports = computed(() => systemStore.dashboardStats?.recent_reports?.slice(0, 4) ?? [])
 
 const totalToolUsage = computed(() => {
   const usage = systemStore.dashboardStats?.tool_usage ?? {}
@@ -375,6 +374,36 @@ function getScoreColorClass(score: number | null): string {
             </RouterLink>
           </div>
         </section>
+
+        <section class="rounded-lg border border-border bg-surface p-5">
+          <h2 class="text-xl font-bold text-text-primary">本周概览</h2>
+          <div v-if="weekly" class="mt-4 space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-text-muted">分析次数</span>
+              <span class="font-semibold text-text-primary">{{ weekly.report_count_this_week }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">平均质量分</span>
+              <span class="font-semibold text-text-primary">
+                {{ weekly.average_score_this_week !== null ? weekly.average_score_this_week.toFixed(1) : '暂无' }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-text-muted">高危问题</span>
+              <span class="font-semibold" :class="weekly.high_severity_count_this_week > 0 ? 'text-danger' : 'text-success'">
+                {{ weekly.high_severity_count_this_week }}
+              </span>
+            </div>
+            <div v-if="weekly.most_used_tool_this_week" class="flex justify-between">
+              <span class="text-text-muted">最常用工具</span>
+              <span class="font-semibold text-text-primary">{{ getToolDisplayMeta(weekly.most_used_tool_this_week as ToolType)?.name }}</span>
+            </div>
+          </div>
+          <p v-else class="mt-4 text-sm text-text-muted">本周暂无数据。</p>
+          <p class="mt-3 text-xs text-text-muted">统计口径：最近 7 天（UTC）的评分型报告；非评分报告不计入平均分分母。</p>
+        </section>
+
+        <QualityTrend :points="trendPoints" />
 
         <section class="rounded-lg border border-border bg-surface p-5">
           <h2 class="text-xl font-bold text-text-primary">建议流程</h2>

@@ -3,23 +3,30 @@
  * Project Doctor Page
  * Upload project ZIP for comprehensive health analysis
  */
-
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, nextTick, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { runProjectDoctor } from '@/api/tools'
+import { downloadReport } from '@/api/reports'
 import type { Report, ProjectDoctorResult } from '@/types/report'
-import {
-  Stethoscope,
-  Upload,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  ArrowLeft,
-  Download,
-} from '@lucide/vue'
+import { Stethoscope, Download } from '@lucide/vue'
+import ToolPageShell from '@/components/tool/ToolPageShell.vue'
+import ToolFormSection from '@/components/tool/ToolFormSection.vue'
+import FileUpload from '@/components/tool/FileUpload.vue'
+import ProjectPicker from '@/components/tool/ProjectPicker.vue'
+import ScorePanel from '@/components/report/ScorePanel.vue'
+import IssueList from '@/components/report/IssueList.vue'
+import RecommendationList from '@/components/report/RecommendationList.vue'
+import CodexPromptBox from '@/components/report/CodexPromptBox.vue'
+import GeneratedFilesPanel from '@/components/report/GeneratedFilesPanel.vue'
+import ActionItemsPanel from '@/components/report/ActionItemsPanel.vue'
+import { focusFirstError } from '@/utils/focusFirstError'
 
 const router = useRouter()
+const route = useRoute()
+
+// Lineage: parent_report_id carried from a "re-run" action.
+const parentReportId = ref('')
+const projectId = ref('')
 
 // Form state
 const title = ref('')
@@ -28,13 +35,15 @@ const techStack = ref('')
 const projectDescription = ref('')
 const analysisDepth = ref<'basic' | 'standard' | 'deep'>('standard')
 const projectFile = ref<File | null>(null)
-const fileName = ref('')
+
+// Field-level validation errors
+const errors = ref<{ title?: string; projectFile?: string }>({})
 
 // Result state
 const loading = ref(false)
 const error = ref<string | null>(null)
 const result = ref<Report<ProjectDoctorResult> | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
+const exportError = ref<string | null>(null)
 
 const analysisDepthOptions: Array<{
   value: 'basic' | 'standard' | 'deep'
@@ -46,43 +55,40 @@ const analysisDepthOptions: Array<{
   { value: 'deep', label: '深度', description: '更全面的工程审查' },
 ]
 
-// File handling
-function handleFileSelect(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (target.files?.length) {
-    projectFile.value = target.files[0]
-    fileName.value = target.files[0].name
+// Prefill safe (text-only) fields from the query when re-running. File uploads
+// are intentionally NOT restored (browser security forbids programmatic selection).
+onMounted(() => {
+  const q = route.query
+  parentReportId.value = typeof q.parent_report_id === 'string' ? q.parent_report_id : ''
+  projectId.value = typeof q.project_id === 'string' ? q.project_id : ''
+  if (typeof q.title === 'string') title.value = q.title
+  if (typeof q.project_name === 'string') projectName.value = q.project_name
+  if (typeof q.tech_stack === 'string') techStack.value = q.tech_stack
+  if (typeof q.project_description === 'string') projectDescription.value = q.project_description
+  if (typeof q.analysis_depth === 'string') {
+    const v = q.analysis_depth as typeof analysisDepth.value
+    if (v === 'basic' || v === 'standard' || v === 'deep') analysisDepth.value = v
   }
-}
-
-function triggerFileInput() {
-  fileInput.value?.click()
-}
-
-function handleUploadZoneKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Enter' && event.key !== ' ') return
-  event.preventDefault()
-  triggerFileInput()
-}
-
-function clearFile() {
-  projectFile.value = null
-  fileName.value = ''
-}
+})
 
 // Submit
 async function handleSubmit() {
+  errors.value = {}
   if (!title.value.trim()) {
-    error.value = '请输入标题'
-    return
+    errors.value.title = '请输入标题'
   }
   if (!projectFile.value) {
-    error.value = '请上传项目 ZIP 文件'
+    errors.value.projectFile = '请上传项目 ZIP 文件'
+  }
+  if (errors.value.title || errors.value.projectFile) {
+    await nextTick()
+    focusFirstError()
     return
   }
 
   loading.value = true
   error.value = null
+  exportError.value = null
   result.value = null
 
   try {
@@ -92,7 +98,9 @@ async function handleSubmit() {
     formData.append('analysis_depth', analysisDepth.value)
     if (techStack.value) formData.append('tech_stack', techStack.value)
     if (projectDescription.value) formData.append('project_description', projectDescription.value)
-    formData.append('project_zip', projectFile.value)
+    formData.append('project_zip', projectFile.value as Blob)
+    if (parentReportId.value) formData.append('parent_report_id', parentReportId.value)
+    if (projectId.value) formData.append('project_id', projectId.value)
 
     result.value = await runProjectDoctor(formData) as unknown as Report<ProjectDoctorResult>
   } catch (err: any) {
@@ -102,49 +110,14 @@ async function handleSubmit() {
   }
 }
 
-// Helpers
-function getScoreColor(score: number, max: number): string {
-  const percent = (score / max) * 100
-  if (percent >= 80) return 'text-success'
-  if (percent >= 60) return 'text-warning'
-  return 'text-danger'
-}
-
-function getSeverityColor(severity: string): string {
-  if (severity === 'high') return 'text-danger'
-  if (severity === 'medium') return 'text-warning'
-  return 'text-accent'
-}
-
-function getSeverityBadgeClass(severity: string): string {
-  if (severity === 'high') return 'bg-danger/10 text-danger border-danger/20'
-  if (severity === 'medium') return 'bg-warning/10 text-warning border-warning/20'
-  return 'bg-accent-soft text-accent border-accent/20'
-}
-
-function getSeverityDisplayName(severity: string): string {
-  if (severity === 'high') return '高'
-  if (severity === 'medium') return '中'
-  if (severity === 'low') return '低'
-  return severity
-}
-
-function getGradeColor(grade: string | null): string {
-  if (!grade) return 'text-text-muted'
-  if (grade === 'A') return 'text-success'
-  if (grade === 'B') return 'text-accent'
-  if (grade === 'C') return 'text-warning'
-  return 'text-danger'
-}
-
-function downloadFile(filename: string) {
+async function exportMarkdown() {
   if (!result.value) return
-  window.open(`/api/reports/${result.value.id}/files/${filename}`, '_blank')
-}
-
-function exportMarkdown() {
-  if (!result.value) return
-  window.open(`/api/reports/${result.value.id}/export?format=markdown`, '_blank')
+  exportError.value = null
+  try {
+    await downloadReport(result.value.id)
+  } catch (err: any) {
+    exportError.value = err.message || '导出失败'
+  }
 }
 
 function resetForm() {
@@ -154,252 +127,226 @@ function resetForm() {
   projectDescription.value = ''
   analysisDepth.value = 'standard'
   projectFile.value = null
-  fileName.value = ''
+  projectId.value = ''
   result.value = null
   error.value = null
+  exportError.value = null
+  errors.value = {}
 }
 
-const canSubmit = computed(() => title.value.trim() && projectFile.value)
+const canSubmit = computed(() => !!(title.value.trim() && projectFile.value))
+
+const reportData = computed(() => result.value?.report_data ?? null)
+
+const hasScores = computed(() =>
+  reportData.value?.scores?.length
+  && result.value?.total_score !== null
+  && result.value?.grade !== null,
+)
+
+function goBack() {
+  router.push('/dashboard')
+}
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="mb-6">
-      <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
-        <ArrowLeft :size="20" />
-        <span>返回工作台</span>
-      </button>
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-success rounded-xl flex items-center justify-center">
-          <Stethoscope :size="24" class="text-white" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-text-primary">项目诊断</h1>
-          <p class="text-text-secondary">全面检查项目健康度和工程质量</p>
-        </div>
-      </div>
-    </div>
+  <ToolPageShell
+    :icon="Stethoscope"
+    title="项目诊断"
+    description="全面检查项目健康度和工程质量"
+    step-text="上传项目 ZIP → 选择深度 → 开始诊断 → 查看结果"
+    accent="success"
+    :loading="loading"
+    :error="error"
+    :can-submit="!!canSubmit"
+    submit-label="开始诊断"
+    submitting-label="诊断中..."
+    loading-hint="AI 正在分析项目..."
+    :back-label="''"
+    @submit="handleSubmit"
+    @back="goBack"
+  >
+    <template #form>
+      <ToolFormSection label="标题" required id-for="project-doctor-title" help-id="project-doctor-title-help" help="用于区分本次诊断报告。" :error="errors.title">
+        <input
+          id="project-doctor-title"
+          v-model="title"
+          type="text"
+          required
+          :aria-invalid="errors.title ? 'true' : undefined"
+          :aria-describedby="errors.title ? 'project-doctor-title-error' : 'project-doctor-title-help'"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="输入诊断标题..."
+        />
+      </ToolFormSection>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Input Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">输入参数</h2>
+      <ToolFormSection label="关联项目" optional id-for="project-doctor-project" help-id="project-doctor-project-help" help="可选。关联后会沉淀诊断报告与质量趋势。">
+        <ProjectPicker v-model="projectId" input-id="project-doctor-project" help-id="project-doctor-project-help" />
+      </ToolFormSection>
 
-        <div class="mb-4">
-          <label for="project-doctor-title" class="block text-sm font-medium text-text-secondary mb-2">标题 *</label>
-          <input
-            id="project-doctor-title"
-            v-model="title"
-            type="text"
-            required
-            aria-describedby="project-doctor-title-help"
-            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
-            placeholder="输入诊断标题..."
-          />
-          <p id="project-doctor-title-help" class="text-xs text-text-secondary mt-1">用于区分本次诊断报告。</p>
-        </div>
+      <ToolFormSection label="项目名称" optional id-for="project-doctor-name">
+        <input
+          id="project-doctor-name"
+          v-model="projectName"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: AI Workbench..."
+        />
+      </ToolFormSection>
 
-        <div class="mb-4">
-          <label for="project-doctor-name" class="block text-sm font-medium text-text-secondary mb-2">项目名称</label>
-          <input
-            id="project-doctor-name"
-            v-model="projectName"
-            type="text"
-            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
-            placeholder="如: AI Workbench..."
-          />
-        </div>
+      <!-- File Upload -->
+      <ToolFormSection
+        label="项目 ZIP 文件"
+        required
+        id-for="project-doctor-zip"
+        help-id="project-doctor-zip-help"
+        help="按 Enter 或空格选择文件，支持 .zip，最大 20MB"
+        :error="errors.projectFile"
+      >
+        <FileUpload
+          v-model="projectFile"
+          input-id="project-doctor-zip"
+          testid="project-zip"
+          accept=".zip,application/zip,application/x-zip-compressed"
+          accent="success"
+          empty-text="点击、拖拽或按 Enter / 空格上传 ZIP"
+          hint="支持 .zip，最大 20MB"
+          help-id="project-doctor-zip-help"
+          remove-label="移除已上传的项目 ZIP 文件"
+        />
+      </ToolFormSection>
 
-        <!-- File Upload -->
-        <div class="mb-4">
-          <label for="project-doctor-zip" class="block text-sm font-medium text-text-secondary mb-2">项目 ZIP 文件 *</label>
-          <div
-            v-if="!fileName"
-            data-testid="project-zip-upload-zone"
-            role="button"
-            tabindex="0"
-            aria-describedby="project-doctor-zip-help"
-            class="border-2 border-dashed border-border/80 rounded-lg p-8 text-center hover:border-success focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none transition-smooth cursor-pointer bg-surface-muted/40"
-            @click="triggerFileInput"
-            @keydown="handleUploadZoneKeydown"
+      <ToolFormSection label="技术栈" optional id-for="project-doctor-tech-stack">
+        <input
+          id="project-doctor-tech-stack"
+          v-model="techStack"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: Vue 3 + Go + MySQL..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="分析深度" required as-label>
+        <div role="radiogroup" aria-label="分析深度" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            v-for="option in analysisDepthOptions"
+            :key="option.value"
+            type="button"
+            role="radio"
+            :aria-checked="analysisDepth === option.value"
+            @click="analysisDepth = option.value"
+            :class="[
+              'flex flex-col items-start gap-1 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-success focus:outline-none',
+              analysisDepth === option.value
+                ? 'bg-success text-white'
+                : 'bg-surface-muted text-text-secondary hover:bg-border',
+            ]"
           >
-            <Upload :size="32" class="text-success mx-auto mb-2" />
-            <p class="text-text-primary font-medium">点击、拖拽或按 Enter / 空格上传 ZIP</p>
-            <p id="project-doctor-zip-help" class="text-text-secondary text-sm mt-1">按 Enter 或空格选择文件，支持 .zip，最大 20MB</p>
-            <input
-              id="project-doctor-zip"
-              ref="fileInput"
-              type="file"
-              accept=".zip"
-              required
-              class="hidden"
-              @change="handleFileSelect"
-            />
-          </div>
-          <div v-else class="flex items-center justify-between gap-3 p-3 bg-surface-muted rounded-lg">
-            <div class="flex items-center gap-2 min-w-0">
-              <FileText :size="18" class="text-accent" />
-              <span class="text-text-primary truncate">{{ fileName }}</span>
-            </div>
-            <button
-              type="button"
-              aria-label="移除已上传的项目 ZIP 文件"
-              @click="clearFile"
-              class="p-1 text-danger hover:text-danger/80 focus-visible:ring-2 focus-visible:ring-danger focus:outline-none rounded cursor-pointer"
-            >
-              <AlertCircle :size="16" />
-            </button>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label for="project-doctor-tech-stack" class="block text-sm font-medium text-text-secondary mb-2">技术栈</label>
-          <input
-            id="project-doctor-tech-stack"
-            v-model="techStack"
-            type="text"
-            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
-            placeholder="如: Vue 3 + Go + MySQL..."
-          />
-        </div>
-
-        <div class="mb-4">
-          <span class="block text-sm font-medium text-text-secondary mb-2">分析深度 *</span>
-          <div role="radiogroup" aria-label="分析深度" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              v-for="option in analysisDepthOptions"
-              :key="option.value"
-              type="button"
-              role="radio"
-              :aria-checked="analysisDepth === option.value"
-              @click="analysisDepth = option.value"
-              :class="[
-                'flex flex-col items-start gap-1 px-4 py-3 rounded-lg transition-smooth text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-success focus:outline-none',
-                analysisDepth === option.value
-                  ? 'bg-success text-white'
-                  : 'bg-surface-muted text-text-secondary hover:bg-border',
-              ]"
-            >
-              <span class="font-semibold">{{ option.label }}</span>
-              <span class="text-xs opacity-85">{{ option.description }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label for="project-doctor-description" class="block text-sm font-medium text-text-secondary mb-2">项目描述</label>
-          <textarea
-            id="project-doctor-description"
-            v-model="projectDescription"
-            class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
-            rows="3"
-            placeholder="描述项目功能和目标..."
-          ></textarea>
-        </div>
-
-        <!-- Error -->
-        <div v-if="error" class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-          <div class="flex items-center gap-2">
-            <AlertCircle :size="18" class="text-danger" />
-            <span class="text-danger">{{ error }}</span>
-          </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="flex gap-3">
-          <button @click="handleSubmit" :disabled="loading || !canSubmit" :class="['flex items-center gap-2 px-6 py-2 rounded-lg transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none', loading || !canSubmit ? 'bg-surface-muted text-text-muted cursor-not-allowed' : 'bg-success text-white hover:bg-success/80 cursor-pointer']">
-            <Loader2 v-if="loading" :size="18" class="animate-spin" />
-            <Stethoscope v-else :size="18" />
-            <span>{{ loading ? '诊断中...' : '开始诊断' }}</span>
-          </button>
-          <button @click="resetForm" class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none cursor-pointer">重置</button>
-        </div>
-      </div>
-
-      <!-- Result Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">诊断结果</h2>
-
-        <div v-if="!result && !loading" class="text-center py-12">
-          <Stethoscope :size="48" class="text-text-muted mx-auto mb-4" />
-          <p class="text-text-secondary">上传项目 ZIP 开始诊断</p>
-        </div>
-
-        <div v-if="loading" class="text-center py-12">
-          <Loader2 :size="48" class="text-accent mx-auto mb-4 animate-spin" />
-          <p class="text-text-secondary">AI 正在分析项目...</p>
-        </div>
-
-        <div v-if="result && !loading">
-          <!-- Summary -->
-          <div class="mb-6 p-4 bg-surface-muted rounded-lg">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-text-secondary">健康评分</span>
-              <span :class="getGradeColor(result.grade)">
-                <span v-if="result.total_score">{{ result.total_score }}/100</span>
-                <span v-if="result.grade" class="ml-2 font-bold text-xl">{{ result.grade }}</span>
-              </span>
-            </div>
-            <p class="text-text-primary">{{ result.summary }}</p>
-          </div>
-
-          <!-- Scores -->
-          <div v-if="result.report_data?.scores?.length" class="mb-6">
-            <h3 class="text-md font-semibold text-text-primary mb-3">评分详情</h3>
-            <div class="space-y-2">
-              <div v-for="score in result.report_data.scores" :key="score.name" class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between p-2 bg-surface-muted rounded">
-                <span class="text-text-secondary">{{ score.name }}</span>
-                <span :class="getScoreColor(score.score, score.max_score)">{{ score.score }}/{{ score.max_score }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Issues -->
-          <div v-if="result.report_data?.issues?.length" class="mb-6">
-            <h3 class="text-md font-semibold text-text-primary mb-3">发现的问题</h3>
-            <div class="space-y-2">
-              <div v-for="(issue, idx) in result.report_data.issues" :key="idx" class="p-3 bg-surface-muted rounded">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1">
-                  <span class="font-medium text-text-primary">{{ issue.title }}</span>
-                  <span :class="[getSeverityColor(issue.severity), getSeverityBadgeClass(issue.severity)]" class="inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold">
-                    {{ getSeverityDisplayName(issue.severity) }}
-                  </span>
-                </div>
-                <p class="text-text-secondary text-sm">{{ issue.problem }}</p>
-                <p class="text-accent text-sm mt-1">建议: {{ issue.suggestion }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recommendations -->
-          <div v-if="result.report_data?.recommendations?.length" class="mb-6">
-            <h3 class="text-md font-semibold text-text-primary mb-3">改进建议</h3>
-            <ul class="space-y-1">
-              <li v-for="(rec, idx) in result.report_data.recommendations" :key="idx" class="flex items-start gap-2 text-text-secondary">
-                <CheckCircle2 :size="14" class="text-success mt-1" />
-                <span class="text-sm">{{ rec }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Generated Files -->
-          <div v-if="result.generated_files?.length" class="mb-4">
-            <h3 class="text-md font-semibold text-text-primary mb-2">生成的文件</h3>
-            <div class="flex gap-2">
-              <button v-for="file in result.generated_files" :key="file.id" @click="downloadFile(file.filename)" class="flex items-center gap-1 px-3 py-1 bg-accent-soft text-accent rounded hover:bg-accent hover:text-white transition-smooth text-sm">
-                <FileText :size="14" />
-                <span>{{ file.filename }}</span>
-              </button>
-            </div>
-          </div>
-
-          <button @click="exportMarkdown" class="flex items-center gap-2 px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth">
-            <Download :size="18" />
-            <span>导出 Markdown</span>
+            <span class="font-semibold">{{ option.label }}</span>
+            <span class="text-xs opacity-85">{{ option.description }}</span>
           </button>
         </div>
+      </ToolFormSection>
+
+      <ToolFormSection label="项目描述" optional id-for="project-doctor-description">
+        <textarea
+          id="project-doctor-description"
+          v-model="projectDescription"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-success focus-visible:border-success focus:outline-none text-text-primary placeholder:text-text-muted"
+          rows="3"
+          placeholder="描述项目功能和目标..."
+        ></textarea>
+      </ToolFormSection>
+    </template>
+
+    <template #actions>
+      <button
+        type="button"
+        class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none cursor-pointer"
+        @click="resetForm"
+      >
+        重置
+      </button>
+    </template>
+
+    <template #empty>
+      <div class="py-12 text-center">
+        <Stethoscope :size="48" class="text-text-muted mx-auto mb-4" />
+        <p class="text-text-secondary">上传项目 ZIP 开始诊断</p>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template v-if="result" #result>
+      <!-- Summary -->
+      <div class="mb-6 p-4 bg-surface-muted rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-text-secondary">健康评分</span>
+          <span v-if="result.total_score" class="font-bold text-xl text-text-primary">
+            {{ result.total_score }}/100
+            <span v-if="result.grade" class="ml-2">{{ result.grade }}</span>
+          </span>
+        </div>
+        <p class="text-text-primary">{{ result.summary }}</p>
+      </div>
+
+      <!-- Scores -->
+      <div v-if="hasScores" class="mb-6">
+        <ScorePanel
+          :scores="reportData!.scores!"
+          :total-score="result.total_score!"
+          :grade="result.grade!"
+        />
+      </div>
+
+      <!-- Issues -->
+      <div v-if="reportData?.issues?.length" class="mb-6">
+        <IssueList :issues="reportData.issues" />
+      </div>
+
+      <!-- Action Items -->
+      <ActionItemsPanel
+        v-if="reportData?.action_items?.length || reportData?.recommendations?.length"
+        :report-id="result.id"
+        :report-title="result.title"
+        :action-items="reportData?.action_items ?? []"
+        :recommendations="reportData?.recommendations ?? []"
+        class="mb-6"
+      />
+
+      <!-- Recommendations -->
+      <RecommendationList
+        v-if="reportData?.recommendations?.length"
+        :recommendations="reportData.recommendations"
+        class="mb-6"
+      />
+
+      <!-- Codex Prompt -->
+      <CodexPromptBox
+        v-if="reportData?.codex_prompt"
+        :prompt="reportData.codex_prompt"
+        class="mb-6"
+      />
+
+      <!-- Generated Files -->
+      <GeneratedFilesPanel
+        v-if="result.generated_files?.length"
+        :files="result.generated_files"
+        :report-id="result.id"
+        class="mb-6"
+      />
+
+      <!-- Export -->
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-success focus:outline-none"
+          @click="exportMarkdown"
+        >
+          <Download :size="18" />
+          <span>导出 Markdown</span>
+        </button>
+        <span v-if="exportError" class="text-sm text-danger">{{ exportError }}</span>
+      </div>
+    </template>
+  </ToolPageShell>
 </template>

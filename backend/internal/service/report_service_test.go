@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"ai-developer-workbench/internal/config"
 	"ai-developer-workbench/internal/dto"
 	"ai-developer-workbench/internal/model"
+	"ai-developer-workbench/internal/repository"
 
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -114,4 +117,54 @@ func TestReportDataRoundTrip(t *testing.T) {
 	assert.Equal(t, 80, decoded.Scores[0].Score)
 	assert.Equal(t, "high", decoded.Issues[0].Severity)
 	assert.Equal(t, "Fix the bugs", decoded.CodexPrompt)
+}
+
+func TestCreateProcessingReportAssociatesOnlyExistingProjects(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(
+		&model.Project{},
+		&model.Report{},
+		&model.GeneratedFile{},
+		&model.ReportAsset{},
+	))
+
+	project := &model.Project{Name: "Workbench"}
+	require.NoError(t, db.Create(project).Error)
+	reportSvc := NewReportService(
+		&config.Config{},
+		repository.NewReportRepository(db),
+		repository.NewGeneratedFileRepository(db),
+		repository.NewReportAssetRepository(db),
+		repository.NewProjectRepository(db),
+		db,
+	)
+
+	report, err := reportSvc.CreateProcessingReport(
+		context.Background(),
+		model.ToolTypeUIReview,
+		"Project review",
+		"code",
+		json.RawMessage(`{"project_id":"`+project.ID+`"}`),
+		"",
+		project.ID,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, report.ProjectID)
+	assert.Equal(t, project.ID, *report.ProjectID)
+
+	_, err = reportSvc.CreateProcessingReport(
+		context.Background(),
+		model.ToolTypeUIReview,
+		"Invalid project review",
+		"code",
+		json.RawMessage(`{}`),
+		"",
+		"missing-project",
+	)
+	require.ErrorContains(t, err, "project not found")
+
+	var count int64
+	require.NoError(t, db.Model(&model.Report{}).Count(&count).Error)
+	assert.Equal(t, int64(1), count, "invalid project must not create a processing report")
 }

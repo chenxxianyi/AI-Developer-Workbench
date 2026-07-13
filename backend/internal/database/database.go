@@ -66,15 +66,18 @@ func Close(db *gorm.DB) error {
 }
 
 // RunMigrations executes database migrations.
+// Versioned SQL migrations run first (one transaction per file, tracked in
+// schema_migrations); then, when autoMigrate is true, GORM AutoMigrate keeps
+// models in sync (useful for dev). In production prefer versioned SQL only.
 func RunMigrations(db *gorm.DB, autoMigrate bool) error {
-	if autoMigrate {
-		if err := db.AutoMigrate(
-			&model.Report{},
-			&model.GeneratedFile{},
-			&model.ReportAsset{},
-		); err != nil {
-			return fmt.Errorf("auto-migrate failed: %w", err)
-		}
+	models := []any{
+		&model.Report{},
+		&model.GeneratedFile{},
+		&model.ReportAsset{},
+		&model.Project{},
+	}
+	if err := RunVersionedMigrations(db, autoMigrate, models); err != nil {
+		return err
 	}
 	return nil
 }

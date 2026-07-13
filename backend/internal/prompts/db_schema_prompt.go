@@ -13,9 +13,12 @@ Output a JSON object with this exact structure:
   "optimized_schema": "string - SQL DDL for optimized schema (optional)",
   "migration_suggestions": ["string - specific migration steps"],
   "recommendations": ["string - general recommendations"],
+  "action_items": [
+    {"id": "stable-kebab-case-id", "title": "string", "priority": "high|medium|low", "effort": "small|medium|large", "category": "string", "reason": "string", "suggested_prompt": "string", "issue_title": "string", "issue_body": "string - Markdown"}
+  ],
   "codex_prompt": "string - prompt for generating migration scripts"
 }
-`
+` + ActionItemsPromptSchema
 
 // BuildDBSchemaPrompt creates the prompt for DB Schema Review.
 func BuildDBSchemaPrompt(schemaType, databaseType, businessContext, schemaContent, targetGoal string) (string, string) {

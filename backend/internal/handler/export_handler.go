@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"errors"
+
 	"ai-developer-workbench/internal/service"
 	"ai-developer-workbench/internal/util"
 
@@ -25,8 +27,26 @@ func (h *ExportHandler) ExportMarkdown(c *gin.Context) {
 		return
 	}
 
-	content, filename, err := h.exportService.ExportMarkdown(c.Request.Context(), id)
+	format := c.DefaultQuery("format", "markdown")
+	var (
+		content  []byte
+		filename string
+		err      error
+	)
+	switch format {
+	case "markdown":
+		content, filename, err = h.exportService.ExportMarkdown(c.Request.Context(), id)
+	case "github-issues":
+		content, filename, err = h.exportService.ExportGitHubIssues(c.Request.Context(), id)
+	default:
+		util.BadRequest(c, "Unsupported export format")
+		return
+	}
 	if err != nil {
+		if errors.Is(err, service.ErrNoActionItems) {
+			util.BadRequest(c, "Report has no action items")
+			return
+		}
 		util.NotFound(c, "Report not found")
 		return
 	}

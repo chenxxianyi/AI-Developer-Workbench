@@ -1,7 +1,10 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -84,7 +87,37 @@ func InternalError(c *gin.Context, errDetail string) {
 
 // WriteDownloadResponse writes a file download response with proper headers.
 func WriteDownloadResponse(c *gin.Context, filename string, content []byte, mimeType string) {
-	c.Header("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	safeName := SafeFilename(filename)
+	c.Header("Content-Disposition", contentDisposition(safeName))
 	c.Header("Content-Type", mimeType)
 	c.Data(http.StatusOK, mimeType, content)
+}
+
+func contentDisposition(filename string) string {
+	return fmt.Sprintf(
+		"attachment; filename=\"%s\"; filename*=UTF-8''%s",
+		asciiFilenameFallback(filename),
+		url.PathEscape(filename),
+	)
+}
+
+func asciiFilenameFallback(filename string) string {
+	var b strings.Builder
+	for _, r := range filename {
+		switch {
+		case r < 0x20 || r == 0x7f:
+			continue
+		case r == '"' || r == '\\':
+			b.WriteByte('_')
+		case r > 0x7e:
+			b.WriteByte('_')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	fallback := strings.TrimSpace(b.String())
+	if fallback == "" {
+		return "download"
+	}
+	return fallback
 }

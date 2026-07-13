@@ -7,23 +7,29 @@ Output a JSON object with this exact structure:
   "scores": [
     {"name": "string - Chinese dimension name", "score": number (0-100), "max_score": 100, "comment": "string - Simplified Chinese"}
   ],
+  "screenshot_contexts": [{"kind":"desktop|mobile", "viewport":"WIDTHxHEIGHT"}],
   "issues": [
-    {"title": "string - Simplified Chinese", "severity": "high|medium|low", "category": "string - Simplified Chinese", "problem": "string - Simplified Chinese", "suggestion": "string - Simplified Chinese", "action": "string - Simplified Chinese"}
+    {"title":"string", "severity":"high|medium|low", "category":"string", "problem":"string", "suggestion":"string", "action":"string", "viewport":"desktop|mobile", "region":{"x":0-100,"y":0-100,"width":0-100,"height":0-100}, "contrast_suggestion":"WCAG-aware fix", "component_prompt":"executable component-level fix prompt"}
   ],
   "recommendations": ["string - Simplified Chinese actionable recommendations"],
+  "action_items": [
+    {"id": "stable-kebab-case-id", "title": "string - Simplified Chinese", "priority": "high|medium|low", "effort": "small|medium|large", "category": "string", "reason": "string - Simplified Chinese", "suggested_prompt": "string - Simplified Chinese", "issue_title": "string - Simplified Chinese", "issue_body": "string - Markdown"}
+  ],
   "codex_prompt": "string - Simplified Chinese prompt for generating CSS fixes"
 }
 
 Language requirements:
 - 必须使用简体中文输出所有面向用户的内容，包括 scores.name、scores.comment、issues.title、issues.category、issues.problem、issues.suggestion、issues.action、recommendations 和 codex_prompt。
+- action_items 中 title、reason、suggested_prompt、issue_title 和 issue_body 必须使用简体中文。
 - 可以保留 UI、UX、WCAG、CSS、HTML、Vue、React、ARIA、CTA 等行业术语或专有名词。
 - severity 字段必须继续使用 high、medium、low 三个枚举值，不要翻译。
-`
+` + ActionItemsPromptSchema
 
 // BuildUIReviewPrompt creates the prompt for UI Review.
 func BuildUIReviewPrompt(reviewMode, codeSource, pageType, targetStyle, description, code, projectSummary string) (string, string) {
 	systemPrompt := `You are an expert UI/UX designer reviewing interfaces.
-Your task is to analyze the provided UI screenshot or code for design quality.
+Your task is to analyze the provided UI screenshots or code for design quality.
+For screenshot reviews, attribute every issue to desktop or mobile and provide percentage-based region coordinates. Every high-severity issue must include a non-empty component_prompt. Include WCAG contrast guidance when color is involved. Apply page-specific priorities for login, dashboard, form, and content pages.
 All explanations, issue descriptions, comments, and recommendations must be written in Simplified Chinese unless they are proper nouns or technical terms.
 
 Scoring dimensions, use these Chinese names exactly:

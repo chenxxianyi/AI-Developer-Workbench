@@ -60,6 +60,36 @@ const routes = [
     meta: { layout: 'app' },
   },
   {
+    path: '/reports/:id/compare/:targetId',
+    name: 'report-compare',
+    component: () => import('@/pages/ReportComparePage.vue'),
+    meta: { layout: 'app' },
+  },
+  {
+    path: '/projects',
+    name: 'projects',
+    component: () => import('@/pages/ProjectsPage.vue'),
+    meta: { layout: 'app' },
+  },
+  {
+    path: '/projects/new',
+    name: 'project-new',
+    component: () => import('@/pages/ProjectFormPage.vue'),
+    meta: { layout: 'app' },
+  },
+  {
+    path: '/projects/:id',
+    name: 'project-detail',
+    component: () => import('@/pages/ProjectDetailPage.vue'),
+    meta: { layout: 'app' },
+  },
+  {
+    path: '/projects/:id/edit',
+    name: 'project-edit',
+    component: () => import('@/pages/ProjectFormPage.vue'),
+    meta: { layout: 'app' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/pages/SettingsPage.vue'),

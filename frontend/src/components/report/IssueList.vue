@@ -101,6 +101,11 @@ const severityLabel = { high: '高', medium: '中', low: '低' }
             </div>
 
             <p class="mt-2 text-sm leading-relaxed text-text-secondary">{{ issue.problem }}</p>
+            <div v-if="issue.viewport || issue.contrast_suggestion || issue.component_prompt" class="mt-3 space-y-2 rounded-lg border border-border/70 bg-surface-muted/60 px-3 py-2 text-sm text-text-secondary">
+              <p v-if="issue.viewport"><strong class="text-text-primary">Viewport:</strong> {{ issue.viewport }}</p>
+              <p v-if="issue.contrast_suggestion"><strong class="text-text-primary">Contrast:</strong> {{ issue.contrast_suggestion }}</p>
+              <p v-if="issue.component_prompt"><strong class="text-text-primary">Component fix prompt:</strong> {{ issue.component_prompt }}</p>
+            </div>
 
             <div
               v-if="issue.suggestion || issue.action"

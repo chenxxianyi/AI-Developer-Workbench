@@ -7,8 +7,9 @@ type AIRequest struct {
 	ToolType     string
 	SystemPrompt string
 	UserPrompt   string
-	ImagePath    string // Optional: path to image file for vision
-	NeedVision   bool   // Whether to use vision model
+	ImagePath    string   // Deprecated single-image input; retained for compatibility
+	ImagePaths   []string // Optional ordered image inputs for multi-viewport review
+	NeedVision   bool     // Whether to use vision model
 }
 
 // AIResult is the output from an AI service call.

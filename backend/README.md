@@ -61,8 +61,15 @@ go run ./cmd/server
 ### Docker
 
 ```bash
-docker-compose up -d
+# 在仓库根目录执行
+docker compose up -d --build        # 构建并启动 MySQL + backend + frontend
+docker compose logs -f backend      # 查看后端日志
+docker compose ps                   # 查看健康状态
+docker compose down                 # 停止
+docker compose down -v              # 停止并清理数据卷（MySQL 数据丢失）
 ```
+
+后端镜像健康检查命中 `GET /api/health`；MySQL 就绪后才启动后端，后端就绪后才启动前端。
 
 ## Configuration
 
@@ -79,6 +86,11 @@ Key configuration options in `.env`:
 | `AI_MODEL` | Text model | gpt-4.1 |
 | `AI_VISION_MODEL` | Vision model | gpt-4.1 |
 | `MAX_UPLOAD_SIZE_MB` | Max upload size | 20 |
+| `CORS_ALLOW_ORIGINS` | 允许的前端来源，逗号分隔 | http://localhost:5173 |
+
+## 切换真实 AI
+
+编辑仓库根目录 `.env`（从 `.env.example` 复制），将 `AI_MOCK_MODE` 设为 `false` 并填入 `AI_API_KEY`，然后 `docker compose up -d`。
 
 ## API Endpoints
 

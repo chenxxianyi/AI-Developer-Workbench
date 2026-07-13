@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"ai-developer-workbench/internal/dto"
 	"ai-developer-workbench/internal/service"
 	"ai-developer-workbench/internal/util"
@@ -68,10 +70,34 @@ func (h *ReportHandler) DeleteReport(c *gin.Context) {
 	util.SuccessResponse(c, nil)
 }
 
+// CompareReports handles GET /api/reports/:id/compare/:targetId.
+func (h *ReportHandler) CompareReports(c *gin.Context) {
+	baselineID := c.Param("id")
+	targetID := c.Param("targetId")
+	if baselineID == "" || targetID == "" {
+		util.BadRequest(c, "Both report IDs are required")
+		return
+	}
+
+	result, err := h.reportService.CompareReports(c.Request.Context(), baselineID, targetID)
+	if err != nil {
+		// Surface "not found" and "tool mismatch" as 4xx.
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "mismatch") {
+			util.BadRequest(c, err.Error())
+			return
+		}
+		util.InternalError(c, "Failed to compare reports")
+		return
+	}
+
+	util.SuccessResponse(c, result)
+}
+
 // RegisterReportRoutes registers report routes.
 func RegisterReportRoutes(r *gin.RouterGroup, reportService service.ReportService) {
 	handler := NewReportHandler(reportService)
 	r.GET("/reports", handler.ListReports)
 	r.GET("/reports/:id", handler.GetReport)
+	r.GET("/reports/:id/compare/:targetId", handler.CompareReports)
 	r.DELETE("/reports/:id", handler.DeleteReport)
 }

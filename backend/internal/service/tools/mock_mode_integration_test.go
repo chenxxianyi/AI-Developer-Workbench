@@ -18,24 +18,24 @@ import (
 
 // fakeReportService records calls to verify the full report lifecycle in mock mode.
 type fakeReportService struct {
-	lastModelReport  *model.Report
-	lastReportDTO    *dto.ReportDTO
-	createCalled     bool
-	succeedCalled    bool
-	failCalled       bool
-	fallbackCalled   bool
-	lastSummary      string
-	lastScore        *int
-	lastGrade        *string
+	lastModelReport    *model.Report
+	lastReportDTO      *dto.ReportDTO
+	createCalled       bool
+	succeedCalled      bool
+	failCalled         bool
+	fallbackCalled     bool
+	lastSummary        string
+	lastScore          *int
+	lastGrade          *string
 	lastGeneratedFiles []model.GeneratedFile
-	lastReportJSON   json.RawMessage
+	lastReportJSON     json.RawMessage
 }
 
 func newFakeReportService() *fakeReportService {
 	return &fakeReportService{}
 }
 
-func (f *fakeReportService) CreateProcessingReport(_ context.Context, toolType, title, inputMode string, inputData json.RawMessage) (*model.Report, error) {
+func (f *fakeReportService) CreateProcessingReport(_ context.Context, toolType, title, inputMode string, inputData json.RawMessage, parentReportID, projectID string) (*model.Report, error) {
 	f.createCalled = true
 	r := &model.Report{
 		ID:        "mock-report-" + toolType,
@@ -44,6 +44,12 @@ func (f *fakeReportService) CreateProcessingReport(_ context.Context, toolType, 
 		InputMode: inputMode,
 		Status:    model.StatusProcessing,
 		InputJSON: datatypes.JSON(inputData),
+	}
+	if parentReportID != "" {
+		r.ParentReportID = &parentReportID
+	}
+	if projectID != "" {
+		r.ProjectID = &projectID
 	}
 	f.lastModelReport = r
 	return r, nil
@@ -112,6 +118,30 @@ func (f *fakeReportService) GetDashboardStats(_ context.Context) (*dto.Dashboard
 	return &dto.DashboardStatsDTO{}, nil
 }
 
+func (f *fakeReportService) ValidateParentReport(_ context.Context, toolType, parentReportID string) (*model.Report, error) {
+	if parentReportID == "" {
+		return nil, nil
+	}
+	// For testing, always return a valid parent report with matching tool type
+	return &model.Report{
+		ID:       parentReportID,
+		ToolType: toolType,
+		Title:    "Parent Report",
+		Status:   model.StatusSucceeded,
+	}, nil
+}
+
+func (f *fakeReportService) ResolveProject(_ context.Context, projectID string) (*model.Project, error) {
+	if projectID == "" {
+		return nil, nil
+	}
+	return &model.Project{ID: projectID, Name: "Test Project", FrontendStack: "Vue", BackendStack: "Go"}, nil
+}
+
+func (f *fakeReportService) CompareReports(_ context.Context, _, _ string) (*dto.ReportCompareDTO, error) {
+	return &dto.ReportCompareDTO{}, nil
+}
+
 var _ service.ReportService = (*fakeReportService)(nil)
 
 func TestMockMode_AgentConfig_EndToEnd(t *testing.T) {
@@ -162,10 +192,10 @@ func TestMockMode_DBSchema_EndToEnd(t *testing.T) {
 	defer cancel()
 
 	req := dto.DBSchemaRequest{
-		Title:          "Mock DB Schema E2E",
-		SchemaType:     "review",
-		DatabaseType:   "MySQL",
-		SchemaContent:  "CREATE TABLE users (id INT PRIMARY KEY);",
+		Title:           "Mock DB Schema E2E",
+		SchemaType:      "review",
+		DatabaseType:    "MySQL",
+		SchemaContent:   "CREATE TABLE users (id INT PRIMARY KEY);",
 		BusinessContext: "E-commerce",
 	}
 
@@ -239,12 +269,12 @@ func TestMockMode_ProjectDoctor_EndToEnd(t *testing.T) {
 	defer cancel()
 
 	input := ProjectDoctorFormInput{
-		Title:               "Mock Project Doctor E2E",
-		ProjectName:         "TestProject",
-		TechStack:           "Vue 3, Go, MySQL",
-		ProjectDescription:  "A full-stack web application",
-		AnalysisDepth:       "standard",
-		ProjectZip:          &multipart.FileHeader{
+		Title:              "Mock Project Doctor E2E",
+		ProjectName:        "TestProject",
+		TechStack:          "Vue 3, Go, MySQL",
+		ProjectDescription: "A full-stack web application",
+		AnalysisDepth:      "standard",
+		ProjectZip: &multipart.FileHeader{
 			Filename: "test.zip",
 			Header:   map[string][]string{"Content-Type": {"application/zip"}},
 			Size:     1024,
@@ -280,12 +310,12 @@ func TestMockMode_APIDoc_PasteMode_EndToEnd(t *testing.T) {
 	defer cancel()
 
 	input := APIDocFormInput{
-		Title:         "Mock API Doc E2E",
-		SourceType:    "code",
-		BackendStack:  "Go/Gin",
-		Code:          "// GET /api/users\nfunc ListUsers() {}",
+		Title:          "Mock API Doc E2E",
+		SourceType:     "code",
+		BackendStack:   "Go/Gin",
+		Code:           "// GET /api/users\nfunc ListUsers() {}",
 		APIDescription: "User management API",
-		OutputFormat:  "markdown",
+		OutputFormat:   "markdown",
 	}
 
 	report, err := svc.Run(ctx, input)

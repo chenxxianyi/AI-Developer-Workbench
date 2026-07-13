@@ -23,6 +23,7 @@ export interface ToolMeta {
 
 export interface UIReviewInput {
   title: string
+  project_id?: string
   review_mode: 'screenshot' | 'code' | 'screenshot_code'
   code_source?: 'paste' | 'project_zip'
   page_type?: string
@@ -35,6 +36,7 @@ export interface UIReviewInput {
 
 export interface ProjectDoctorInput {
   title: string
+  project_id?: string
   project_name: string
   tech_stack?: string
   project_description?: string
@@ -44,6 +46,7 @@ export interface ProjectDoctorInput {
 
 export interface AgentConfigInput {
   title: string
+  project_id?: string
   project_name: string
   project_type?: string
   frontend_stack?: string
@@ -52,10 +55,12 @@ export interface AgentConfigInput {
   ui_style?: string
   coding_preferences?: string
   strict_rules?: string
+  parent_report_id?: string
 }
 
 export interface APIDocInput {
   title: string
+  project_id?: string
   source_type: 'code' | 'project_zip' | 'manual'
   backend_stack?: string
   code?: string
@@ -66,9 +71,11 @@ export interface APIDocInput {
 
 export interface DBSchemaInput {
   title: string
+  project_id?: string
   schema_type: string
   database_type?: string
   business_context?: string
   schema_content: string
   target_goal?: string
+  parent_report_id?: string
 }

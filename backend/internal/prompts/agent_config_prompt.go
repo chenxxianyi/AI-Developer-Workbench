@@ -12,9 +12,12 @@ Output a JSON object with this exact structure:
     "BACKEND_ARCHITECTURE.md": "string - backend architecture doc (optional)"
   },
   "recommendations": ["string - actionable recommendations"],
+  "action_items": [
+    {"id": "stable-kebab-case-id", "title": "string", "priority": "high|medium|low", "effort": "small|medium|large", "category": "string", "reason": "string", "suggested_prompt": "string", "issue_title": "string", "issue_body": "string - Markdown"}
+  ],
   "codex_prompt": "string - prompt for generating additional files"
 }
-`
+` + ActionItemsPromptSchema
 
 // BuildAgentConfigPrompt creates the prompt for Agent Config Studio.
 func BuildAgentConfigPrompt(projectName, projectType, frontendStack, backendStack, database, uiStyle, codingPrefs, strictRules string) (string, string) {

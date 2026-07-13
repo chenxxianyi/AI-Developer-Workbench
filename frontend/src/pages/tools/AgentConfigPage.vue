@@ -3,23 +3,27 @@
  * Agent Config Studio Page
  * Generate AI agent configuration files
  */
-
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { runAgentConfig } from '@/api/tools'
+import { downloadReport } from '@/api/reports'
 import type { AgentConfigInput } from '@/types/tool'
 import type { Report, AgentConfigResult } from '@/types/report'
-import {
-  Bot,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  ArrowLeft,
-  Download,
-} from '@lucide/vue'
+import { Bot, Download } from '@lucide/vue'
+import ToolPageShell from '@/components/tool/ToolPageShell.vue'
+import ToolFormSection from '@/components/tool/ToolFormSection.vue'
+import ProjectPicker from '@/components/tool/ProjectPicker.vue'
+import RecommendationList from '@/components/report/RecommendationList.vue'
+import CodexPromptBox from '@/components/report/CodexPromptBox.vue'
+import GeneratedFilesPanel from '@/components/report/GeneratedFilesPanel.vue'
+import ActionItemsPanel from '@/components/report/ActionItemsPanel.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// Lineage: parent_report_id carried from a "re-run" action.
+const parentReportId = ref('')
+const projectId = ref('')
 
 // Form state
 const title = ref('')
@@ -36,6 +40,23 @@ const strictRules = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const result = ref<Report<AgentConfigResult> | null>(null)
+const exportError = ref<string | null>(null)
+
+// Prefill safe (text-only) fields from the query when re-running.
+onMounted(() => {
+  const q = route.query
+  parentReportId.value = typeof q.parent_report_id === 'string' ? q.parent_report_id : ''
+  projectId.value = typeof q.project_id === 'string' ? q.project_id : ''
+  if (typeof q.title === 'string') title.value = q.title
+  if (typeof q.project_name === 'string') projectName.value = q.project_name
+  if (typeof q.project_type === 'string') projectType.value = q.project_type
+  if (typeof q.frontend_stack === 'string') frontendStack.value = q.frontend_stack
+  if (typeof q.backend_stack === 'string') backendStack.value = q.backend_stack
+  if (typeof q.database === 'string') database.value = q.database
+  if (typeof q.ui_style === 'string') uiStyle.value = q.ui_style
+  if (typeof q.coding_preferences === 'string') codingPreferences.value = q.coding_preferences
+  if (typeof q.strict_rules === 'string') strictRules.value = q.strict_rules
+})
 
 // Submit
 async function handleSubmit() {
@@ -50,11 +71,13 @@ async function handleSubmit() {
 
   loading.value = true
   error.value = null
+  exportError.value = null
   result.value = null
 
   try {
     const payload: AgentConfigInput = {
       title: title.value,
+      project_id: projectId.value || undefined,
       project_name: projectName.value,
       project_type: projectType.value || undefined,
       frontend_stack: frontendStack.value || undefined,
@@ -63,6 +86,7 @@ async function handleSubmit() {
       ui_style: uiStyle.value || undefined,
       coding_preferences: codingPreferences.value || undefined,
       strict_rules: strictRules.value || undefined,
+      parent_report_id: parentReportId.value || undefined,
     }
 
     result.value = await runAgentConfig(payload) as unknown as Report<AgentConfigResult>
@@ -73,14 +97,14 @@ async function handleSubmit() {
   }
 }
 
-function downloadFile(filename: string) {
+async function exportMarkdown() {
   if (!result.value) return
-  window.open(`/api/reports/${result.value.id}/files/${filename}`, '_blank')
-}
-
-function exportMarkdown() {
-  if (!result.value) return
-  window.open(`/api/reports/${result.value.id}/export?format=markdown`, '_blank')
+  exportError.value = null
+  try {
+    await downloadReport(result.value.id)
+  } catch (err: any) {
+    exportError.value = err.message || '导出失败'
+  }
 }
 
 function resetForm() {
@@ -93,166 +117,219 @@ function resetForm() {
   uiStyle.value = ''
   codingPreferences.value = ''
   strictRules.value = ''
+  projectId.value = ''
   result.value = null
   error.value = null
+  exportError.value = null
 }
 
 const canSubmit = computed(() => title.value.trim() && projectName.value.trim())
+
+const reportData = computed(() => result.value?.report_data ?? null)
+
+function goBack() {
+  router.push('/dashboard')
+}
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="mb-6">
-      <button @click="router.push('/dashboard')" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-smooth mb-4">
-        <ArrowLeft :size="20" />
-        <span>返回工作台</span>
+  <ToolPageShell
+    :icon="Bot"
+    title="Agent 配置生成"
+    description="为项目生成 AI Agent 配置文件"
+    step-text="填写项目信息 → 生成配置 → 查看文件 → 下载"
+    accent="purple"
+    :loading="loading"
+    :error="error"
+    :can-submit="!!canSubmit"
+    submit-label="生成配置"
+    submitting-label="生成中..."
+    loading-hint="AI 正在生成配置..."
+    form-heading="项目配置"
+    result-heading="生成结果"
+    @submit="handleSubmit"
+    @back="goBack"
+  >
+    <template #form>
+      <ToolFormSection label="标题" required id-for="agent-config-title">
+        <input
+          id="agent-config-title"
+          v-model="title"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="输入配置标题..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="关联项目" optional id-for="agent-config-project" help-id="agent-config-project-help" help="选择后会保存报告归属，并把项目技术栈和规则作为上下文。">
+        <ProjectPicker v-model="projectId" input-id="agent-config-project" help-id="agent-config-project-help" />
+      </ToolFormSection>
+
+      <ToolFormSection label="项目名称" required id-for="agent-config-name">
+        <input
+          id="agent-config-name"
+          v-model="projectName"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: AI Workbench..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="项目类型" optional id-for="agent-config-type">
+        <input
+          id="agent-config-type"
+          v-model="projectType"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: fullstack, frontend, backend..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="前端技术栈" optional id-for="agent-config-frontend">
+        <input
+          id="agent-config-frontend"
+          v-model="frontendStack"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: Vue 3 + TypeScript + Vite..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="后端技术栈" optional id-for="agent-config-backend">
+        <input
+          id="agent-config-backend"
+          v-model="backendStack"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: Go + Gin + GORM..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="数据库" optional id-for="agent-config-database">
+        <input
+          id="agent-config-database"
+          v-model="database"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: MySQL, PostgreSQL..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="UI 风格" optional id-for="agent-config-ui">
+        <input
+          id="agent-config-ui"
+          v-model="uiStyle"
+          type="text"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          placeholder="如: Tailwind CSS, 简洁现代..."
+        />
+      </ToolFormSection>
+
+      <ToolFormSection label="编码偏好" optional id-for="agent-config-coding">
+        <textarea
+          id="agent-config-coding"
+          v-model="codingPreferences"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          rows="3"
+          placeholder="描述编码风格和偏好..."
+        ></textarea>
+      </ToolFormSection>
+
+      <ToolFormSection label="严格规则" optional id-for="agent-config-rules">
+        <textarea
+          id="agent-config-rules"
+          v-model="strictRules"
+          class="w-full px-4 py-2 bg-surface-muted border border-border/80 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500 focus:outline-none text-text-primary placeholder:text-text-muted"
+          rows="3"
+          placeholder="描述必须遵守的规则..."
+        ></textarea>
+      </ToolFormSection>
+    </template>
+
+    <template #actions>
+      <button
+        type="button"
+        class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-purple-500 focus:outline-none cursor-pointer"
+        @click="resetForm"
+      >
+        重置
       </button>
+    </template>
+
+    <template #empty>
+      <div class="py-12 text-center">
+        <Bot :size="48" class="text-text-muted mx-auto mb-4" />
+        <p class="text-text-secondary">填写项目信息后生成配置文件</p>
+      </div>
+    </template>
+
+    <template v-if="result" #result>
+      <!-- Non-scoring notice -->
+      <div class="mb-6 rounded-lg border border-border bg-surface p-5">
+        <h3 class="text-lg font-semibold text-text-primary mb-2">非评分型分析</h3>
+        <p class="text-sm text-text-muted">本工具不产生量化评分，请查看下方的生成文件、建议和行动项。</p>
+      </div>
+
+      <!-- Summary -->
+      <div class="mb-6 p-4 bg-surface-muted rounded-lg">
+        <p class="text-text-primary">{{ result.summary }}</p>
+      </div>
+
+      <!-- Generated Files Preview -->
+      <div v-if="reportData?.generated_files_content" class="mb-6 rounded-lg border border-border bg-surface p-5">
+        <h3 class="text-lg font-semibold text-text-primary mb-3">生成的配置文件预览</h3>
+        <div class="space-y-3">
+          <div v-for="(content, filename) in reportData.generated_files_content" :key="filename" class="p-3 bg-surface-muted rounded">
+            <span class="font-medium text-accent">{{ filename }}</span>
+            <pre class="text-text-secondary text-sm mt-2 overflow-x-auto whitespace-pre-wrap">{{ content.substring(0, 200) }}...</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Items -->
+      <ActionItemsPanel
+        v-if="reportData?.action_items?.length || reportData?.recommendations?.length"
+        :report-id="result.id"
+        :report-title="result.title"
+        :action-items="reportData?.action_items ?? []"
+        :recommendations="reportData?.recommendations ?? []"
+        class="mb-6"
+      />
+
+      <!-- Recommendations -->
+      <RecommendationList
+        v-if="reportData?.recommendations?.length"
+        :recommendations="reportData.recommendations"
+        class="mb-6"
+      />
+
+      <!-- Codex Prompt -->
+      <CodexPromptBox
+        v-if="reportData?.codex_prompt"
+        :prompt="reportData.codex_prompt"
+        class="mb-6"
+      />
+
+      <!-- Generated Files (download) -->
+      <GeneratedFilesPanel
+        v-if="result.generated_files?.length"
+        :files="result.generated_files"
+        :report-id="result.id"
+        class="mb-6"
+      />
+
+      <!-- Export -->
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-warning rounded-xl flex items-center justify-center">
-          <Bot :size="24" class="text-white" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-text-primary">Agent 配置生成</h1>
-          <p class="text-text-secondary">为项目生成 AI Agent 配置文件</p>
-        </div>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth focus-visible:ring-2 focus-visible:ring-purple-500 focus:outline-none"
+          @click="exportMarkdown"
+        >
+          <Download :size="18" />
+          <span>导出 Markdown</span>
+        </button>
+        <span v-if="exportError" class="text-sm text-danger">{{ exportError }}</span>
       </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Input Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">项目配置</h2>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">标题 *</label>
-          <input v-model="title" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="输入配置标题..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">项目名称 *</label>
-          <input v-model="projectName" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: AI Workbench..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">项目类型</label>
-          <input v-model="projectType" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: fullstack, frontend, backend..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">前端技术栈</label>
-          <input v-model="frontendStack" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: Vue 3 + TypeScript + Vite..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">后端技术栈</label>
-          <input v-model="backendStack" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: Go + Gin + GORM..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">数据库</label>
-          <input v-model="database" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: MySQL, PostgreSQL..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">UI 风格</label>
-          <input v-model="uiStyle" type="text" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" placeholder="如: Tailwind CSS, 简洁现代..." />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">编码偏好</label>
-          <textarea v-model="codingPreferences" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" rows="3" placeholder="描述编码风格和偏好..."></textarea>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-text-secondary mb-2">严格规则</label>
-          <textarea v-model="strictRules" class="w-full px-4 py-2 bg-surface-muted border border-border rounded-lg focus:border-accent focus:outline-none" rows="3" placeholder="描述必须遵守的规则..."></textarea>
-        </div>
-
-        <!-- Error -->
-        <div v-if="error" class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-          <div class="flex items-center gap-2">
-            <AlertCircle :size="18" class="text-danger" />
-            <span class="text-danger">{{ error }}</span>
-          </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="flex gap-3">
-          <button @click="handleSubmit" :disabled="loading || !canSubmit" :class="['flex items-center gap-2 px-6 py-2 rounded-lg transition-smooth', loading || !canSubmit ? 'bg-surface-muted text-text-muted cursor-not-allowed' : 'bg-warning text-white hover:bg-warning/80']">
-            <Loader2 v-if="loading" :size="18" class="animate-spin" />
-            <Bot v-else :size="18" />
-            <span>{{ loading ? '生成中...' : '生成配置' }}</span>
-          </button>
-          <button @click="resetForm" class="px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth">重置</button>
-        </div>
-      </div>
-
-      <!-- Result Panel -->
-      <div class="bg-surface border border-border rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">生成结果</h2>
-
-        <div v-if="!result && !loading" class="text-center py-12">
-          <Bot :size="48" class="text-text-muted mx-auto mb-4" />
-          <p class="text-text-secondary">填写项目信息后生成配置文件</p>
-        </div>
-
-        <div v-if="loading" class="text-center py-12">
-          <Loader2 :size="48" class="text-accent mx-auto mb-4 animate-spin" />
-          <p class="text-text-secondary">AI 正在生成配置...</p>
-        </div>
-
-        <div v-if="result && !loading">
-          <!-- Summary -->
-          <div class="mb-6 p-4 bg-surface-muted rounded-lg">
-            <p class="text-text-primary">{{ result.summary }}</p>
-          </div>
-
-          <!-- Generated Files -->
-          <div v-if="result.report_data?.generated_files_content" class="mb-6">
-            <h3 class="text-md font-semibold text-text-primary mb-3">生成的配置文件</h3>
-            <div class="space-y-3">
-              <div v-for="(content, filename) in result.report_data.generated_files_content" :key="filename" class="p-3 bg-surface-muted rounded">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="font-medium text-accent">{{ filename }}</span>
-                  <button @click="downloadFile(filename)" class="flex items-center gap-1 px-2 py-1 bg-accent-soft text-accent rounded hover:bg-accent hover:text-white transition-smooth text-sm">
-                    <Download :size="14" />
-                    <span>下载</span>
-                  </button>
-                </div>
-                <pre class="text-text-secondary text-sm overflow-x-auto whitespace-pre-wrap">{{ content.substring(0, 200) }}...</pre>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recommendations -->
-          <div v-if="result.report_data?.recommendations?.length" class="mb-6">
-            <h3 class="text-md font-semibold text-text-primary mb-3">建议</h3>
-            <ul class="space-y-1">
-              <li v-for="(rec, idx) in result.report_data.recommendations" :key="idx" class="flex items-start gap-2 text-text-secondary">
-                <CheckCircle2 :size="14" class="text-success mt-1" />
-                <span class="text-sm">{{ rec }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Download All -->
-          <div v-if="result.generated_files?.length" class="mb-4">
-            <h3 class="text-md font-semibold text-text-primary mb-2">下载全部文件</h3>
-            <div class="flex gap-2">
-              <button v-for="file in result.generated_files" :key="file.id" @click="downloadFile(file.filename)" class="flex items-center gap-1 px-3 py-1 bg-accent-soft text-accent rounded hover:bg-accent hover:text-white transition-smooth text-sm">
-                <FileText :size="14" />
-                <span>{{ file.filename }}</span>
-              </button>
-            </div>
-          </div>
-
-          <button @click="exportMarkdown" class="flex items-center gap-2 px-4 py-2 bg-surface-muted text-text-secondary rounded-lg hover:bg-border transition-smooth">
-            <Download :size="18" />
-            <span>导出 Markdown</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    </template>
+  </ToolPageShell>
 </template>

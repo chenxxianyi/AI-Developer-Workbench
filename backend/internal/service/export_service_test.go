@@ -29,6 +29,9 @@ func (s *stubReportRepo) Delete(_ context.Context, _ *gorm.DB, _ string) error {
 func (s *stubReportRepo) GetDashboardStats(_ context.Context) (*dto.DashboardStatsDTO, error) {
 	return &dto.DashboardStatsDTO{}, nil
 }
+func (s *stubReportRepo) GetRecentScoredReports(_ context.Context, _ interface{}) ([]model.Report, error) {
+	return nil, nil
+}
 
 // stubFileRepo implements repository.GeneratedFileRepository for export tests.
 type stubFileRepo struct {

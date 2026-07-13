@@ -1,0 +1,5 @@
+// @vitest-environment jsdom
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+import ScreenshotAnnotation from './ScreenshotAnnotation.vue'
+describe('ScreenshotAnnotation', () => { it('renders only annotations for its viewport', () => { vi.stubGlobal('URL', { createObjectURL: () => 'blob:test', revokeObjectURL: vi.fn() }); const wrapper=mount(ScreenshotAnnotation,{props:{file:new File(['x'],'desktop.png',{type:'image/png'}),viewport:'desktop',viewportLabel:'1440x900',issues:[{title:'Desktop issue',severity:'high',category:'layout',problem:'x',suggestion:'y',action:'z',viewport:'desktop',region:{x:10,y:20,width:30,height:15}},{title:'Mobile issue',severity:'low',category:'layout',problem:'x',suggestion:'y',action:'z',viewport:'mobile',region:{x:1,y:2,width:3,height:4}}]}}); expect(wrapper.text()).toContain('Desktop issue'); expect(wrapper.text()).not.toContain('Mobile issue'); expect(wrapper.get('[aria-label="1. Desktop issue"]').attributes('style')).toContain('left: 10%') }) })

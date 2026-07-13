@@ -15,9 +15,12 @@ Output a JSON object with this exact structure:
   "markdown_content": "string - full Markdown documentation",
   "openapi_content": "string - OpenAPI 3.0 JSON (if requested)",
   "recommendations": ["string - recommendations"],
+  "action_items": [
+    {"id": "stable-kebab-case-id", "title": "string", "priority": "high|medium|low", "effort": "small|medium|large", "category": "string", "reason": "string", "suggested_prompt": "string", "issue_title": "string", "issue_body": "string - Markdown"}
+  ],
   "codex_prompt": "string - prompt for generating implementation stubs"
 }
-`
+` + ActionItemsPromptSchema
 
 // BuildAPIDocPrompt creates the prompt for API Doc Builder.
 func BuildAPIDocPrompt(sourceType, backendStack, code, apiDescription, outputFormat string, projectSummary string) (string, string) {

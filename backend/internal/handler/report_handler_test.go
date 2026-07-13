@@ -24,7 +24,7 @@ type stubReportService struct {
 
 var _ service.ReportService = (*stubReportService)(nil)
 
-func (s *stubReportService) CreateProcessingReport(_ context.Context, _, _, _ string, _ json.RawMessage) (*model.Report, error) {
+func (s *stubReportService) CreateProcessingReport(_ context.Context, _, _, _ string, _ json.RawMessage, _, _ string) (*model.Report, error) {
 	return &model.Report{}, nil
 }
 func (s *stubReportService) SucceedReport(_ context.Context, _ string, _ json.RawMessage, _ string, _ *int, _ *string, _ []model.GeneratedFile) (*dto.ReportDTO, error) {
@@ -44,6 +44,15 @@ func (s *stubReportService) ListReports(_ context.Context, query dto.ListReports
 func (s *stubReportService) DeleteReport(_ context.Context, _ string) error { return nil }
 func (s *stubReportService) GetDashboardStats(_ context.Context) (*dto.DashboardStatsDTO, error) {
 	return &dto.DashboardStatsDTO{}, nil
+}
+func (s *stubReportService) ValidateParentReport(_ context.Context, _, _ string) (*model.Report, error) {
+	return nil, nil
+}
+func (s *stubReportService) ResolveProject(_ context.Context, _ string) (*model.Project, error) {
+	return nil, nil
+}
+func (s *stubReportService) CompareReports(_ context.Context, _, _ string) (*dto.ReportCompareDTO, error) {
+	return &dto.ReportCompareDTO{}, nil
 }
 
 func TestListReports_PassesStatusParameter(t *testing.T) {

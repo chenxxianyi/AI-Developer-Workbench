@@ -11,9 +11,12 @@ Output a JSON object with this exact structure:
     {"title": "string", "severity": "high|medium|low", "category": "string", "problem": "string", "suggestion": "string", "action": "string"}
   ],
   "recommendations": ["string - actionable recommendations"],
+  "action_items": [
+    {"id": "stable-kebab-case-id", "title": "string", "priority": "high|medium|low", "effort": "small|medium|large", "category": "string", "reason": "string", "suggested_prompt": "string", "issue_title": "string", "issue_body": "string - Markdown"}
+  ],
   "codex_prompt": "string - prompt for generating fixes"
 }
-`
+` + ActionItemsPromptSchema
 
 // BuildProjectDoctorPrompt creates the prompt for Project Doctor.
 func BuildProjectDoctorPrompt(projectName, techStack, projectDescription, analysisDepth string, projectSummary string) (string, string) {

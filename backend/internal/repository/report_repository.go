@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"ai-developer-workbench/internal/dto"
 	"ai-developer-workbench/internal/model"
@@ -18,6 +20,10 @@ type ReportRepository interface {
 	List(ctx context.Context, query dto.ListReportsQuery) ([]model.Report, int64, error)
 	Delete(ctx context.Context, tx *gorm.DB, id string) error
 	GetDashboardStats(ctx context.Context) (*dto.DashboardStatsDTO, error)
+	// GetRecentScoredReports returns reports created since `since` that have a
+	// non-null total_score, ordered by created_at asc. Used by the service to
+	// compute high-severity issue counts and the weekly summary.
+	GetRecentScoredReports(ctx context.Context, since interface{}) ([]model.Report, error)
 }
 
 type reportRepository struct {
@@ -98,7 +104,8 @@ func (r *reportRepository) Delete(ctx context.Context, tx *gorm.DB, id string) e
 	return db.WithContext(ctx).Delete(&model.Report{}, "id = ?", id).Error
 }
 
-// GetDashboardStats retrieves aggregated dashboard statistics.
+// GetDashboardStats retrieves aggregated dashboard statistics, including a
+// 30-day quality trend (daily buckets) and a weekly summary.
 func (r *reportRepository) GetDashboardStats(ctx context.Context) (*dto.DashboardStatsDTO, error) {
 	stats := &dto.DashboardStatsDTO{
 		ToolUsage: make(map[string]int64),
@@ -163,7 +170,147 @@ func (r *reportRepository) GetDashboardStats(ctx context.Context) (*dto.Dashboar
 		})
 	}
 
+	// 30-day quality trend (daily buckets, UTC). We fetch all reports in the
+	// window and aggregate in Go because high-severity issue counts live
+	// inside report_json, which is not cleanly aggregatable in SQL.
+	now := time.Now().UTC()
+	since30 := now.AddDate(0, 0, -30)
+	windowReports, err := r.GetRecentScoredReports(ctx, since30)
+	if err != nil {
+		return nil, err
+	}
+	stats.QualityTrend = buildQualityTrend(windowReports, since30, now)
+
+	// Weekly summary (last 7 days, UTC). Reuses the 30-day fetch to avoid a
+	// second query; we filter to the last 7 days in Go.
+	since7 := now.AddDate(0, 0, -7)
+	weeklyReports := filterReportsSince(windowReports, since7)
+	stats.WeeklyStats = buildWeeklyStats(weeklyReports)
+
 	return stats, nil
+}
+
+// buildQualityTrend aggregates reports into daily buckets [since, now].
+func buildQualityTrend(reports []model.Report, since, now time.Time) []dto.QualityTrendPointDTO {
+	// Bucket by YYYY-MM-DD (UTC day start).
+	buckets := make(map[string][]model.Report)
+	for _, rp := range reports {
+		day := rp.CreatedAt.UTC().Format("2006-01-02")
+		buckets[day] = append(buckets[day], rp)
+	}
+
+	// Build a contiguous list of days from `since` to `now` (inclusive).
+	var trend []dto.QualityTrendPointDTO
+	for d := truncateToDay(since); !d.After(truncateToDay(now)); d = d.AddDate(0, 0, 1) {
+		key := d.Format("2006-01-02")
+		dayReports := buckets[key]
+		point := dto.QualityTrendPointDTO{
+			Bucket:       key,
+			ReportCount:  int64(len(dayReports)),
+			AverageScore: nil,
+		}
+		var sum int
+		count := 0
+		for _, rp := range dayReports {
+			if rp.TotalScore != nil {
+				sum += *rp.TotalScore
+				count++
+			}
+		}
+		if count > 0 {
+			avg := float64(sum) / float64(count)
+			point.AverageScore = &avg
+		}
+		point.HighSeverityCount = countHighSeverity(dayReports)
+		trend = append(trend, point)
+	}
+	return trend
+}
+
+// buildWeeklyStats computes the 7-day summary from pre-fetched reports.
+func buildWeeklyStats(reports []model.Report) *dto.WeeklyStatsDTO {
+	w := &dto.WeeklyStatsDTO{
+		ReportCountThisWeek: int64(len(reports)),
+	}
+	if len(reports) == 0 {
+		return w
+	}
+	var sum int
+	scoredCount := 0
+	toolCounts := make(map[string]int64)
+	for _, rp := range reports {
+		if rp.TotalScore != nil {
+			sum += *rp.TotalScore
+			scoredCount++
+		}
+		toolCounts[rp.ToolType]++
+	}
+	if scoredCount > 0 {
+		avg := float64(sum) / float64(scoredCount)
+		w.AverageScoreThisWeek = &avg
+	}
+	w.HighSeverityCountThisWeek = countHighSeverity(reports)
+	// Most used tool this week.
+	var bestTool string
+	var bestCount int64
+	for tool, c := range toolCounts {
+		if c > bestCount {
+			bestTool = tool
+			bestCount = c
+		}
+	}
+	w.MostUsedToolThisWeek = bestTool
+	return w
+}
+
+// countHighSeverity counts issues with severity "high" across reports' ReportJSON.
+func countHighSeverity(reports []model.Report) int64 {
+	var total int64
+	for _, rp := range reports {
+		var probe struct {
+			Issues []struct {
+				Severity string `json:"severity"`
+			} `json:"issues"`
+		}
+		if err := json.Unmarshal(rp.ReportJSON, &probe); err != nil {
+			continue
+		}
+		for _, it := range probe.Issues {
+			if it.Severity == "high" {
+				total++
+			}
+		}
+	}
+	return total
+}
+
+// filterReportsSince returns reports with created_at >= since.
+func filterReportsSince(reports []model.Report, since time.Time) []model.Report {
+	var out []model.Report
+	for _, rp := range reports {
+		if !rp.CreatedAt.Before(since) {
+			out = append(out, rp)
+		}
+	}
+	return out
+}
+
+// truncateToDay returns t truncated to the start of its UTC day.
+func truncateToDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+// GetRecentScoredReports returns reports created since `since` that have a
+// non-null total_score, ordered by created_at asc.
+func (r *reportRepository) GetRecentScoredReports(ctx context.Context, since interface{}) ([]model.Report, error) {
+	var reports []model.Report
+	if err := r.db.WithContext(ctx).
+		Where("created_at >= ? AND total_score IS NOT NULL", since).
+		Order("created_at ASC").
+		Find(&reports).Error; err != nil {
+		return nil, fmt.Errorf("failed to get recent scored reports: %w", err)
+	}
+	return reports, nil
 }
 
 // getDB returns the transaction DB if provided, otherwise the default DB.

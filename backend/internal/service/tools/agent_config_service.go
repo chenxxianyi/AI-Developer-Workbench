@@ -29,19 +29,29 @@ func NewAgentConfigService(aiService service.AIService, reportService service.Re
 
 // Run executes the Agent Config Studio tool.
 func (s *AgentConfigService) Run(ctx context.Context, req dto.AgentConfigRequest) (*dto.ReportDTO, error) {
+	if req.ParentReportID != "" {
+		if _, err := s.reportService.ValidateParentReport(ctx, model.ToolTypeAgentConfig, req.ParentReportID); err != nil {
+			return nil, fmt.Errorf("invalid parent report: %w", err)
+		}
+	}
+	project, err := s.reportService.ResolveProject(ctx, req.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid project: %w", err)
+	}
 	// 1. Create processing report.
 	inputData, _ := json.Marshal(req)
-	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeAgentConfig, req.Title, "json", inputData)
+	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeAgentConfig, req.Title, "json", inputData, req.ParentReportID, req.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create report: %w", err)
 	}
 
-	// 2. Build prompt.
+	// 2. Build prompt. Redact secrets in free-text fields before reaching the AI.
 	systemPrompt, userPrompt := prompts.BuildAgentConfigPrompt(
 		req.ProjectName, req.ProjectType, req.FrontendStack,
 		req.BackendStack, req.Database, req.UIStyle,
-		req.CodingPreferences, req.StrictRules,
+		util.RedactText(req.CodingPreferences), util.RedactText(req.StrictRules),
 	)
+	userPrompt = prompts.AppendTrustedProjectContext(userPrompt, project)
 
 	// 3. Call AI service.
 	aiResult, err := s.aiService.GenerateJSON(ctx, service.AIRequest{
@@ -87,6 +97,7 @@ func (s *AgentConfigService) normalizeResult(result *dto.AgentConfigResult) {
 	if result.GeneratedFilesContent == nil {
 		result.GeneratedFilesContent = map[string]string{}
 	}
+	result.ActionItems = dto.NormalizeActionItems(result.ActionItems)
 	// Validate filenames.
 	for filename := range result.GeneratedFilesContent {
 		if !util.IsAllowedGeneratedFilename(filename) {

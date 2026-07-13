@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"ai-developer-workbench/internal/config"
@@ -17,12 +19,12 @@ import (
 
 // OpenAICompatibleService calls OpenAI-compatible Chat Completions API.
 type OpenAICompatibleService struct {
-	baseURL    string
-	apiKey     string
-	model      string
+	baseURL     string
+	apiKey      string
+	model       string
 	visionModel string
-	httpClient *http.Client
-	maxRetries int
+	httpClient  *http.Client
+	maxRetries  int
 }
 
 // NewOpenAICompatibleService creates a new OpenAI-compatible service.
@@ -42,9 +44,9 @@ func NewOpenAICompatibleService(cfg *config.AIConfig) *OpenAICompatibleService {
 
 // chatRequest represents an OpenAI Chat Completions request.
 type chatRequest struct {
-	Model         string        `json:"model"`
-	Messages      []chatMessage `json:"messages"`
-	Temperature   float64       `json:"temperature,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []chatMessage   `json:"messages"`
+	Temperature    float64         `json:"temperature,omitempty"`
 	ResponseFormat *responseFormat `json:"response_format,omitempty"`
 }
 
@@ -79,9 +81,13 @@ func (s *OpenAICompatibleService) GenerateJSON(ctx context.Context, input AIRequ
 	}
 
 	// Build user message content.
-	if input.NeedVision && input.ImagePath != "" {
+	imagePaths := input.ImagePaths
+	if len(imagePaths) == 0 && input.ImagePath != "" {
+		imagePaths = []string{input.ImagePath}
+	}
+	if input.NeedVision && len(imagePaths) > 0 {
 		model = s.visionModel
-		imageContent, err := s.buildVisionContent(input.UserPrompt, input.ImagePath)
+		imageContent, err := s.buildVisionContent(input.UserPrompt, imagePaths)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build vision content: %w", err)
 		}
@@ -91,9 +97,9 @@ func (s *OpenAICompatibleService) GenerateJSON(ctx context.Context, input AIRequ
 	}
 
 	reqBody := chatRequest{
-		Model:       model,
-		Messages:    messages,
-		Temperature: 0.3,
+		Model:          model,
+		Messages:       messages,
+		Temperature:    0.3,
 		ResponseFormat: &responseFormat{Type: "json_object"},
 	}
 
@@ -180,32 +186,30 @@ func (s *OpenAICompatibleService) doRequest(ctx context.Context, body []byte, mo
 }
 
 // buildVisionContent builds the message content for vision requests.
-func (s *OpenAICompatibleService) buildVisionContent(prompt, imagePath string) ([]interface{}, error) {
-	imgData, err := os.ReadFile(imagePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read image: %w", err)
+func (s *OpenAICompatibleService) buildVisionContent(prompt string, imagePaths []string) ([]interface{}, error) {
+	content := []interface{}{map[string]interface{}{"type": "text", "text": prompt}}
+	for _, imagePath := range imagePaths {
+		imgData, err := os.ReadFile(imagePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read image: %w", err)
+		}
+		if len(imgData) > 20*1024*1024 {
+			return nil, fmt.Errorf("image too large for vision API")
+		}
+		mimeType := "image/png"
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+		case ".jpg", ".jpeg":
+			mimeType = "image/jpeg"
+		case ".webp":
+			mimeType = "image/webp"
+		}
+		dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(imgData))
+		content = append(content, map[string]interface{}{
+			"type":      "image_url",
+			"image_url": map[string]interface{}{"url": dataURL},
+		})
 	}
-
-	// Limit image size to 20MB.
-	if len(imgData) > 20*1024*1024 {
-		return nil, fmt.Errorf("image too large for vision API")
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(imgData)
-	dataURL := fmt.Sprintf("data:image/png;base64,%s", encoded)
-
-	return []interface{}{
-		map[string]interface{}{
-			"type": "text",
-			"text": prompt,
-		},
-		map[string]interface{}{
-			"type": "image_url",
-			"image_url": map[string]interface{}{
-				"url": dataURL,
-			},
-		},
-	}, nil
+	return content, nil
 }
 
 // retryableError indicates an error that can be retried.

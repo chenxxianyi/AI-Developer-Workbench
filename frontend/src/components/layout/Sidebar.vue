@@ -19,6 +19,7 @@ import {
   FileStack,
   Settings,
   CheckCircle2,
+  FolderKanban,
   X,
 } from '@lucide/vue'
 
@@ -94,6 +95,37 @@ const providerInfo = computed(() => systemStore.providerInfo)
           <span>工作台</span>
         </RouterLink>
 
+        <RouterLink
+          to="/projects"
+          :class="[
+            'flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth',
+            isActive('/projects')
+              ? 'bg-accent-soft text-accent font-medium'
+              : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary',
+          ]"
+        >
+          <FolderKanban :size="20" />
+          <span>项目</span>
+        </RouterLink>
+
+        <!-- Reports Section -->
+        <div class="mt-6 mb-2 px-3">
+          <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告管理</span>
+        </div>
+
+        <RouterLink
+          to="/reports"
+          :class="[
+            'flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth',
+            isActive('/reports')
+              ? 'bg-accent-soft text-accent font-medium'
+              : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary',
+          ]"
+        >
+          <FileStack :size="20" />
+          <span>历史报告</span>
+        </RouterLink>
+
         <!-- Tools Section -->
         <div class="mt-6 mb-2 px-3">
           <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">分析工具</span>
@@ -167,24 +199,6 @@ const providerInfo = computed(() => systemStore.providerInfo)
         >
           <Database :size="20" />
           <span>数据库审查</span>
-        </RouterLink>
-
-        <!-- Reports Section -->
-        <div class="mt-6 mb-2 px-3">
-          <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告管理</span>
-        </div>
-
-        <RouterLink
-          to="/reports"
-          :class="[
-            'flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth',
-            isActive('/reports')
-              ? 'bg-accent-soft text-accent font-medium'
-              : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary',
-          ]"
-        >
-          <FileStack :size="20" />
-          <span>历史报告</span>
         </RouterLink>
 
         <!-- System Section -->
@@ -272,6 +286,28 @@ const providerInfo = computed(() => systemStore.providerInfo)
           <span>工作台</span>
         </RouterLink>
 
+        <RouterLink
+          to="/projects"
+          @click="emit('close')"
+          class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg"
+        >
+          <FolderKanban :size="20" />
+          <span>项目</span>
+        </RouterLink>
+
+        <div class="mt-6 mb-2 px-3">
+          <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告管理</span>
+        </div>
+
+        <RouterLink
+          to="/reports"
+          @click="emit('close')"
+          class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg"
+        >
+          <FileStack :size="20" />
+          <span>历史报告</span>
+        </RouterLink>
+
         <div class="mt-6 mb-2 px-3">
           <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">分析工具</span>
         </div>
@@ -319,19 +355,6 @@ const providerInfo = computed(() => systemStore.providerInfo)
         >
           <Database :size="20" />
           <span>数据库审查</span>
-        </RouterLink>
-
-        <div class="mt-6 mb-2 px-3">
-          <span class="text-sm font-semibold text-text-muted uppercase tracking-wide">报告管理</span>
-        </div>
-
-        <RouterLink
-          to="/reports"
-          @click="emit('close')"
-          class="flex items-center gap-3 px-3 py-2 text-text-secondary hover:bg-surface-muted rounded-lg"
-        >
-          <FileStack :size="20" />
-          <span>历史报告</span>
         </RouterLink>
 
         <div class="mt-6 mb-2 px-3">

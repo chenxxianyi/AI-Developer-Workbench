@@ -59,13 +59,30 @@ type mockScoreItem struct {
 	Comment  string `json:"comment"`
 }
 
+type mockIssueRegion struct{ X, Y, Width, Height float64 }
 type mockIssueItem struct {
-	Title      string `json:"title"`
-	Severity   string `json:"severity"`
-	Category   string `json:"category"`
-	Problem    string `json:"problem"`
-	Suggestion string `json:"suggestion"`
-	Action     string `json:"action"`
+	Title              string           `json:"title"`
+	Severity           string           `json:"severity"`
+	Category           string           `json:"category"`
+	Problem            string           `json:"problem"`
+	Suggestion         string           `json:"suggestion"`
+	Action             string           `json:"action"`
+	Viewport           string           `json:"viewport,omitempty"`
+	Region             *mockIssueRegion `json:"region,omitempty"`
+	ContrastSuggestion string           `json:"contrast_suggestion,omitempty"`
+	ComponentPrompt    string           `json:"component_prompt,omitempty"`
+}
+
+type mockActionItem struct {
+	ID              string `json:"id"`
+	Title           string `json:"title"`
+	Priority        string `json:"priority"`
+	Effort          string `json:"effort"`
+	Category        string `json:"category"`
+	Reason          string `json:"reason"`
+	SuggestedPrompt string `json:"suggested_prompt"`
+	IssueTitle      string `json:"issue_title"`
+	IssueBody       string `json:"issue_body"`
 }
 
 type mockEndpointItem struct {
@@ -83,6 +100,7 @@ type mockModuleItem struct {
 
 func (s *MockAIService) mockUIReviewData() interface{} {
 	return map[string]interface{}{
+		"screenshot_contexts": []map[string]string{{"kind": "desktop", "viewport": "1440x900"}, {"kind": "mobile", "viewport": "390x844"}},
 		"scores": []mockScoreItem{
 			{Name: "视觉层级", Score: 78, MaxScore: 100, Comment: "整体层级清晰，但部分区域间距不一致。"},
 			{Name: "一致性", Score: 82, MaxScore: 100, Comment: "按钮和表单风格统一，但图标风格有轻微差异。"},
@@ -92,27 +110,29 @@ func (s *MockAIService) mockUIReviewData() interface{} {
 		"issues": []mockIssueItem{
 			{
 				Title: "移动端导航栏横向溢出", Severity: "high", Category: "responsive",
-				Problem: "在 320px 宽度下导航栏出现横向滚动条。",
+				Problem:    "在 320px 宽度下导航栏出现横向滚动条。",
 				Suggestion: "将导航链接改为汉堡菜单或使用 flex-wrap。",
-				Action: "检查并修复导航栏在移动端的布局。",
+				Action:     "检查并修复导航栏在移动端的布局。",
+				Viewport:   "mobile", Region: &mockIssueRegion{X: 5, Y: 2, Width: 90, Height: 12},
+				ComponentPrompt: "Update the navigation component to collapse below 640px and preserve keyboard focus.",
 			},
 			{
 				Title: "上传按钮缺少键盘支持", Severity: "high", Category: "accessibility",
-				Problem: "文件上传区域仅响应点击事件，键盘用户无法使用。",
+				Problem:    "文件上传区域仅响应点击事件，键盘用户无法使用。",
 				Suggestion: "添加 Enter/Space 事件处理和 aria-label。",
-				Action: "为上传区域添加键盘事件和 ARIA 属性。",
+				Action:     "为上传区域添加键盘事件和 ARIA 属性。",
 			},
 			{
 				Title: "评分文字颜色对比度不足", Severity: "medium", Category: "contrast",
-				Problem: "浅灰色文字在白色背景上对比度仅 2.3:1。",
+				Problem:    "浅灰色文字在白色背景上对比度仅 2.3:1。",
 				Suggestion: "将文字颜色改为 #555 或更深的灰色。",
-				Action: "调整评分文字颜色以符合 WCAG AA 标准。",
+				Action:     "调整评分文字颜色以符合 WCAG AA 标准。",
 			},
 			{
 				Title: "表单字段缺少 label 关联", Severity: "medium", Category: "form",
-				Problem: "部分输入框使用 placeholder 代替 label，屏幕阅读器无法识别。",
+				Problem:    "部分输入框使用 placeholder 代替 label，屏幕阅读器无法识别。",
 				Suggestion: "为每个输入框添加显式 label 元素。",
-				Action: "为所有表单字段添加 label 和 htmlFor 关联。",
+				Action:     "为所有表单字段添加 label 和 htmlFor 关联。",
 			},
 		},
 		"recommendations": []string{
@@ -120,6 +140,7 @@ func (s *MockAIService) mockUIReviewData() interface{} {
 			"为移动端导航实现汉堡菜单。",
 			"补充所有交互元素的 aria-label。",
 		},
+		"action_items": mockActionItems("ui-review", "accessibility", "UI 审查"),
 		"codex_prompt": "请修复 UIReviewPage 中的可访问性问题：1) 上传区域增加键盘 Enter/Space 触发；2) 所有表单字段添加显式 label；3) 移动端导航栏改为汉堡菜单。",
 	}
 }
@@ -137,27 +158,27 @@ func (s *MockAIService) mockProjectDoctorData() interface{} {
 		"issues": []mockIssueItem{
 			{
 				Title: "缺少 README 文档", Severity: "high", Category: "documentation",
-				Problem: "项目中没有 README.md，新人无法快速了解项目。",
+				Problem:    "项目中没有 README.md，新人无法快速了解项目。",
 				Suggestion: "创建 README.md，包含项目简介、安装步骤和开发指南。",
-				Action: "编写完整的 README.md。",
+				Action:     "编写完整的 README.md。",
 			},
 			{
 				Title: "测试覆盖率不足", Severity: "high", Category: "testing",
-				Problem: "仅有一个单元测试文件，核心业务逻辑未覆盖。",
+				Problem:    "仅有一个单元测试文件，核心业务逻辑未覆盖。",
 				Suggestion: "为关键模块添加单元测试和集成测试。",
-				Action: "补充测试用例，目标行覆盖率 > 60%。",
+				Action:     "补充测试用例，目标行覆盖率 > 60%。",
 			},
 			{
 				Title: "硬编码配置", Severity: "medium", Category: "config",
-				Problem: "数据库连接和 API Key 等配置硬编码在代码中。",
+				Problem:    "数据库连接和 API Key 等配置硬编码在代码中。",
 				Suggestion: "使用环境变量或配置文件管理所有配置。",
-				Action: "将所有硬编码配置迁移到 .env 文件。",
+				Action:     "将所有硬编码配置迁移到 .env 文件。",
 			},
 			{
 				Title: "缺少 Docker Compose", Severity: "medium", Category: "deploy",
-				Problem: "仅有 Dockerfile，没有 docker-compose.yml。",
+				Problem:    "仅有 Dockerfile，没有 docker-compose.yml。",
 				Suggestion: "创建 docker-compose.yml 编排前后端和数据库。",
-				Action: "编写 docker-compose.yml 并验证一键启动。",
+				Action:     "编写 docker-compose.yml 并验证一键启动。",
 			},
 		},
 		"recommendations": []string{
@@ -165,6 +186,7 @@ func (s *MockAIService) mockProjectDoctorData() interface{} {
 			"提取所有硬编码配置到环境变量。",
 			"为关键路径添加测试。",
 		},
+		"action_items": mockActionItems("project-doctor", "project-health", "项目诊断"),
 		"codex_prompt": "请修复项目的以下问题：1) 创建 README.md 包含项目介绍、安装和开发指南；2) 创建 AGENTS.md 提供 AI Coding 工具使用说明；3) 将所有硬编码配置迁移到环境变量。",
 	}
 }
@@ -244,6 +266,7 @@ frontend/  - Vue 3 SPA
 			"CODING_RULES.md 包含前后端通用规则，可根据团队偏好修改。",
 			"TASK_PLAN.md 列出了当前待办事项，建议纳入项目管理工具。",
 		},
+		"action_items": mockActionItems("agent-config", "agent-config", "Agent 配置"),
 		"codex_prompt": "请根据 CODING_RULES.md 中的规则审查当前代码库，并修复所有违规项。",
 	}
 }
@@ -310,6 +333,7 @@ func (s *MockAIService) mockAPIDocData() interface{} {
 			"补充认证方式的说明文档。",
 			"为前端开发者提供调用示例。",
 		},
+		"action_items": mockActionItems("api-doc", "api-docs", "API 文档"),
 		"codex_prompt": "请根据 API 文档补全 reports 模块的前端 API 客户端调用函数。",
 	}
 }
@@ -325,21 +349,21 @@ func (s *MockAIService) mockDBSchemaData() interface{} {
 		"issues": []mockIssueItem{
 			{
 				Title: "reports 表缺少 report_data 索引", Severity: "high", Category: "index",
-				Problem: "按 tool_type 和 status 查询时需要全表扫描。",
+				Problem:    "按 tool_type 和 status 查询时需要全表扫描。",
 				Suggestion: "在 (tool_type, status, created_at) 上创建复合索引。",
-				Action: "添加 idx_reports_tool_status_created 索引。",
+				Action:     "添加 idx_reports_tool_status_created 索引。",
 			},
 			{
 				Title: "字符串主键性能问题", Severity: "medium", Category: "structure",
-				Problem: "使用 UUID 字符串作为主键在 InnoDB 中可能导致页分裂。",
+				Problem:    "使用 UUID 字符串作为主键在 InnoDB 中可能导致页分裂。",
 				Suggestion: "考虑使用自增 ID 作为主键，UUID 作为业务标识。",
-				Action: "评估迁移成本后决定是否调整主键策略。",
+				Action:     "评估迁移成本后决定是否调整主键策略。",
 			},
 			{
 				Title: "缺少 updated_at 自动更新", Severity: "medium", Category: "integrity",
-				Problem: "部分表没有自动更新 updated_at 的触发器。",
+				Problem:    "部分表没有自动更新 updated_at 的触发器。",
 				Suggestion: "使用 GORM 的 BeforeUpdate hook 或数据库触发器。",
-				Action: "确保所有表在更新记录时自动更新 updated_at。",
+				Action:     "确保所有表在更新记录时自动更新 updated_at。",
 			},
 		},
 		"optimized_schema": strPtr("-- 建议优化\nALTER TABLE reports ADD INDEX idx_tool_status_created (tool_type, status, created_at);\nALTER TABLE reports MODIFY COLUMN title VARCHAR(255) NOT NULL;\n-- ⚠ 以下 DDL 有锁表风险，请在低峰期执行\n-- ALTER TABLE reports ADD FOREIGN KEY ..."),
@@ -353,7 +377,46 @@ func (s *MockAIService) mockDBSchemaData() interface{} {
 			"审查所有 VARCHAR 列的长度是否合理。",
 			"考虑定期清理历史数据或分区策略。",
 		},
+		"action_items": mockActionItems("db-schema", "database", "数据库结构"),
 		"codex_prompt": "请为 reports 表添加复合索引 idx_tool_status_created (tool_type, status, created_at)，并确保所有 VARCHAR 列有合理的长度约束。",
+	}
+}
+
+func mockActionItems(prefix, category, target string) []mockActionItem {
+	return []mockActionItem{
+		{
+			ID:              prefix + "-fix-high-priority",
+			Title:           "修复" + target + "中的高优问题",
+			Priority:        "high",
+			Effort:          "small",
+			Category:        category,
+			Reason:          "报告已识别出会影响可用性或交付质量的高优问题。",
+			SuggestedPrompt: "请根据报告中的 high severity 问题逐项修复，并在完成后列出修改文件和验证命令。",
+			IssueTitle:      "fix(" + category + "): resolve high priority findings",
+			IssueBody:       "## 背景\n报告发现高优问题需要优先处理。\n\n## 修复要求\n- 定位报告中的 high severity 项\n- 修改对应文件或配置\n- 保留兼容行为\n\n## 验收\n- [ ] 相关测试通过\n- [ ] 报告中的高优问题已复查",
+		},
+		{
+			ID:              prefix + "-add-regression-tests",
+			Title:           "补充" + target + "回归测试",
+			Priority:        "medium",
+			Effort:          "medium",
+			Category:        "testing",
+			Reason:          "当前问题需要自动化测试防止后续回归。",
+			SuggestedPrompt: "请为本报告中的关键修复补充单元测试或组件测试，并说明覆盖的失败路径。",
+			IssueTitle:      "test(" + category + "): add regression coverage",
+			IssueBody:       "## 背景\n报告建议补充自动化测试。\n\n## 修复要求\n- 为关键行为添加测试\n- 覆盖成功和失败状态\n\n## 验收\n- [ ] 新增测试先失败后通过\n- [ ] 现有测试全部通过",
+		},
+		{
+			ID:              prefix + "-document-follow-up",
+			Title:           "记录" + target + "修复说明",
+			Priority:        "low",
+			Effort:          "small",
+			Category:        "documentation",
+			Reason:          "修复后的行为和验证命令需要沉淀，便于后续复查。",
+			SuggestedPrompt: "请把本次修复的影响范围、验证命令和剩余风险整理到对应文档或 PR 描述中。",
+			IssueTitle:      "docs(" + category + "): record validation notes",
+			IssueBody:       "## 背景\n需要记录修复结果和验证方式。\n\n## 修复要求\n- 写明修改范围\n- 写明验证命令\n- 写明剩余风险\n\n## 验收\n- [ ] 文档包含可复查的命令和结果",
+		},
 	}
 }
 

@@ -50,6 +50,8 @@ type ProjectDoctorFormInput struct {
 	ProjectDescription string
 	AnalysisDepth      string
 	ProjectZip         *multipart.FileHeader
+	ParentReportID     string
+	ProjectID          string
 }
 
 // Run executes the Project Doctor tool.
@@ -61,16 +63,28 @@ func (s *ProjectDoctorService) Run(ctx context.Context, input ProjectDoctorFormI
 		return nil, fmt.Errorf("project_zip is required")
 	}
 
+	if input.ParentReportID != "" {
+		if _, err := s.reportService.ValidateParentReport(ctx, model.ToolTypeProjectDoctor, input.ParentReportID); err != nil {
+			return nil, fmt.Errorf("invalid parent report: %w", err)
+		}
+	}
+	project, err := s.reportService.ResolveProject(ctx, input.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid project: %w", err)
+	}
+
 	req := dto.ProjectDoctorRequest{
 		Title:              input.Title,
 		ProjectName:        input.ProjectName,
 		TechStack:          input.TechStack,
 		ProjectDescription: input.ProjectDescription,
 		AnalysisDepth:      input.AnalysisDepth,
+		ParentReportID:     input.ParentReportID,
+		ProjectID:          input.ProjectID,
 	}
 	inputData, _ := json.Marshal(req)
 
-	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeProjectDoctor, input.Title, "project_zip", inputData)
+	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeProjectDoctor, input.Title, "project_zip", inputData, input.ParentReportID, input.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create report: %w", err)
 	}
@@ -95,11 +109,12 @@ func (s *ProjectDoctorService) Run(ctx context.Context, input ProjectDoctorFormI
 	summaryJSON, _ := json.Marshal(summary)
 	summaryText := util.TruncateText(string(summaryJSON), 300000)
 
-	// Build prompt.
+	// Build prompt. Redact the free-text project description before it reaches the AI.
 	systemPrompt, userPrompt := prompts.BuildProjectDoctorPrompt(
 		input.ProjectName, input.TechStack,
-		input.ProjectDescription, input.AnalysisDepth, summaryText,
+		util.RedactText(input.ProjectDescription), input.AnalysisDepth, summaryText,
 	)
+	userPrompt = prompts.AppendTrustedProjectContext(userPrompt, project)
 
 	// Call AI.
 	aiResult, err := s.aiService.GenerateJSON(ctx, service.AIRequest{
@@ -155,6 +170,7 @@ func (s *ProjectDoctorService) normalizeResult(result *dto.ProjectDoctorResult) 
 	if result.Recommendations == nil {
 		result.Recommendations = []string{}
 	}
+	result.ActionItems = dto.NormalizeActionItems(result.ActionItems)
 	for i := range result.Scores {
 		result.Scores[i].Score = util.NormalizeScore(result.Scores[i].Score)
 		result.Scores[i].MaxScore = 100
@@ -166,10 +182,10 @@ func (s *ProjectDoctorService) normalizeResult(result *dto.ProjectDoctorResult) 
 
 func (s *ProjectDoctorService) buildFallbackResult(input ProjectDoctorFormInput) dto.ProjectDoctorResult {
 	return dto.ProjectDoctorResult{
-		Scores:         []dto.ScoreItem{{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"}},
-		Issues:         []dto.IssueItem{},
+		Scores:          []dto.ScoreItem{{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"}},
+		Issues:          []dto.IssueItem{},
 		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:    "Retry project health check for " + input.ProjectName,
+		CodexPrompt:     "Retry project health check for " + input.ProjectName,
 	}
 }
 

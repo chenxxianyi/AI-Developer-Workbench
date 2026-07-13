@@ -39,15 +39,23 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 	sort.Strings(got)
 
 	want := []string{
+		"DELETE /api/projects/:id",
 		"DELETE /api/reports/:id",
 		"GET /api/dashboard/stats",
 		"GET /api/health",
+		"GET /api/projects",
+		"GET /api/projects/:id",
+		"GET /api/projects/:id/reports",
+		"GET /api/projects/:id/stats",
 		"GET /api/reports",
 		"GET /api/reports/:id",
+		"GET /api/reports/:id/compare/:targetId",
 		"GET /api/reports/:id/export",
 		"GET /api/reports/:id/files/:filename",
 		"GET /api/system/status",
 		"GET /api/tools",
+		"PATCH /api/projects/:id",
+		"POST /api/projects",
 		"POST /api/tools/agent-config/run",
 		"POST /api/tools/api-doc/run",
 		"POST /api/tools/db-schema/run",

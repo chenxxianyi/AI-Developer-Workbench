@@ -49,12 +49,24 @@ type APIDocFormInput struct {
 	APIDescription string
 	OutputFormat   string
 	ProjectZip     *multipart.FileHeader
+	ParentReportID string
+	ProjectID      string
 }
 
 // Run executes the API Doc Builder tool.
 func (s *APIDocService) Run(ctx context.Context, input APIDocFormInput) (*dto.ReportDTO, error) {
 	if err := s.validateInput(input); err != nil {
 		return nil, err
+	}
+
+	if input.ParentReportID != "" {
+		if _, err := s.reportService.ValidateParentReport(ctx, model.ToolTypeAPIDoc, input.ParentReportID); err != nil {
+			return nil, fmt.Errorf("invalid parent report: %w", err)
+		}
+	}
+	project, err := s.reportService.ResolveProject(ctx, input.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid project: %w", err)
 	}
 
 	req := dto.APIDocRequest{
@@ -64,10 +76,12 @@ func (s *APIDocService) Run(ctx context.Context, input APIDocFormInput) (*dto.Re
 		Code:           input.Code,
 		APIDescription: input.APIDescription,
 		OutputFormat:   input.OutputFormat,
+		ParentReportID: input.ParentReportID,
+		ProjectID:      input.ProjectID,
 	}
 	inputData, _ := json.Marshal(req)
 
-	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeAPIDoc, input.Title, input.SourceType, inputData)
+	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeAPIDoc, input.Title, input.SourceType, inputData, input.ParentReportID, input.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create report: %w", err)
 	}
@@ -92,12 +106,15 @@ func (s *APIDocService) Run(ctx context.Context, input APIDocFormInput) (*dto.Re
 		projectSummaryText = util.TruncateText(string(summaryJSON), 300000)
 	}
 
-	code := util.TruncateText(input.Code, 12000)
+	// Redact secrets before the content reaches the AI.
+	code := util.RedactText(util.TruncateText(input.Code, 12000))
+	apiDescription := util.RedactText(input.APIDescription)
 
 	systemPrompt, userPrompt := prompts.BuildAPIDocPrompt(
 		input.SourceType, input.BackendStack, code,
-		input.APIDescription, input.OutputFormat, projectSummaryText,
+		apiDescription, input.OutputFormat, projectSummaryText,
 	)
+	userPrompt = prompts.AppendTrustedProjectContext(userPrompt, project)
 
 	aiResult, err := s.aiService.GenerateJSON(ctx, service.AIRequest{
 		ToolType:     model.ToolTypeAPIDoc,
@@ -167,6 +184,7 @@ func (s *APIDocService) normalizeResult(result *dto.APIDocResult, input APIDocFo
 	if result.Recommendations == nil {
 		result.Recommendations = []string{}
 	}
+	result.ActionItems = dto.NormalizeActionItems(result.ActionItems)
 	// Ensure content matches output_format.
 	if input.OutputFormat == "markdown" || input.OutputFormat == "both" {
 		if result.MarkdownContent == nil {

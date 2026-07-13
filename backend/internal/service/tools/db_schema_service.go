@@ -26,16 +26,30 @@ func NewDBSchemaService(aiService service.AIService, reportService service.Repor
 
 // Run executes the DB Schema Review tool.
 func (s *DBSchemaService) Run(ctx context.Context, req dto.DBSchemaRequest) (*dto.ReportDTO, error) {
+	if req.ParentReportID != "" {
+		if _, err := s.reportService.ValidateParentReport(ctx, model.ToolTypeDBSchema, req.ParentReportID); err != nil {
+			return nil, fmt.Errorf("invalid parent report: %w", err)
+		}
+	}
+	project, err := s.reportService.ResolveProject(ctx, req.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid project: %w", err)
+	}
 	inputData, _ := json.Marshal(req)
-	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeDBSchema, req.Title, "json", inputData)
+	report, err := s.reportService.CreateProcessingReport(ctx, model.ToolTypeDBSchema, req.Title, "json", inputData, req.ParentReportID, req.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create report: %w", err)
 	}
 
+	// Redact secrets before the content reaches the AI.
+	schemaContent := util.RedactText(req.SchemaContent)
+	businessContext := util.RedactText(req.BusinessContext)
+
 	systemPrompt, userPrompt := prompts.BuildDBSchemaPrompt(
-		req.SchemaType, req.DatabaseType, req.BusinessContext,
-		req.SchemaContent, req.TargetGoal,
+		req.SchemaType, req.DatabaseType, businessContext,
+		schemaContent, req.TargetGoal,
 	)
+	userPrompt = prompts.AppendTrustedProjectContext(userPrompt, project)
 
 	aiResult, err := s.aiService.GenerateJSON(ctx, service.AIRequest{
 		ToolType:     model.ToolTypeDBSchema,
@@ -104,6 +118,7 @@ func (s *DBSchemaService) normalizeResult(result *dto.DBSchemaResult) {
 	if result.MigrationSuggestions == nil {
 		result.MigrationSuggestions = []string{}
 	}
+	result.ActionItems = dto.NormalizeActionItems(result.ActionItems)
 	for i := range result.Scores {
 		result.Scores[i].Score = util.NormalizeScore(result.Scores[i].Score)
 		result.Scores[i].MaxScore = 100
@@ -118,9 +133,9 @@ func (s *DBSchemaService) buildFallbackResult(req dto.DBSchemaRequest) dto.DBSch
 		Scores: []dto.ScoreItem{
 			{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"},
 		},
-		Issues:         []dto.IssueItem{},
+		Issues:          []dto.IssueItem{},
 		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:    "Retry schema review for " + req.SchemaType,
+		CodexPrompt:     "Retry schema review for " + req.SchemaType,
 	}
 }
 

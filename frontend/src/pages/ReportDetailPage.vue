@@ -8,8 +8,8 @@ import { onMounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useReportStore } from '@/stores/reportStore'
 import { getToolDisplayMeta } from '@/utils/toolDisplay'
-import type { Report, Issue } from '@/types/report'
-import { ArrowLeft, Download, FileText, Trash2 } from '@lucide/vue'
+import type { Report, Issue, ActionItem } from '@/types/report'
+import { ArrowLeft, Download, FileText, Trash2, RotateCcw } from '@lucide/vue'
 import ReportStatusBadge from '@/components/report/ReportStatusBadge.vue'
 import ScorePanel from '@/components/report/ScorePanel.vue'
 import IssueList from '@/components/report/IssueList.vue'
@@ -17,6 +17,7 @@ import RecommendationList from '@/components/report/RecommendationList.vue'
 import CodexPromptBox from '@/components/report/CodexPromptBox.vue'
 import GeneratedFilesPanel from '@/components/report/GeneratedFilesPanel.vue'
 import ReportErrorState from '@/components/report/ReportErrorState.vue'
+import ActionItemsPanel from '@/components/report/ActionItemsPanel.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const route = useRoute()
@@ -24,6 +25,7 @@ const router = useRouter()
 const store = useReportStore()
 
 const showDeleteConfirm = ref(false)
+const deleting = ref(false)
 
 const reportId = computed(() => route.params.id as string)
 
@@ -46,17 +48,19 @@ interface ParsedReport {
   scores: Array<{ name: string; score: number; max_score: number; comment: string }>
   issues: Issue[]
   recommendations: string[]
+  actionItems: ActionItem[]
   codexPrompt: string
 }
 
 const parsedData = computed<ParsedReport>(() => {
-  if (!report.value) return { scores: [], issues: [], recommendations: [], codexPrompt: '' }
+  if (!report.value) return { scores: [], issues: [], recommendations: [], actionItems: [], codexPrompt: '' }
   const data = report.value.report_data as Record<string, unknown>
 
   return {
     scores: Array.isArray(data.scores) ? data.scores as ParsedReport['scores'] : [],
     issues: Array.isArray(data.issues) ? data.issues as Issue[] : [],
     recommendations: Array.isArray(data.recommendations) ? data.recommendations as string[] : [],
+    actionItems: Array.isArray(data.action_items) ? data.action_items as ParsedReport['actionItems'] : [],
     codexPrompt: typeof data.codex_prompt === 'string' ? data.codex_prompt : '',
   }
 })
@@ -83,12 +87,15 @@ function formatDate(dateString: string): string {
 }
 
 async function handleDelete() {
+  deleting.value = true
   try {
     await store.deleteReportById(reportId.value)
     showDeleteConfirm.value = false
     router.push('/reports')
   } catch {
     showDeleteConfirm.value = false
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -99,6 +106,30 @@ async function handleDownloadMarkdown() {
   } catch {
     // Error handled silently.
   }
+}
+
+// Map tool_type to its tool page route, used for "re-run from this report".
+const toolRouteByType: Record<string, string> = {
+  ui_review: '/tools/ui-review',
+  project_doctor: '/tools/project-doctor',
+  agent_config: '/tools/agent-config',
+  api_doc: '/tools/api-doc',
+  db_schema: '/tools/db-schema',
+}
+
+function handleRerun() {
+  if (!report.value) return
+  const route = toolRouteByType[report.value.tool_type]
+  if (!route) return
+  // Carry the parent report id and the original input as query params so the
+  // tool page can prefill safe (text-only) fields. File uploads are NOT
+  // restored: the browser cannot re-select files programmatically.
+  const input = report.value.input_data ?? {}
+  const query: Record<string, string> = { parent_report_id: report.value.id }
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof v === 'string' && v) query[k] = v
+  }
+  router.push({ path: route, query })
 }
 </script>
 
@@ -141,6 +172,20 @@ async function handleDownloadMarkdown() {
               </span>
             </div>
             <h1 class="text-2xl font-bold text-text-primary truncate">{{ report.title }}</h1>
+            <!-- Parent report lineage link -->
+            <p
+              v-if="report.parent_report_id"
+              class="mt-2 text-xs text-text-muted"
+            >
+              基于报告
+              <RouterLink
+                :to="`/reports/${report.parent_report_id}`"
+                class="text-accent hover:underline"
+              >
+                {{ report.parent_report_id.substring(0, 8) }}…
+              </RouterLink>
+              复查
+            </p>
           </div>
 
           <!-- Actions -->
@@ -155,12 +200,22 @@ async function handleDownloadMarkdown() {
               导出
             </button>
             <button
-              class="inline-flex items-center gap-1.5 rounded-md border border-danger/30 bg-surface px-4 py-2 text-sm font-medium text-danger hover:bg-danger/5 transition-smooth"
+              v-if="report.status === 'succeeded' || report.status === 'fallback'"
+              class="inline-flex items-center gap-1.5 rounded-md border border-accent/30 bg-surface px-4 py-2 text-sm font-medium text-accent hover:bg-accent/5 transition-smooth focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+              @click="handleRerun"
+              aria-label="基于本报告复查"
+            >
+              <RotateCcw :size="16" />
+              复查
+            </button>
+            <button
+              :disabled="deleting"
+              class="inline-flex items-center gap-1.5 rounded-md border border-danger/30 bg-surface px-4 py-2 text-sm font-medium text-danger hover:bg-danger/5 transition-smooth disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-danger focus:outline-none"
               @click="showDeleteConfirm = true"
               aria-label="删除报告"
             >
               <Trash2 :size="16" />
-              删除
+              {{ deleting ? '删除中...' : '删除' }}
             </button>
           </div>
         </div>
@@ -217,6 +272,14 @@ async function handleDownloadMarkdown() {
           <h3 class="text-lg font-semibold text-text-primary mb-4">最严重问题</h3>
           <IssueList :issues="topIssues" />
         </div>
+
+        <!-- Action Items -->
+        <ActionItemsPanel
+          :report-id="report.id"
+          :report-title="report.title"
+          :action-items="parsedData.actionItems"
+          :recommendations="parsedData.recommendations"
+        />
 
         <!-- Codex Prompt -->
         <CodexPromptBox v-if="parsedData.codexPrompt" :prompt="parsedData.codexPrompt" />

@@ -126,11 +126,17 @@ func newFakeUIReviewReportService() *fakeUIReviewReportService {
 	}
 }
 
-func (f *fakeUIReviewReportService) CreateProcessingReport(ctx context.Context, toolType, title, inputMode string, inputData json.RawMessage) (*model.Report, error) {
+func (f *fakeUIReviewReportService) CreateProcessingReport(ctx context.Context, toolType, title, inputMode string, inputData json.RawMessage, parentReportID, projectID string) (*model.Report, error) {
 	f.report.Title = title
 	f.report.ToolType = toolType
 	f.report.InputMode = inputMode
 	f.report.InputJSON = datatypes.JSON(inputData)
+	if parentReportID != "" {
+		f.report.ParentReportID = &parentReportID
+	}
+	if projectID != "" {
+		f.report.ProjectID = &projectID
+	}
 	return f.report, nil
 }
 
@@ -140,6 +146,29 @@ func (f *fakeUIReviewReportService) SucceedReport(ctx context.Context, id string
 
 func (f *fakeUIReviewReportService) FailReport(ctx context.Context, id string, errorMessage string) error {
 	return nil
+}
+
+func (f *fakeUIReviewReportService) ValidateParentReport(ctx context.Context, toolType, parentReportID string) (*model.Report, error) {
+	if parentReportID == "" {
+		return nil, nil
+	}
+	return &model.Report{
+		ID:       parentReportID,
+		ToolType: toolType,
+		Title:    "Parent Report",
+		Status:   model.StatusSucceeded,
+	}, nil
+}
+
+func (f *fakeUIReviewReportService) ResolveProject(ctx context.Context, projectID string) (*model.Project, error) {
+	if projectID == "" {
+		return nil, nil
+	}
+	return &model.Project{ID: projectID, Name: "UI Project", UIStyle: "quiet"}, nil
+}
+
+func (f *fakeUIReviewReportService) CompareReports(_ context.Context, _, _ string) (*dto.ReportCompareDTO, error) {
+	return &dto.ReportCompareDTO{}, nil
 }
 
 func (f *fakeUIReviewReportService) FallbackReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string) error {

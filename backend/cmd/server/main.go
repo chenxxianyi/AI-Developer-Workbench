@@ -125,14 +125,17 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	reportRepo := repository.NewReportRepository(db)
 	generatedFileRepo := repository.NewGeneratedFileRepository(db)
 	reportAssetRepo := repository.NewReportAssetRepository(db)
+	projectRepo := repository.NewProjectRepository(db)
 
 	reportService := service.NewReportService(
 		cfg,
 		reportRepo,
 		generatedFileRepo,
 		reportAssetRepo,
+		projectRepo,
 		db,
 	)
+	projectService := service.NewProjectService(projectRepo)
 	fileService := service.NewFileService(cfg, reportAssetRepo)
 	zipService := service.NewZipService(cfg.Upload.TempDir)
 
@@ -178,11 +181,18 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	)
 
 	router := gin.New()
+	// Cap uploaded bodies at the configured limit and return a clear 413 for
+	// oversize JSON or multipart requests. Gin's default MultipartMemory is
+	// 32MB; align it with the configured upload cap so large multipart streams
+	// are rejected at the boundary rather than streamed to disk unbounded.
+	uploadCap := int64(cfg.Upload.MaxUploadSizeMB) << 20
+	router.MaxMultipartMemory = uploadCap
 	router.Use(
 		middleware.RequestID(),
 		middleware.Recovery(),
 		middleware.Logger(),
-		middleware.CORS(cfg.CORS.AllowOrigins),
+		middleware.BodyLimit(uploadCap),
+		middleware.CORS(cfg.CORS.AllowOrigins, cfg.App.Env == "production"),
 	)
 
 	api := router.Group("/api")
@@ -191,6 +201,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	handler.RegisterDashboardRoutes(api, reportService)
 	handler.RegisterToolRoutes(api, reportRepo)
 	handler.RegisterReportRoutes(api, reportService)
+	handler.RegisterProjectRoutes(api, projectService)
 	handler.RegisterExportRoutes(api, exportService)
 	handler.RegisterToolRunRoutes(api, toolRunHandler)
 

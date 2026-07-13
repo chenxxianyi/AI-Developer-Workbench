@@ -23,12 +23,20 @@ type Report struct {
 	FilePath     string         `gorm:"type:varchar(1024)" json:"file_path"`
 	FileURL      string         `gorm:"type:varchar(1024)" json:"file_url"`
 	ErrorMessage string         `gorm:"type:text" json:"error_message"`
+	ParentReportID *string      `gorm:"type:char(36);index" json:"parent_report_id,omitempty"`
+	ProjectID    *string        `gorm:"type:char(36);index" json:"project_id,omitempty"`
 	CreatedAt    time.Time      `gorm:"not null" json:"created_at"`
 	UpdatedAt    time.Time      `gorm:"not null" json:"updated_at"`
 
 	// Relations
 	GeneratedFiles []GeneratedFile `gorm:"foreignKey:ReportID;constraint:OnDelete:CASCADE" json:"generated_files"`
 	Assets         []ReportAsset   `gorm:"foreignKey:ReportID;constraint:OnDelete:CASCADE" json:"assets"`
+	// ParentReport is the report this one re-runs from (nullable). On parent
+	// delete the FK is set NULL so the child report survives.
+	ParentReport *Report `gorm:"foreignKey:ParentReportID;constraint:OnDelete:SET NULL" json:"parent_report,omitempty"`
+	// Project is the project this report belongs to (nullable). On project
+	// delete the FK is set NULL so the report survives.
+	Project *Project `gorm:"foreignKey:ProjectID;constraint:OnDelete:SET NULL" json:"project,omitempty"`
 }
 
 // BeforeCreate sets UUID and timestamps before creating a report.

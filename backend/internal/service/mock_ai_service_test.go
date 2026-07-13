@@ -61,6 +61,49 @@ func TestMockAIService_UnknownToolTypeReturnsError(t *testing.T) {
 	}
 }
 
+func TestMockAIService_AllToolTypesIncludeActionItems(t *testing.T) {
+	svc := NewMockAIService()
+	toolTypes := []string{
+		model.ToolTypeUIReview,
+		model.ToolTypeProjectDoctor,
+		model.ToolTypeAgentConfig,
+		model.ToolTypeAPIDoc,
+		model.ToolTypeDBSchema,
+	}
+
+	for _, toolType := range toolTypes {
+		t.Run(toolType, func(t *testing.T) {
+			result, err := svc.GenerateJSON(context.Background(), AIRequest{ToolType: toolType})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var data map[string]interface{}
+			if err := json.Unmarshal([]byte(result.JSONText), &data); err != nil {
+				t.Fatal(err)
+			}
+
+			items, ok := data["action_items"].([]interface{})
+			if !ok {
+				t.Fatal("missing or invalid action_items")
+			}
+			if len(items) < 3 {
+				t.Fatalf("len(action_items)=%d, want at least 3", len(items))
+			}
+
+			first, ok := items[0].(map[string]interface{})
+			if !ok {
+				t.Fatal("first action item is not an object")
+			}
+			for _, field := range []string{"id", "title", "priority", "effort", "category", "reason", "suggested_prompt", "issue_title", "issue_body"} {
+				if first[field] == "" {
+					t.Fatalf("first action item missing %q", field)
+				}
+			}
+		})
+	}
+}
+
 func TestMockAIService_UIReviewResultIsParseable(t *testing.T) {
 	svc := NewMockAIService()
 	result, err := svc.GenerateJSON(context.Background(), AIRequest{
