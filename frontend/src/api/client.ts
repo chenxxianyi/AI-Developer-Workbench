@@ -8,11 +8,16 @@ import type { ApiResponse, ApiErrorResponse } from '@/types/api'
 
 // Create Axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
-  timeout: 100_000, // Slightly above backend AI timeout
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+  timeout: 100_000,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+// Request interceptor: attach JWT token
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
 })
 
 // Response interceptor: unwrap ApiResponse.data or throw normalized error

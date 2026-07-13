@@ -1,0 +1,2 @@
+<template><div class="flex items-center justify-center min-h-[60vh]"><div class="text-center"><h2 class="text-6xl font-bold text-text-muted mb-3">404</h2><h3 class="text-xl font-semibold mb-2">页面不存在</h3><p class="text-text-muted mb-4">您访问的页面未找到</p><RouterLink to="/dashboard" class="text-accent hover:underline text-sm">返回工作台</RouterLink></div></div></template>
+<script setup lang="ts">import { RouterLink } from 'vue-router'</script>

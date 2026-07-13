@@ -11,20 +11,10 @@ import { useToolStore } from '@/stores/toolStore'
 import { getToolDisplayMeta } from '@/utils/toolDisplay'
 import type { ToolType } from '@/types/tool'
 import {
-  Wrench,
-  Eye,
-  Stethoscope,
-  Bot,
-  FileText,
-  Database,
-  ArrowRight,
-  ChevronRight,
-  FileStack,
-  BarChart3,
-  Activity,
-  CheckCircle2,
-  Sparkles,
-  FlaskConical,
+  Wrench, Eye, Stethoscope, Bot, FileText, Database,
+  ArrowRight, ChevronRight, FileStack, BarChart3, Activity,
+  CheckCircle2, Sparkles, FlaskConical,
+  FolderKanban, Play, Monitor, AlertCircle,
 } from '@lucide/vue'
 import QualityTrend from '@/components/dashboard/QualityTrend.vue'
 
@@ -272,6 +262,21 @@ function getScoreColorClass(score: number | null): string {
           </div>
         </aside>
       </div>
+    </section>
+
+    <!-- 项目概览 -->
+    <section class="rounded-lg border border-border bg-surface p-5">
+      <div class="mb-5 flex items-center justify-between">
+        <div><h2 class="text-xl font-bold text-text-primary">项目概览</h2><p class="mt-1 text-sm text-text-muted">生成和导入项目的整体状态</p></div>
+        <RouterLink to="/projects" class="text-sm font-semibold text-accent hover:underline">查看全部</RouterLink>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="rounded-lg border border-border bg-background/70 p-4"><div class="flex items-center gap-2 mb-2"><FolderKanban :size="18" class="text-accent" /><span class="text-sm text-text-muted">项目总数</span></div><div class="text-2xl font-bold text-text-primary">—</div></div>
+        <div class="rounded-lg border border-border bg-background/70 p-4"><div class="flex items-center gap-2 mb-2"><Play :size="18" class="text-info" /><span class="text-sm text-text-muted">生成中</span></div><div class="text-2xl font-bold text-text-primary">—</div></div>
+        <div class="rounded-lg border border-border bg-background/70 p-4"><div class="flex items-center gap-2 mb-2"><Monitor :size="18" class="text-success" /><span class="text-sm text-text-muted">已生成</span></div><div class="text-2xl font-bold text-text-primary">—</div></div>
+        <div class="rounded-lg border border-border bg-background/70 p-4"><div class="flex items-center gap-2 mb-2"><AlertCircle :size="18" class="text-warning" /><span class="text-sm text-text-muted">待处理</span></div><div class="text-2xl font-bold text-text-primary">—</div></div>
+      </div>
+      <p class="mt-3 text-xs text-text-muted">项目数据将在后端统一后接入（Sprint 3-4）。</p>
     </section>
 
     <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">

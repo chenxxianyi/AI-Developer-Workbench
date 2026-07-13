@@ -9,23 +9,30 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds all application configuration.
+// Config holds all application configuration (unified Workbench + Builder).
 type Config struct {
-	App     AppConfig
-	Database DatabaseConfig
-	Upload  UploadConfig
-	AI      AIConfig
-	CORS    CORSConfig
+	App       AppConfig
+	Database  DatabaseConfig
+	Redis     RedisConfig
+	JWT       JWTConfig
+	Security  SecurityConfig
+	Upload    UploadConfig
+	Workspace WorkspaceConfig
+	AI        AIConfig
+	CORS      CORSConfig
 }
 
-// AppConfig holds application-level settings.
+// ── App ──
+
 type AppConfig struct {
 	Env     string
 	Port    string
+	Host    string
 	Version string
 }
 
-// DatabaseConfig holds MySQL connection settings.
+// ── Database ──
+
 type DatabaseConfig struct {
 	Driver          string
 	Host            string
@@ -41,25 +48,39 @@ type DatabaseConfig struct {
 	AutoMigrate     bool
 }
 
-// DSN returns the data source name for the configured driver.
-// This value must never be logged.
 func (d DatabaseConfig) DSN() string {
 	if d.Driver == "sqlite" {
-		return d.Name // For SQLite, Name is the file path
+		return d.Name
 	}
-	// multiStatements is required because the migration runner executes each
-	// versioned SQL file as a single Exec call, and the migration files contain
-	// multiple statements separated by semicolons.
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=%s&multiStatements=true",
 		d.User, d.Password, d.Host, d.Port, d.Name, d.Charset, d.Loc)
 }
 
-// IsSQLite returns true if the database driver is SQLite.
-func (d DatabaseConfig) IsSQLite() bool {
-	return d.Driver == "sqlite"
+func (d DatabaseConfig) IsSQLite() bool { return d.Driver == "sqlite" }
+
+// ── Redis ──
+
+type RedisConfig struct {
+	Addr     string
+	Password string
+	DB       int
 }
 
-// UploadConfig holds file upload and ZIP processing limits.
+// ── JWT ──
+
+type JWTConfig struct {
+	Secret string
+	Expire int // hours
+}
+
+// ── Security ──
+
+type SecurityConfig struct {
+	EncryptionKey string
+}
+
+// ── Upload ──
+
 type UploadConfig struct {
 	Dir                   string
 	TempDir               string
@@ -70,7 +91,17 @@ type UploadConfig struct {
 	MaxZipUncompressedMB  int
 }
 
-// AIConfig holds AI provider settings.
+// ── Workspace (for generation / build / preview) ──
+
+type WorkspaceConfig struct {
+	RootDir           string
+	BuildTimeoutSec   int
+	PreviewSessionTTL int // minutes
+	MaxConcurrentBuilds int
+}
+
+// ── AI ──
+
 type AIConfig struct {
 	Provider       string
 	BaseURL        string
@@ -82,18 +113,19 @@ type AIConfig struct {
 	MaxRetries     int
 }
 
-// CORSConfig holds CORS allowlist settings.
+// ── CORS ──
+
 type CORSConfig struct {
 	AllowOrigins []string
 }
 
-// LoadConfig loads configuration from .env file and environment variables.
-// If envFile is empty, no .env file is loaded.
+// ── Load ──
+
 func LoadConfig(envFile string) (*Config, error) {
 	if envFile != "" {
 		if _, err := os.Stat(envFile); err == nil {
 			if err := godotenv.Load(envFile); err != nil {
-				return nil, fmt.Errorf("failed to load .env file: %w", err)
+				return nil, fmt.Errorf("load .env: %w", err)
 			}
 		}
 	}
@@ -102,6 +134,7 @@ func LoadConfig(envFile string) (*Config, error) {
 		App: AppConfig{
 			Env:     getEnv("APP_ENV", "development"),
 			Port:    getEnv("APP_PORT", "8080"),
+			Host:    getEnv("APP_HOST", "0.0.0.0"),
 			Version: getEnv("APP_VERSION", "0.1.0"),
 		},
 		Database: DatabaseConfig{
@@ -118,6 +151,18 @@ func LoadConfig(envFile string) (*Config, error) {
 			ConnMaxLifetime: getEnvInt("DATABASE_CONN_MAX_LIFETIME_MINUTES", 30),
 			AutoMigrate:     getEnvBool("DB_AUTO_MIGRATE", true),
 		},
+		Redis: RedisConfig{
+			Addr:     getEnv("REDIS_ADDR", "127.0.0.1:6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvInt("REDIS_DB", 0),
+		},
+		JWT: JWTConfig{
+			Secret: getEnv("JWT_SECRET", "change-me-in-production"),
+			Expire: getEnvInt("JWT_EXPIRE_HOURS", 72),
+		},
+		Security: SecurityConfig{
+			EncryptionKey: getEnv("APP_ENCRYPTION_KEY", ""),
+		},
 		Upload: UploadConfig{
 			Dir:                   getEnv("UPLOAD_DIR", "./uploads"),
 			TempDir:               getEnv("TEMP_DIR", "./temp"),
@@ -126,6 +171,12 @@ func LoadConfig(envFile string) (*Config, error) {
 			MaxFileReadBytes:      getEnvInt("MAX_FILE_READ_BYTES", 12000),
 			MaxProjectTotalReadKB: getEnvInt("MAX_PROJECT_TOTAL_READ_BYTES", 300000),
 			MaxZipUncompressedMB:  getEnvInt("MAX_ZIP_UNCOMPRESSED_MB", 100),
+		},
+		Workspace: WorkspaceConfig{
+			RootDir:             getEnv("WORKSPACE_DIR", "./workspace"),
+			BuildTimeoutSec:     getEnvInt("BUILD_TIMEOUT_SEC", 600),
+			PreviewSessionTTL:   getEnvInt("PREVIEW_SESSION_TTL_MINUTES", 120),
+			MaxConcurrentBuilds: getEnvInt("MAX_CONCURRENT_BUILDS", 3),
 		},
 		AI: AIConfig{
 			Provider:       getEnv("AI_PROVIDER", "openai"),
@@ -145,44 +196,33 @@ func LoadConfig(envFile string) (*Config, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
-
 	return cfg, nil
 }
 
-// validate checks required configuration values.
 func (c *Config) validate() error {
-	// SQLite doesn't require host/password
 	if !c.Database.IsSQLite() {
 		if c.Database.Host == "" {
 			return fmt.Errorf("DATABASE_HOST is required")
 		}
-		if c.Database.Password == "" {
-			return fmt.Errorf("DATABASE_PASSWORD is required")
-		}
 	}
-
-	// Normalize mock mode: explicit MockMode=true forces mock; empty API key auto-mocks.
 	if c.AI.MockMode || c.AI.APIKey == "" {
 		c.AI.MockMode = true
 		return nil
 	}
-
-	// Only validate API key when NOT in mock mode.
 	if c.AI.APIKey == "" {
 		return fmt.Errorf("AI_API_KEY is required")
+	}
+	// Warn on weak JWT secret in production
+	if c.App.Env == "production" && c.JWT.Secret == "change-me-in-production" {
+		return fmt.Errorf("JWT_SECRET must be changed in production")
 	}
 	return nil
 }
 
-// IsMockMode returns true when the AI is running in mock mode.
-func (c *Config) IsMockMode() bool {
-	return c.AI.MockMode
-}
+func (c *Config) IsMockMode() bool    { return c.AI.MockMode }
+func (c *Config) IsDevelopment() bool { return c.App.Env == "development" }
 
-// IsDevelopment returns true if running in development mode.
-func (c *Config) IsDevelopment() bool {
-	return c.App.Env == "development"
-}
+// ── Helpers ──
 
 func getEnv(key, defaultVal string) string {
 	if val := os.Getenv(key); val != "" {
