@@ -44,7 +44,7 @@ func CORS(allowOrigins []string, isProduction bool) gin.HandlerFunc {
 		if allowed && origin != "" {
 			c.Header("Access-Control-Allow-Origin", origin)
 			c.Header("Access-Control-Allow-Credentials", "true")
-			c.Header("Access-Control-Allow-Headers", "Content-Type, X-Request-ID")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID")
 			c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 			c.Header("Access-Control-Expose-Headers", "Content-Disposition, X-Request-ID")
 			c.Header("Vary", "Origin")

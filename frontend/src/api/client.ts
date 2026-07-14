@@ -13,8 +13,11 @@ const apiClient: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Request interceptor: attach JWT token
+// Request interceptor: attach JWT token (skip for auth endpoints)
 apiClient.interceptors.request.use((config) => {
+  if (config.url && (config.url.endsWith('/auth/login') || config.url.endsWith('/auth/register'))) {
+    return config
+  }
   const token = localStorage.getItem('auth_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
@@ -29,12 +32,19 @@ apiClient.interceptors.response.use(
 
     const body = response.data as Record<string, unknown>
 
-    // Backend error format: { error: { code: "UNAUTHORIZED", message: "..." } }
+    // Backend error format (two variants):
+    //   old: { error: { code: "UNAUTHORIZED", message: "..." } }
+    //   new: { code: 50001, message: "internal error", error: "detail string" }
     if (body.error) {
-      const err = body.error as { code?: string; message?: string }
+      let message = '请求失败'
+      if (typeof body.error === 'string') {
+        message = body.error
+      } else if (typeof body.error === 'object') {
+        message = (body.error as { message?: string }).message || message
+      }
       const error: ApiErrorResponse = {
-        code: 0,
-        message: err.message || '请求失败',
+        code: typeof body.code === 'number' ? body.code : 0,
+        message,
       }
       return Promise.reject(error)
     }
@@ -57,7 +67,7 @@ apiClient.interceptors.response.use(
           })
         }
       }
-      return Promise.reject(error.response.data)
+      return Promise.reject(normalizeError(error.response.data))
     }
 
     // Handle timeout
@@ -85,3 +95,18 @@ apiClient.interceptors.response.use(
 )
 
 export default apiClient
+
+/** Normalize backend error responses to ApiErrorResponse format. */
+function normalizeError(data: unknown): ApiErrorResponse {
+  const obj = data as Record<string, unknown>
+  // Old format: { error: { code: "UNAUTHORIZED", message: "..." } }
+  if (obj.error && typeof obj.error === 'object') {
+    const err = obj.error as { code?: string; message?: string }
+    return { code: 0, message: err.message || '请求失败' }
+  }
+  // New format: { code: 50001, message: "internal error", error: "detail" }
+  if (typeof obj.error === 'string') {
+    return { code: typeof obj.code === 'number' ? obj.code : 0, message: obj.error }
+  }
+  return { code: typeof obj.code === 'number' ? obj.code : 0, message: (obj.message as string) || '请求失败' }
+}
