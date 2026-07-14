@@ -7,5 +7,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-const projects = ref([{ id: '1', name: '示例项目', status: 'draft', created_at: '2026-07-13' }])
+const projects = ref([{ id: '1', name: '示例项目', user_id: '', status: 'draft', created_at: '2026-07-13' }])
 </script>

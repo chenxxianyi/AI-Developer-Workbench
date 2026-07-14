@@ -1,32 +1,117 @@
-<template>
-  <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">在线预览</h1>
-      <div class="flex gap-2">
-        <button @click="rebuild" class="px-4 py-2 rounded-lg border text-sm">🔄 重新构建</button>
-        <a :href="previewUrl" target="_blank" class="px-4 py-2 rounded-lg border text-sm">🔗 新窗口</a>
-      </div>
-    </div>
-    <div v-if="previewUrl" class="border rounded-lg overflow-hidden bg-white">
-      <iframe :src="previewUrl" class="w-full h-[70vh]" sandbox="allow-scripts allow-same-origin" />
-    </div>
-    <div v-else class="text-center py-16 bg-[var(--color-surface)] rounded-lg border">
-      <p class="text-[var(--color-text-muted)] mb-4">尚未构建预览</p>
-      <button @click="rebuild" class="px-6 py-3 rounded-lg bg-[var(--color-accent)] text-white">🏗 构建并预览</button>
-    </div>
-  </div>
-</template>
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  AlertCircle,
+  ExternalLink,
+  Loader2,
+  Monitor,
+  RefreshCw,
+} from '@lucide/vue'
 import apiClient from '@/api/client'
+import ProjectStageShell from '@/components/project/ProjectStageShell.vue'
+
 const route = useRoute()
 const projectId = route.params.projectId as string
 const previewUrl = ref('')
+const rebuilding = ref(false)
+const error = ref('')
+
 async function rebuild() {
+  if (rebuilding.value) return
+  rebuilding.value = true
+  error.value = ''
   try {
-    const res = await apiClient.post(`/projects/${projectId}/build`) as any
-    previewUrl.value = res.preview_url || ''
-  } catch {}
+    const result = await apiClient.post(`/projects/${projectId}/build`) as { preview_url?: string }
+    previewUrl.value = result.preview_url || ''
+    if (!previewUrl.value) error.value = '构建已完成，但没有返回可用的预览地址'
+  } catch (err: any) {
+    error.value = err.message || '预览构建失败，请稍后重试'
+  } finally {
+    rebuilding.value = false
+  }
 }
 </script>
+
+<template>
+  <ProjectStageShell
+    :icon="Monitor"
+    title="在线预览"
+    description="在工作区中检查生成结果，并可随时重新构建最新版本。"
+    step-text="预览阶段"
+  >
+    <template #actions>
+      <button
+        v-if="previewUrl"
+        type="button"
+        :disabled="rebuilding"
+        class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-text-primary transition-smooth hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+        @click="rebuild"
+      >
+        <Loader2 v-if="rebuilding" :size="16" class="animate-spin" />
+        <RefreshCw v-else :size="16" />
+        {{ rebuilding ? '构建中...' : '重新构建' }}
+      </button>
+      <a
+        v-if="previewUrl"
+        :href="previewUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-white transition-smooth hover:bg-accent/80 focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+      >
+        <ExternalLink :size="16" />
+        新窗口打开
+      </a>
+    </template>
+
+    <div v-if="error" role="alert" class="mb-5 flex items-center gap-2 rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
+      <AlertCircle :size="18" class="shrink-0" />
+      {{ error }}
+    </div>
+
+    <section v-if="previewUrl" class="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted/70 px-4 py-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="flex items-center gap-1.5" aria-hidden="true">
+            <span class="h-2.5 w-2.5 rounded-full bg-danger/70" />
+            <span class="h-2.5 w-2.5 rounded-full bg-warning/70" />
+            <span class="h-2.5 w-2.5 rounded-full bg-success/70" />
+          </div>
+          <div class="min-w-0 rounded-md border border-border bg-surface px-3 py-1.5">
+            <p class="truncate font-mono text-xs text-text-muted">{{ previewUrl }}</p>
+          </div>
+        </div>
+        <span class="text-xs font-medium text-text-muted">实时预览</span>
+      </div>
+      <iframe
+        :src="previewUrl"
+        title="项目在线预览"
+        class="h-[70vh] min-h-[460px] w-full bg-white"
+        sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+      />
+    </section>
+
+    <section
+      v-else
+      class="flex min-h-[520px] flex-col items-center justify-center rounded-lg border border-border bg-surface px-6 py-12 text-center shadow-sm"
+    >
+      <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-accent-soft text-accent">
+        <Monitor :size="26" />
+      </div>
+      <h2 class="text-lg font-semibold text-text-primary">尚未构建预览</h2>
+      <p class="mt-2 max-w-md text-sm leading-6 text-text-secondary">
+        构建完成后，生成的网站会直接显示在当前工作区。
+      </p>
+      <button
+        type="button"
+        :disabled="rebuilding"
+        class="mt-6 inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-white transition-smooth hover:bg-accent/80 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+        @click="rebuild"
+      >
+        <Loader2 v-if="rebuilding" :size="16" class="animate-spin" />
+        <RefreshCw v-else :size="16" />
+        {{ rebuilding ? '构建中...' : '构建并预览' }}
+      </button>
+    </section>
+  </ProjectStageShell>
+</template>

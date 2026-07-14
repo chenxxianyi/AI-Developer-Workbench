@@ -18,6 +18,13 @@ const pageTitle = computed(() => {
   const path = route.path
 
   if (path === '/dashboard') return '工作台'
+  if (path === '/projects/new') return '创建项目'
+  if (path.endsWith('/blueprint')) return '蓝图设计'
+  if (path.endsWith('/generation')) return '代码生成'
+  if (path.endsWith('/preview')) return '在线预览'
+  if (path.endsWith('/files')) return '项目文件'
+  if (path.startsWith('/projects/')) return '项目工作区'
+  if (path === '/projects') return '项目'
   if (path.startsWith('/tools/ui-review')) return 'UI 审查'
   if (path.startsWith('/tools/project-doctor')) return '项目诊断'
   if (path.startsWith('/tools/agent-config')) return 'Agent 配置'

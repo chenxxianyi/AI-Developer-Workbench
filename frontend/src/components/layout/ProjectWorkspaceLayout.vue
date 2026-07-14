@@ -1,22 +1,27 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, RouterLink, RouterView } from 'vue-router'
-import AppBadge from '@/components/common/AppBadge.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
-import ErrorState from '@/components/common/ErrorState.vue'
-import AppSkeleton from '@/components/common/AppSkeleton.vue'
-import { LayoutDashboard, FileText, PenTool, Play, Monitor, Files, FileStack, Download, ExternalLink } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
+import {
+  Download,
+  ExternalLink,
+  FileStack,
+  FileText,
+  Files,
+  FolderKanban,
+  LayoutDashboard,
+  Monitor,
+  PenTool,
+  Play,
+} from '@lucide/vue'
+import { getProject } from '@/api/projects'
+import type { Project } from '@/types/project'
 
 const route = useRoute()
 const projectId = computed(() => route.params.projectId as string)
-
-interface Project { id: string; name: string; type: string; status: string; quality_score?: number }
 const project = ref<Project | null>(null)
-const loading = ref(true)
-const error = ref('')
-const notFound = ref(false)
+const loading = ref(false)
 
-const navItems = [
+const navItems = computed(() => [
   { to: `/projects/${projectId.value}`, icon: LayoutDashboard, label: '概览' },
   { to: `/projects/${projectId.value}/requirements`, icon: FileText, label: '需求' },
   { to: `/projects/${projectId.value}/blueprint`, icon: PenTool, label: '蓝图' },
@@ -24,81 +29,96 @@ const navItems = [
   { to: `/projects/${projectId.value}/preview`, icon: Monitor, label: '预览' },
   { to: `/projects/${projectId.value}/files`, icon: Files, label: '文件' },
   { to: `/projects/${projectId.value}/reports`, icon: FileStack, label: '报告' },
-]
+])
 
-const statusVariant = {
-  draft: 'default', generating: 'info', building: 'info', completed: 'success', failed: 'danger', archived: 'default',
-} as const
+const projectTitle = computed(() => project.value?.name || `项目 #${projectId.value}`)
+const projectDescription = computed(() => project.value?.description || '从需求、蓝图到代码交付的项目工作区')
 
-onMounted(async () => {
+async function loadProject() {
+  if (!projectId.value) return
+  loading.value = true
   try {
-    // TODO: Replace with actual API call when project service is unified
-    project.value = { id: projectId.value, name: '加载中...', type: 'website', status: 'draft' }
-  } catch (e: any) {
-    error.value = e.message || '加载失败'
+    project.value = await getProject(projectId.value)
+  } catch {
+    project.value = null
   } finally {
     loading.value = false
   }
-})
+}
+
+function exportProject() {
+  const base = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  window.open(`${base}/projects/${projectId.value}/export`, '_blank')
+}
+
+watch(projectId, loadProject, { immediate: true })
 </script>
 
 <template>
-  <!-- Loading -->
-  <div v-if="loading" class="space-y-4">
-    <AppSkeleton height="48px" />
-    <AppSkeleton height="32px" width="60%" />
-    <AppSkeleton height="200px" />
-  </div>
-
-  <!-- Error -->
-  <ErrorState v-else-if="error" :message="error" retry-label="重试" @retry="loading = true; error = ''; /* retry logic */" />
-
-  <!-- Not Found -->
-  <EmptyState v-else-if="notFound" title="项目不存在" description="该项目可能已被删除或您没有访问权限">
-    <template #action>
-      <RouterLink to="/projects" class="text-sm text-accent hover:underline">返回项目列表</RouterLink>
-    </template>
-  </EmptyState>
-
-  <!-- Project Layout -->
-  <template v-else>
-    <!-- Header -->
-    <div class="flex items-start justify-between mb-6">
-      <div>
-        <div class="flex items-center gap-3 mb-1">
-          <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">{{ project?.name }}</h1>
-          <AppBadge v-if="project?.status" :variant="(statusVariant as Record<string, any>)[project.status] || 'default'">{{ project.status }}</AppBadge>
+  <div class="mx-auto max-w-6xl">
+    <section class="mb-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+      <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+            <FolderKanban :size="22" />
+          </div>
+          <div class="min-w-0">
+            <div v-if="loading" class="space-y-2">
+              <div class="h-5 w-40 animate-pulse rounded bg-surface-muted" />
+              <div class="h-3 w-64 max-w-full animate-pulse rounded bg-surface-muted" />
+            </div>
+            <template v-else>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="truncate text-lg font-semibold text-text-primary">{{ projectTitle }}</h2>
+                <span class="rounded-full border border-border bg-surface-muted px-2 py-0.5 text-xs font-medium text-text-muted">
+                  ID {{ projectId }}
+                </span>
+              </div>
+              <p class="mt-0.5 truncate text-sm text-text-secondary">{{ projectDescription }}</p>
+            </template>
+          </div>
         </div>
-        <p class="text-sm text-[var(--color-text-muted)]">{{ project?.type === 'website' ? '网站生成' : project?.type === 'analysis' ? '项目分析' : '导入项目' }}</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button class="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-smooth">
-          <Download :size="16" /><span>导出</span>
-        </button>
-        <button class="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-smooth">
-          <ExternalLink :size="16" /><span>预览</span>
-        </button>
-      </div>
-    </div>
 
-    <!-- Sub-nav -->
-    <nav class="flex gap-1 mb-6 border-b border-[var(--color-border)] overflow-x-auto">
-      <RouterLink
-        v-for="item in navItems" :key="item.label"
-        :to="item.to"
-        :class="[
-          'flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-[1px] transition-colors duration-200',
-          route.path === item.to || route.path.startsWith(item.to + '/')
-            ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-            : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
-        ]"
-      >
-        <component :is="item.icon" :size="16" />
-        {{ item.label }}
-      </RouterLink>
-    </nav>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-text-primary transition-smooth hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+            @click="exportProject"
+          >
+            <Download :size="16" />
+            <span class="hidden sm:inline">导出</span>
+          </button>
+          <RouterLink
+            :to="`/projects/${projectId}/preview`"
+            class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-semibold text-white transition-smooth hover:bg-accent/80 focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+          >
+            <ExternalLink :size="16" />
+            <span class="hidden sm:inline">打开预览</span>
+          </RouterLink>
+        </div>
+      </div>
 
-    <!-- Page Content -->
+      <nav class="overflow-x-auto border-t border-border px-2" aria-label="项目工作区导航">
+        <div class="flex min-w-max items-center gap-1">
+          <RouterLink
+            v-for="item in navItems"
+            :key="item.label"
+            :to="item.to"
+            :aria-current="route.path === item.to ? 'page' : undefined"
+            :class="[
+              'relative flex min-h-11 items-center gap-2 px-3 text-sm font-medium transition-colors duration-200',
+              route.path === item.to
+                ? 'text-accent after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-accent'
+                : 'text-text-muted hover:text-text-primary',
+            ]"
+          >
+            <component :is="item.icon" :size="16" />
+            {{ item.label }}
+          </RouterLink>
+        </div>
+      </nav>
+    </section>
+
     <RouterView />
-  </template>
+  </div>
 </template>
