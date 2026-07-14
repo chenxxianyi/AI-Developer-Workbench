@@ -19,7 +19,7 @@ func NewRequirementHandler(db *gorm.DB) *RequirementHandler {
 }
 
 func (h *RequirementHandler) Get(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	var req model.Requirement
 	if err := h.db.Where("project_id = ?", projectID).Order("version desc").First(&req).Error; err != nil {
 		response.NotFound(c, "需求不存在")
@@ -29,7 +29,7 @@ func (h *RequirementHandler) Get(c *gin.Context) {
 }
 
 func (h *RequirementHandler) Save(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	var body struct {
 		Content string `json:"content" binding:"required"`
 	}
