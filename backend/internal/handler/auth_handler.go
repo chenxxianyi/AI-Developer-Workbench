@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"ai-developer-workbench/internal/middleware"
 	"ai-developer-workbench/internal/model"
 	"ai-developer-workbench/pkg/auth"
 	"ai-developer-workbench/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -51,11 +53,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	passwordHash, err := hashPassword(req.Password)
+	if err != nil {
+		response.InternalError(c, "密码加密失败")
+		return
+	}
+
 	user := model.User{
 		ID:           uuid.New().String(),
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: hashPassword(req.Password),
+		PasswordHash: passwordHash,
 		Role:         "user",
 		Status:       "active",
 	}
@@ -134,14 +142,22 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 }
 
 // RegisterAuthRoutes registers auth routes.
-func RegisterAuthRoutes(r *gin.RouterGroup, h *AuthHandler) {
-	auth := r.Group("/auth")
-	auth.POST("/register", h.Register)
-	auth.POST("/login", h.Login)
-	auth.GET("/profile", h.Profile)
-	auth.PUT("/profile", h.UpdateProfile)
+func RegisterAuthRoutes(r *gin.RouterGroup, h *AuthHandler, jwtSecret string) {
+	authRoutes := r.Group("/auth")
+	authRoutes.POST("/register", h.Register)
+	authRoutes.POST("/login", h.Login)
+
+	protected := authRoutes.Group("")
+	protected.Use(middleware.JWTAuth(jwtSecret))
+	protected.GET("/profile", h.Profile)
+	protected.PUT("/profile", h.UpdateProfile)
 }
 
-// Simple password hashing (replace with bcrypt in production).
-func hashPassword(pwd string) string            { return pwd } // TODO: bcrypt
-func checkPassword(hash, pwd string) bool        { return hash == pwd }
+func hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hash), err
+}
+
+func checkPassword(hash, password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}

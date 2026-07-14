@@ -22,7 +22,6 @@ type ReportService interface {
 	CreateProcessingReport(ctx context.Context, toolType, title, inputMode string, inputData json.RawMessage, parentReportID, projectID string) (*model.Report, error)
 	SucceedReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string, totalScore *int, grade *string, generatedFiles []model.GeneratedFile) (*dto.ReportDTO, error)
 	FailReport(ctx context.Context, id string, errorMessage string) error
-	FallbackReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string) error
 	GetReport(ctx context.Context, id string) (*dto.ReportDTO, error)
 	ListReports(ctx context.Context, query dto.ListReportsQuery) (*dto.PaginatedResponse[dto.ReportDTO], error)
 	DeleteReport(ctx context.Context, id string) error
@@ -235,20 +234,6 @@ func (s *reportService) FailReport(ctx context.Context, id string, errorMessage 
 
 	report.Status = model.StatusFailed
 	report.ErrorMessage = errorMessage
-
-	return s.reportRepo.Update(ctx, report)
-}
-
-// FallbackReport updates a report to fallback status with partial results.
-func (s *reportService) FallbackReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string) error {
-	report, err := s.reportRepo.GetByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("report not found: %w", err)
-	}
-
-	report.Status = model.StatusFallback
-	report.ReportJSON = datatypes.JSON(reportJSON)
-	report.Summary = summary
 
 	return s.reportRepo.Update(ctx, report)
 }

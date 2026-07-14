@@ -38,7 +38,7 @@ type stubFileRepo struct {
 	files map[string]*model.GeneratedFile
 }
 
-func (s *stubFileRepo) Create(_ context.Context, _ *model.GeneratedFile) error { return nil }
+func (s *stubFileRepo) Create(_ context.Context, _ *model.GeneratedFile) error       { return nil }
 func (s *stubFileRepo) CreateBatch(_ context.Context, _ []model.GeneratedFile) error { return nil }
 func (s *stubFileRepo) GetByReportID(_ context.Context, _ string) ([]model.GeneratedFile, error) {
 	return nil, nil
@@ -97,25 +97,6 @@ func TestExportMarkdown_NonScoringReport(t *testing.T) {
 	assert.Contains(t, filename, "report.md")
 	assert.Contains(t, string(content), "Agent Config Report")
 	assert.NotContains(t, string(content), "/100", "should not contain score for non-scoring report")
-}
-
-func TestExportMarkdown_FallbackReport(t *testing.T) {
-	reportRepo := &stubReportRepo{
-		report: &model.Report{
-			ID:       "r3",
-			Title:    "Fallback Report",
-			ToolType: model.ToolTypeDBSchema,
-			Status:   model.StatusFallback,
-			Summary:  "AI parsing failed, using fallback",
-		},
-	}
-	exportSvc := NewExportService(reportRepo, &stubFileRepo{files: map[string]*model.GeneratedFile{}})
-	ctx := context.Background()
-
-	content, _, err := exportSvc.ExportMarkdown(ctx, "r3")
-	require.NoError(t, err)
-	assert.Contains(t, string(content), "Fallback Report")
-	assert.Contains(t, string(content), "fallback")
 }
 
 func TestExportMarkdown_WithGeneratedFiles(t *testing.T) {

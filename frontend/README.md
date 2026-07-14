@@ -10,13 +10,13 @@ npm install
 npm run dev          # 本地开发，默认 http://localhost:5173
 npm run build        # 生产构建到 dist/
 npm run test:unit    # Vitest 单元测试
-npm run test:e2e     # Playwright E2E（mock /api，无需后端）
+npm run test:e2e     # Playwright E2E（使用独立接口夹具，无需后端）
 ```
 
 ## 与后端联调
 
 默认通过 Vite 代理把 `/api` 转发到 `http://localhost:8080`（见 `vite.config.ts`）。
-后端默认端口 8080，Mock 模式下无需 API Key 即可体验全部功能。
+后端默认端口 8080，并且必须配置真实 AI 服务的 API Key。
 
 ## Docker
 
@@ -33,12 +33,11 @@ docker compose down -v              # 停止并清理数据卷
 
 访问 http://localhost:5173，刷新任意路由不会返回 Nginx 404。
 
-## 切换真实 AI
+## 配置真实 AI
 
 编辑仓库根目录 `.env`（从 `.env.example` 复制），设置：
 
 ```
-AI_MOCK_MODE=false
 AI_API_KEY=sk-...
 AI_PROVIDER=openai
 AI_BASE_URL=https://api.openai.com/v1

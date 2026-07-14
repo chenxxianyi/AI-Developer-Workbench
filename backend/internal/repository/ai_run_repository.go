@@ -14,16 +14,15 @@ type AIRunRepository interface {
 }
 
 type AIObservabilityStats struct {
-	TotalCalls     int64   `json:"total_calls"`
-	SuccessRate    float64 `json:"success_rate"`
-	FallbackRate   float64 `json:"fallback_rate"`
-	ParseFailRate  float64 `json:"parse_fail_rate"`
-	AvgDurationMs  float64 `json:"avg_duration_ms"`
-	P50DurationMs  float64 `json:"p50_duration_ms"`
-	P95DurationMs  float64 `json:"p95_duration_ms"`
-	RetryRate      float64 `json:"retry_rate"`
-	ByTool         []ToolAIStats `json:"by_tool"`
-	ByModel        []ModelAIStats `json:"by_model"`
+	TotalCalls    int64          `json:"total_calls"`
+	SuccessRate   float64        `json:"success_rate"`
+	ParseFailRate float64        `json:"parse_fail_rate"`
+	AvgDurationMs float64        `json:"avg_duration_ms"`
+	P50DurationMs float64        `json:"p50_duration_ms"`
+	P95DurationMs float64        `json:"p95_duration_ms"`
+	RetryRate     float64        `json:"retry_rate"`
+	ByTool        []ToolAIStats  `json:"by_tool"`
+	ByModel       []ModelAIStats `json:"by_model"`
 }
 
 type ToolAIStats struct {
@@ -33,8 +32,8 @@ type ToolAIStats struct {
 }
 
 type ModelAIStats struct {
-	Model       string  `json:"model"`
-	TotalCalls  int64   `json:"total_calls"`
+	Model         string  `json:"model"`
+	TotalCalls    int64   `json:"total_calls"`
 	AvgDurationMs float64 `json:"avg_duration_ms"`
 }
 
@@ -58,18 +57,16 @@ func (r *aiRunRepository) GetStats(ctx context.Context, toolType string, days in
 	}
 
 	type row struct {
-		Count        int64
-		ParseOk      int64
-		FallbackUsed int64
-		Retried      int64
-		SumDuration  int64
+		Count       int64
+		ParseOk     int64
+		Retried     int64
+		SumDuration int64
 	}
 
 	var total row
 	err := query.Select(
 		"COUNT(*) as count",
 		"SUM(CASE WHEN parse_success = 1 THEN 1 ELSE 0 END) as parse_ok",
-		"SUM(CASE WHEN fallback_used = 1 THEN 1 ELSE 0 END) as fallback_used",
 		"SUM(CASE WHEN retry_count > 0 THEN 1 ELSE 0 END) as retried",
 		"COALESCE(SUM(duration_ms), 0) as sum_duration",
 	).Scan(&total).Error
@@ -80,7 +77,6 @@ func (r *aiRunRepository) GetStats(ctx context.Context, toolType string, days in
 	stats := &AIObservabilityStats{TotalCalls: total.Count}
 	if total.Count > 0 {
 		stats.ParseFailRate = float64(total.Count-total.ParseOk) / float64(total.Count) * 100
-		stats.FallbackRate = float64(total.FallbackUsed) / float64(total.Count) * 100
 		stats.RetryRate = float64(total.Retried) / float64(total.Count) * 100
 		stats.AvgDurationMs = float64(total.SumDuration) / float64(total.Count)
 	}

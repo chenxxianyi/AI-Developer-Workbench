@@ -94,9 +94,9 @@ type UploadConfig struct {
 // ── Workspace (for generation / build / preview) ──
 
 type WorkspaceConfig struct {
-	RootDir           string
-	BuildTimeoutSec   int
-	PreviewSessionTTL int // minutes
+	RootDir             string
+	BuildTimeoutSec     int
+	PreviewSessionTTL   int // minutes
 	MaxConcurrentBuilds int
 }
 
@@ -108,7 +108,6 @@ type AIConfig struct {
 	APIKey         string
 	Model          string
 	VisionModel    string
-	MockMode       bool
 	TimeoutSeconds int
 	MaxRetries     int
 }
@@ -184,7 +183,6 @@ func LoadConfig(envFile string) (*Config, error) {
 			APIKey:         getEnv("AI_API_KEY", ""),
 			Model:          getEnv("AI_MODEL", "gpt-4.1"),
 			VisionModel:    getEnv("AI_VISION_MODEL", "gpt-4.1"),
-			MockMode:       getEnvBool("AI_MOCK_MODE", false),
 			TimeoutSeconds: getEnvInt("AI_TIMEOUT_SECONDS", 90),
 			MaxRetries:     getEnvInt("AI_MAX_RETRIES", 1),
 		},
@@ -205,10 +203,6 @@ func (c *Config) validate() error {
 			return fmt.Errorf("DATABASE_HOST is required")
 		}
 	}
-	if c.AI.MockMode || c.AI.APIKey == "" {
-		c.AI.MockMode = true
-		return nil
-	}
 	if c.AI.APIKey == "" {
 		return fmt.Errorf("AI_API_KEY is required")
 	}
@@ -219,7 +213,6 @@ func (c *Config) validate() error {
 	return nil
 }
 
-func (c *Config) IsMockMode() bool    { return c.AI.MockMode }
 func (c *Config) IsDevelopment() bool { return c.App.Env == "development" }
 
 // ── Helpers ──

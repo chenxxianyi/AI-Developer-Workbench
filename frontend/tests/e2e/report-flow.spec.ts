@@ -271,7 +271,6 @@ async function mockApi(page: Page) {
         provider: 'openai',
         text_model: 'mock-text',
         vision_model: 'mock-vision',
-        mock_mode: true,
         upload_limits: {
           image_max_bytes: 20_971_520,
           zip_max_bytes: 104_857_600,

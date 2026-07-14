@@ -45,7 +45,6 @@ func ValidStatusValues() map[string]bool {
 	return map[string]bool{
 		"processing": true,
 		"succeeded":  true,
-		"fallback":   true,
 		"failed":     true,
 	}
 }

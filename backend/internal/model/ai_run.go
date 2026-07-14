@@ -15,11 +15,9 @@ type AIRun struct {
 	ToolType     string    `gorm:"type:varchar(32);not null;index" json:"tool_type"`
 	Provider     string    `gorm:"type:varchar(64);not null" json:"provider"`
 	Model        string    `gorm:"type:varchar(128);not null" json:"model"`
-	IsMock       bool      `gorm:"not null;default:false" json:"is_mock"`
 	DurationMs   int64     `gorm:"not null;default:0" json:"duration_ms"`
 	RetryCount   int       `gorm:"type:tinyint unsigned;not null;default:0" json:"retry_count"`
 	ParseSuccess bool      `gorm:"not null;default:true" json:"parse_success"`
-	FallbackUsed bool      `gorm:"not null;default:false" json:"fallback_used"`
 	ErrorType    string    `gorm:"type:varchar(64);not null;default:''" json:"error_type"`
 	CreatedAt    time.Time `gorm:"not null" json:"created_at"`
 

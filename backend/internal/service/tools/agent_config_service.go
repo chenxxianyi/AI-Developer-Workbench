@@ -68,12 +68,10 @@ func (s *AgentConfigService) Run(ctx context.Context, req dto.AgentConfigRequest
 	// 4. Parse AI response.
 	var result dto.AgentConfigResult
 	if err := util.ParseAIResponseInto(aiResult.JSONText, &result); err != nil {
-		slog.Warn("Failed to parse AI response, using fallback", "error", err)
-		// Generate fallback result.
-		result = s.buildFallbackResult(req)
-		fallbackJSON, _ := json.Marshal(result)
-		_ = s.reportService.FallbackReport(ctx, report.ID, fallbackJSON, "AI response parsing failed, using fallback data")
-		return s.reportService.GetReport(ctx, report.ID)
+		parseErr := fmt.Errorf("parse AI response: %w", err)
+		slog.Error("Failed to parse AI response", "error", err)
+		_ = s.reportService.FailReport(ctx, report.ID, parseErr.Error())
+		return nil, parseErr
 	}
 
 	// 5. Normalize result.
@@ -127,16 +125,4 @@ func (s *AgentConfigService) buildGeneratedFiles(result dto.AgentConfigResult) [
 		})
 	}
 	return files
-}
-
-// buildFallbackResult creates a fallback result when AI parsing fails.
-func (s *AgentConfigService) buildFallbackResult(req dto.AgentConfigRequest) dto.AgentConfigResult {
-	return dto.AgentConfigResult{
-		GeneratedFilesContent: map[string]string{
-			"AGENTS.md":    "# AGENTS.md\n\nProject: " + req.ProjectName + "\n\n[Fallback - AI parsing failed]",
-			"TASK_PLAN.md": "# Task Plan\n\n[Fallback - AI parsing failed]",
-		},
-		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:     "Retry generating configuration files for " + req.ProjectName,
-	}
 }

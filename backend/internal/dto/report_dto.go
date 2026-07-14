@@ -48,7 +48,7 @@ type WeeklyStatsDTO struct {
 	// Nil when no scored reports exist this week (not 0).
 	AverageScoreThisWeek *float64 `json:"average_score_this_week"`
 	// HighSeverityCountThisWeek counts issues with severity "high" across
-	// this week's succeeded/fallback reports. Aggregated in Go from report_json.
+	// this week's succeeded reports. Aggregated in Go from report_json.
 	HighSeverityCountThisWeek int64 `json:"high_severity_count_this_week"`
 	// MostUsedToolThisWeek is the tool_type with the most reports this week.
 	// Empty when no reports exist this week.
@@ -86,7 +86,6 @@ type SystemStatusDTO struct {
 	Provider     string          `json:"provider"`
 	TextModel    string          `json:"text_model"`
 	VisionModel  string          `json:"vision_model"`
-	MockMode     bool            `json:"mock_mode"`
 	UploadLimits UploadLimitsDTO `json:"upload_limits"`
 }
 

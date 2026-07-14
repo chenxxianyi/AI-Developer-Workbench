@@ -80,17 +80,16 @@ Key configuration options in `.env`:
 | `APP_PORT` | Server port | 8080 |
 | `DATABASE_HOST` | MySQL host | 127.0.0.1 |
 | `DATABASE_PASSWORD` | MySQL password | (required) |
-| `AI_API_KEY` | OpenAI API key | (empty = Mock Mode) |
-| `AI_MOCK_MODE` | Force mock mode | true |
+| `AI_API_KEY` | AI service API key (required) | (required) |
 | `AI_BASE_URL` | AI provider URL | https://api.openai.com/v1 |
 | `AI_MODEL` | Text model | gpt-4.1 |
 | `AI_VISION_MODEL` | Vision model | gpt-4.1 |
 | `MAX_UPLOAD_SIZE_MB` | Max upload size | 20 |
 | `CORS_ALLOW_ORIGINS` | 允许的前端来源，逗号分隔 | http://localhost:5173 |
 
-## 切换真实 AI
+## 配置 AI 服务
 
-编辑仓库根目录 `.env`（从 `.env.example` 复制），将 `AI_MOCK_MODE` 设为 `false` 并填入 `AI_API_KEY`，然后 `docker compose up -d`。
+编辑仓库根目录 `.env`（从 `.env.example` 复制），填写 `AI_API_KEY`、服务地址和模型。系统只调用真实 AI 服务，缺少 API Key 时后端会拒绝启动。
 
 ## API Endpoints
 
@@ -116,14 +115,6 @@ Key configuration options in `.env`:
 - `POST /api/tools/agent-config/run` - Run Agent Config (JSON)
 - `POST /api/tools/api-doc/run` - Run API Doc (multipart)
 - `POST /api/tools/db-schema/run` - Run DB Schema (JSON)
-
-## Mock Mode
-
-When `AI_API_KEY` is empty or `AI_MOCK_MODE=true`, the backend uses mock responses that:
-
-- Execute full business chain (validation, persistence, file generation)
-- Produce realistic content for UI testing
-- Pass through same DTO validation as real AI responses
 
 ## Security
 

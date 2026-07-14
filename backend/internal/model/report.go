@@ -10,23 +10,23 @@ import (
 
 // Report represents a tool execution report.
 type Report struct {
-	ID           string         `gorm:"type:char(36);primaryKey" json:"id"`
-	ToolType     string         `gorm:"type:varchar(32);not null" json:"tool_type"`
-	Title        string         `gorm:"type:varchar(255);not null" json:"title"`
-	InputMode    string         `gorm:"type:varchar(32);not null;default:''" json:"input_mode"`
-	Status       string         `gorm:"type:varchar(24);not null;default:'processing'" json:"status"`
-	Summary      string         `gorm:"type:text" json:"summary"`
-	TotalScore   *int           `gorm:"type:smallint unsigned" json:"total_score"`
-	Grade        *string        `gorm:"type:varchar(64)" json:"grade"`
-	InputJSON    datatypes.JSON `gorm:"type:json" json:"input_json"`
-	ReportJSON   datatypes.JSON `gorm:"type:json;not null" json:"report_json"`
-	FilePath     string         `gorm:"type:varchar(1024)" json:"file_path"`
-	FileURL      string         `gorm:"type:varchar(1024)" json:"file_url"`
-	ErrorMessage string         `gorm:"type:text" json:"error_message"`
-	ParentReportID *string      `gorm:"type:char(36);index" json:"parent_report_id,omitempty"`
-	ProjectID    *string        `gorm:"type:char(36);index" json:"project_id,omitempty"`
-	CreatedAt    time.Time      `gorm:"not null" json:"created_at"`
-	UpdatedAt    time.Time      `gorm:"not null" json:"updated_at"`
+	ID             string         `gorm:"type:char(36);primaryKey" json:"id"`
+	ToolType       string         `gorm:"type:varchar(32);not null" json:"tool_type"`
+	Title          string         `gorm:"type:varchar(255);not null" json:"title"`
+	InputMode      string         `gorm:"type:varchar(32);not null;default:''" json:"input_mode"`
+	Status         string         `gorm:"type:varchar(24);not null;default:'processing'" json:"status"`
+	Summary        string         `gorm:"type:text" json:"summary"`
+	TotalScore     *int           `gorm:"type:smallint unsigned" json:"total_score"`
+	Grade          *string        `gorm:"type:varchar(64)" json:"grade"`
+	InputJSON      datatypes.JSON `gorm:"type:json" json:"input_json"`
+	ReportJSON     datatypes.JSON `gorm:"type:json;not null" json:"report_json"`
+	FilePath       string         `gorm:"type:varchar(1024)" json:"file_path"`
+	FileURL        string         `gorm:"type:varchar(1024)" json:"file_url"`
+	ErrorMessage   string         `gorm:"type:text" json:"error_message"`
+	ParentReportID *string        `gorm:"type:char(36);index" json:"parent_report_id,omitempty"`
+	ProjectID      *string        `gorm:"type:char(36);index" json:"project_id,omitempty"`
+	CreatedAt      time.Time      `gorm:"not null" json:"created_at"`
+	UpdatedAt      time.Time      `gorm:"not null" json:"updated_at"`
 
 	// Relations
 	GeneratedFiles []GeneratedFile `gorm:"foreignKey:ReportID;constraint:OnDelete:CASCADE" json:"generated_files"`
@@ -64,7 +64,6 @@ func (Report) TableName() string {
 const (
 	StatusProcessing = "processing"
 	StatusSucceeded  = "succeeded"
-	StatusFallback   = "fallback"
 	StatusFailed     = "failed"
 )
 

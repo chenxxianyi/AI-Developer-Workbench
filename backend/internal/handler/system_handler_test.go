@@ -13,116 +13,64 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestGetStatus_ReturnsMockMode(t *testing.T) {
+func TestGetStatus_ReturnsRealAIConfiguration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-
-	tests := []struct {
-		name         string
-		mockMode     bool
-		expectMocked bool
-	}{
-		{"mock mode enabled", true, true},
-		{"real mode (mock disabled)", false, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := &config.Config{
-				AI: config.AIConfig{
-					Provider:    "openai",
-					Model:       "gpt-4.1",
-					VisionModel: "gpt-4.1",
-					MockMode:    tt.mockMode,
-				},
-				Upload: config.UploadConfig{
-					MaxUploadSizeMB:      20,
-					MaxProjectFiles:      120,
-					MaxZipUncompressedMB: 100,
-				},
-				CORS: config.CORSConfig{
-					AllowOrigins: []string{"*"},
-				},
-			}
-
-			router := gin.New()
-			RegisterSystemRoutes(&router.RouterGroup, cfg)
-
-			req := httptest.NewRequest(http.MethodGet, "/system/status", nil)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			if w.Code != http.StatusOK {
-				t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
-			}
-
-			var resp util.Response
-			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-				t.Fatalf("failed to parse response: %v", err)
-			}
-
-			// Extract data from the response.
-			dataBytes, _ := json.Marshal(resp.Data)
-			var status dto.SystemStatusDTO
-			if err := json.Unmarshal(dataBytes, &status); err != nil {
-				t.Fatalf("failed to parse status data: %v", err)
-			}
-
-			if status.MockMode != tt.expectMocked {
-				t.Errorf("mock_mode=%v, want %v", status.MockMode, tt.expectMocked)
-			}
-			if status.Provider != "openai" {
-				t.Errorf("provider=%q, want %q", status.Provider, "openai")
-			}
-		})
-	}
-}
-
-func TestGetStatus_ReturnsUploadLimits(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	cfg := &config.Config{
-		AI: config.AIConfig{
-			Provider:    "test",
-			Model:       "test-model",
-			VisionModel: "test-vision",
-			MockMode:    true,
-		},
-		Upload: config.UploadConfig{
-			MaxUploadSizeMB:      15,
-			MaxProjectFiles:      80,
-			MaxZipUncompressedMB: 50,
-		},
-		CORS: config.CORSConfig{
-			AllowOrigins: []string{"*"},
-		},
+		AI:     config.AIConfig{Provider: "openai", Model: "gpt-4.1", VisionModel: "gpt-4.1"},
+		Upload: config.UploadConfig{MaxUploadSizeMB: 20, MaxProjectFiles: 120, MaxZipUncompressedMB: 100},
 	}
 
 	router := gin.New()
 	RegisterSystemRoutes(&router.RouterGroup, cfg)
-
 	req := httptest.NewRequest(http.MethodGet, "/system/status", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
-
+	if json.Valid(w.Body.Bytes()) == false {
+		t.Fatalf("invalid JSON response: %s", w.Body.String())
+	}
 	var resp util.Response
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("failed to parse response: %v", err)
+		t.Fatal(err)
 	}
-
 	dataBytes, _ := json.Marshal(resp.Data)
 	var status dto.SystemStatusDTO
 	if err := json.Unmarshal(dataBytes, &status); err != nil {
-		t.Fatalf("failed to parse status data: %v", err)
+		t.Fatal(err)
 	}
+	if status.Provider != "openai" || status.TextModel != "gpt-4.1" {
+		t.Fatalf("unexpected AI status: %+v", status)
+	}
+}
 
+func TestGetStatus_ReturnsUploadLimits(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg := &config.Config{
+		AI:     config.AIConfig{Provider: "test", Model: "test-model", VisionModel: "test-vision"},
+		Upload: config.UploadConfig{MaxUploadSizeMB: 15, MaxProjectFiles: 80, MaxZipUncompressedMB: 50},
+	}
+	router := gin.New()
+	RegisterSystemRoutes(&router.RouterGroup, cfg)
+	req := httptest.NewRequest(http.MethodGet, "/system/status", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	var resp util.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	dataBytes, _ := json.Marshal(resp.Data)
+	var status dto.SystemStatusDTO
+	if err := json.Unmarshal(dataBytes, &status); err != nil {
+		t.Fatal(err)
+	}
 	if status.UploadLimits.ImageMaxBytes != 15*1024*1024 {
-		t.Errorf("ImageMaxBytes=%d, want %d", status.UploadLimits.ImageMaxBytes, 15*1024*1024)
+		t.Fatalf("unexpected image limit: %d", status.UploadLimits.ImageMaxBytes)
 	}
 	if status.UploadLimits.ZipMaxFiles != 80 {
-		t.Errorf("ZipMaxFiles=%d, want 80", status.UploadLimits.ZipMaxFiles)
+		t.Fatalf("unexpected file limit: %d", status.UploadLimits.ZipMaxFiles)
 	}
 }

@@ -204,7 +204,7 @@ func (r *projectRepository) GetStats(ctx context.Context, id string) (*dto.Proje
 	artifactTools := []string{model.ToolTypeAgentConfig, model.ToolTypeAPIDoc, model.ToolTypeDBSchema}
 	if err := r.db.WithContext(ctx).
 		Preload("GeneratedFiles").
-		Where("project_id = ? AND tool_type IN ? AND status IN ?", id, artifactTools, []string{model.StatusSucceeded, model.StatusFallback}).
+		Where("project_id = ? AND tool_type IN ? AND status = ?", id, artifactTools, model.StatusSucceeded).
 		Order("created_at DESC").
 		Find(&artifactReports).Error; err != nil {
 		return nil, fmt.Errorf("failed to get latest project artifacts: %w", err)

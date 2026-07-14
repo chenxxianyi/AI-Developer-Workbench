@@ -24,7 +24,7 @@ async function login() {
   if (!username.value || !password.value) { error.value = '请输入用户名和密码'; return }
   loading.value = true; error.value = ''
   try { await auth.login(username.value, password.value); router.push('/dashboard') }
-  catch { error.value = '用户名或密码错误' }
+  catch (e: any) { error.value = e?.message || '用户名或密码错误' }
   finally { loading.value = false }
 }
 </script>

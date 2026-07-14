@@ -130,11 +130,10 @@ func (s *ProjectDoctorService) Run(ctx context.Context, input ProjectDoctorFormI
 
 	var result dto.ProjectDoctorResult
 	if err := util.ParseAIResponseInto(aiResult.JSONText, &result); err != nil {
-		slog.Warn("Failed to parse AI response, using fallback", "error", err)
-		result = s.buildFallbackResult(input)
-		fallbackJSON, _ := json.Marshal(result)
-		_ = s.reportService.FallbackReport(ctx, report.ID, fallbackJSON, "AI response parsing failed")
-		return s.reportService.GetReport(ctx, report.ID)
+		parseErr := fmt.Errorf("parse AI response: %w", err)
+		slog.Error("Failed to parse AI response", "error", err)
+		_ = s.reportService.FailReport(ctx, report.ID, parseErr.Error())
+		return nil, parseErr
 	}
 
 	s.normalizeResult(&result)
@@ -177,15 +176,6 @@ func (s *ProjectDoctorService) normalizeResult(result *dto.ProjectDoctorResult) 
 	}
 	for i := range result.Issues {
 		result.Issues[i].Severity = util.NormalizeSeverity(result.Issues[i].Severity)
-	}
-}
-
-func (s *ProjectDoctorService) buildFallbackResult(input ProjectDoctorFormInput) dto.ProjectDoctorResult {
-	return dto.ProjectDoctorResult{
-		Scores:          []dto.ScoreItem{{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"}},
-		Issues:          []dto.IssueItem{},
-		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:     "Retry project health check for " + input.ProjectName,
 	}
 }
 

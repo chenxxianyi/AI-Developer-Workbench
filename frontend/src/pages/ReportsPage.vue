@@ -107,7 +107,6 @@ const resetFilters = () => {
         >
           <option value="">全部状态</option>
           <option value="succeeded">成功</option>
-          <option value="fallback">降级</option>
           <option value="failed">失败</option>
           <option value="processing">处理中</option>
         </select>

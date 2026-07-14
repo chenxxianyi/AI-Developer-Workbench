@@ -31,9 +31,6 @@ func (s *stubReportService) SucceedReport(_ context.Context, _ string, _ json.Ra
 	return &dto.ReportDTO{}, nil
 }
 func (s *stubReportService) FailReport(_ context.Context, _ string, _ string) error { return nil }
-func (s *stubReportService) FallbackReport(_ context.Context, _ string, _ json.RawMessage, _ string) error {
-	return nil
-}
 func (s *stubReportService) GetReport(_ context.Context, _ string) (*dto.ReportDTO, error) {
 	return &dto.ReportDTO{}, nil
 }

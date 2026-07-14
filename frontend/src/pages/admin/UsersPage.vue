@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   CircleCheck,
   CircleX,
@@ -11,6 +11,7 @@ import {
   Users,
 } from '@lucide/vue'
 import AdminPageShell from '@/components/admin/AdminPageShell.vue'
+import apiClient from '@/api/client'
 
 interface AdminUser {
   id: string
@@ -22,15 +23,38 @@ interface AdminUser {
 
 const search = ref('')
 const roleFilter = ref<'' | AdminUser['role']>('')
-const users = ref<AdminUser[]>([
-  {
-    id: '1',
-    username: 'admin',
-    email: 'admin@workbench.local',
-    role: 'admin',
-    status: 'active',
-  },
-])
+const users = ref<AdminUser[]>([])
+const loading = ref(false)
+const error = ref('')
+const updatingUserId = ref('')
+
+async function loadUsers() {
+  loading.value = true
+  error.value = ''
+  try {
+    users.value = await apiClient.get('/admin/users') as unknown as AdminUser[]
+  } catch (err: any) {
+    error.value = err?.message || '获取用户列表失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function toggleUserStatus(user: AdminUser) {
+  const status = user.status === 'active' ? 'disabled' : 'active'
+  updatingUserId.value = user.id
+  error.value = ''
+  try {
+    await apiClient.put(`/admin/users/${user.id}/status`, { status })
+    user.status = status
+  } catch (err: any) {
+    error.value = err?.message || '更新用户状态失败'
+  } finally {
+    updatingUserId.value = ''
+  }
+}
+
+onMounted(loadUsers)
 
 const filteredUsers = computed(() => {
   const keyword = search.value.trim().toLowerCase()
@@ -83,6 +107,8 @@ const adminCount = computed(() => users.value.filter((user) => user.role === 'ad
       </div>
     </section>
 
+    <p v-if="error" role="alert" class="mb-4 rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">{{ error }}</p>
+
     <section class="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
       <div class="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div>
@@ -94,7 +120,9 @@ const adminCount = computed(() => users.value.filter((user) => user.role === 'ad
         </span>
       </div>
 
-      <div v-if="filteredUsers.length" class="overflow-x-auto">
+      <div v-if="loading" class="flex min-h-64 items-center justify-center text-sm text-text-muted">正在读取数据库用户...</div>
+
+      <div v-else-if="filteredUsers.length" class="overflow-x-auto">
         <table class="w-full min-w-[820px] text-sm">
           <thead class="bg-surface-muted/70 text-xs text-text-muted">
             <tr>
@@ -165,7 +193,9 @@ const adminCount = computed(() => users.value.filter((user) => user.role === 'ad
                     type="button"
                     :title="user.status === 'active' ? '停用用户' : '启用用户'"
                     :aria-label="user.status === 'active' ? '停用用户' : '启用用户'"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition-smooth hover:bg-surface-muted hover:text-text-primary focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+                    :disabled="updatingUserId === user.id"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition-smooth hover:bg-surface-muted hover:text-text-primary disabled:cursor-wait disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
+                    @click="toggleUserStatus(user)"
                   >
                     <Power :size="16" />
                   </button>

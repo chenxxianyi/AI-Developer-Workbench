@@ -13,7 +13,6 @@ interface ImportMetaEnv {
   /** 应用标题 */
   readonly VITE_APP_TITLE?: string
   /** 是否启用 Mock AI 模式 */
-  readonly VITE_MOCK_AI?: string
 }
 
 interface ImportMeta {

@@ -64,11 +64,10 @@ func (s *DBSchemaService) Run(ctx context.Context, req dto.DBSchemaRequest) (*dt
 
 	var result dto.DBSchemaResult
 	if err := util.ParseAIResponseInto(aiResult.JSONText, &result); err != nil {
-		slog.Warn("Failed to parse AI response, using fallback", "error", err)
-		result = s.buildFallbackResult(req)
-		fallbackJSON, _ := json.Marshal(result)
-		_ = s.reportService.FallbackReport(ctx, report.ID, fallbackJSON, "AI response parsing failed")
-		return s.reportService.GetReport(ctx, report.ID)
+		parseErr := fmt.Errorf("parse AI response: %w", err)
+		slog.Error("Failed to parse AI response", "error", err)
+		_ = s.reportService.FailReport(ctx, report.ID, parseErr.Error())
+		return nil, parseErr
 	}
 
 	// Normalize.
@@ -125,17 +124,6 @@ func (s *DBSchemaService) normalizeResult(result *dto.DBSchemaResult) {
 	}
 	for i := range result.Issues {
 		result.Issues[i].Severity = util.NormalizeSeverity(result.Issues[i].Severity)
-	}
-}
-
-func (s *DBSchemaService) buildFallbackResult(req dto.DBSchemaRequest) dto.DBSchemaResult {
-	return dto.DBSchemaResult{
-		Scores: []dto.ScoreItem{
-			{Name: "Overall", Score: 0, MaxScore: 100, Comment: "AI parsing failed"},
-		},
-		Issues:          []dto.IssueItem{},
-		Recommendations: []string{"AI response parsing failed. Please try again."},
-		CodexPrompt:     "Retry schema review for " + req.SchemaType,
 	}
 }
 

@@ -191,7 +191,7 @@ function handleRerun() {
           <!-- Actions -->
           <div class="flex items-center gap-2 flex-shrink-0">
             <button
-              v-if="report.status === 'succeeded' || report.status === 'fallback'"
+              v-if="report.status === 'succeeded'"
               class="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-surface-hover transition-smooth"
               @click="handleDownloadMarkdown"
               aria-label="下载 Markdown 报告"
@@ -200,7 +200,7 @@ function handleRerun() {
               导出
             </button>
             <button
-              v-if="report.status === 'succeeded' || report.status === 'fallback'"
+              v-if="report.status === 'succeeded'"
               class="inline-flex items-center gap-1.5 rounded-md border border-accent/30 bg-surface px-4 py-2 text-sm font-medium text-accent hover:bg-accent/5 transition-smooth focus-visible:ring-2 focus-visible:ring-accent focus:outline-none"
               @click="handleRerun"
               aria-label="基于本报告复查"
@@ -233,19 +233,12 @@ function handleRerun() {
         <p class="text-text-muted">报告正在生成中，请稍后刷新页面。</p>
       </div>
 
-      <!-- Success / Fallback content -->
+      <!-- Successful report content -->
       <div v-else class="space-y-6">
         <!-- Summary -->
         <div class="rounded-lg border border-border bg-surface p-5">
           <h3 class="text-lg font-semibold text-text-primary mb-3">结论摘要</h3>
           <p class="text-text-secondary leading-relaxed">{{ report.summary }}</p>
-          <div
-            v-if="report.status === 'fallback'"
-            class="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400"
-          >
-            <span class="inline-block h-2 w-2 rounded-full bg-amber-500" />
-            此报告使用了降级数据，部分内容可能不完整。
-          </div>
         </div>
 
         <!-- Score Panel (only for scoring tools) -->

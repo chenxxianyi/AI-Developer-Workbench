@@ -5,7 +5,7 @@
 
 import type { ToolType } from './tool'
 
-export type ReportStatus = 'processing' | 'succeeded' | 'fallback' | 'failed'
+export type ReportStatus = 'processing' | 'succeeded' | 'failed'
 
 export interface GeneratedFileMeta {
   id: string

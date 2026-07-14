@@ -142,13 +142,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	fileService := service.NewFileService(cfg, reportAssetRepo)
 	zipService := service.NewZipService(cfg.Upload.TempDir)
 
-	var aiService service.AIService
-	if cfg.AI.MockMode {
-		slog.Info("AI running in mock mode — no external API calls will be made")
-		aiService = service.NewMockAIService()
-	} else {
-		aiService = service.NewOpenAICompatibleService(&cfg.AI)
-	}
+	var aiService service.AIService = service.NewOpenAICompatibleService(&cfg.AI)
 	aiService = service.NewInstrumentedAIService(aiService, aiRunRepo)
 	exportService := service.NewExportService(reportRepo, generatedFileRepo)
 
@@ -183,6 +177,8 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		projectDoctorService,
 		apiDocService,
 	)
+	authHandler := handler.NewAuthHandler(db, cfg.JWT.Secret, cfg.JWT.Expire)
+	adminHandler := handler.NewAdminHandler(db)
 
 	router := gin.New()
 	// Cap uploaded bodies at the configured limit and return a clear 413 for
@@ -210,6 +206,11 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	handler.RegisterToolRunRoutes(api, toolRunHandler)
 	handler.RegisterJobRoutes(api, jobService)
 	handler.RegisterObservabilityRoutes(api, aiRunRepo)
+	handler.RegisterAuthRoutes(api, authHandler, cfg.JWT.Secret)
+
+	adminAPI := api.Group("")
+	adminAPI.Use(middleware.JWTAuth(cfg.JWT.Secret), middleware.RequireAdmin())
+	handler.RegisterAdminRoutes(adminAPI, adminHandler)
 
 	return router
 }

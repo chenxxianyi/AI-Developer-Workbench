@@ -20,18 +20,8 @@ const (
 )
 
 // JWTAuth validates the JWT token and injects user info into the context.
-// If the request has an X-Mock-User header AND mock mode is enabled, it skips JWT validation.
-func JWTAuth(jwtSecret string, mockEnabled bool) gin.HandlerFunc {
+func JWTAuth(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Mock mode: allow bypass with X-Mock-User header (development only)
-		if mockEnabled {
-			if mockUser := c.GetHeader("X-Mock-User"); mockUser != "" {
-				c.Set(ContextKeyUserID, mockUser)
-				c.Set(ContextKeyUserRole, "user")
-				c.Next()
-				return
-			}
-		}
 
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -100,7 +90,9 @@ func GetUserRole(c *gin.Context) string {
 
 // ProjectAccess validates that the current user owns the project identified by the :id or :projectId URL param.
 // Admins bypass ownership check.
-func ProjectAccess(projectRepo interface{ GetUserIDByProjectID(projectID string) (string, error) }) gin.HandlerFunc {
+func ProjectAccess(projectRepo interface {
+	GetUserIDByProjectID(projectID string) (string, error)
+}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectID := c.Param("projectId")
 		if projectID == "" {
@@ -143,11 +135,6 @@ func GetProjectID(c *gin.Context) string {
 		return s
 	}
 	return ""
-}
-
-// MockBypass returns true if the request came with an X-Mock-User header and mock mode is active.
-func MockBypass(c *gin.Context) bool {
-	return c.GetHeader("X-Mock-User") != "" && GetUserID(c) != ""
 }
 
 // GetClientIP safely extracts the client IP, respecting X-Forwarded-For and X-Real-Ip headers.

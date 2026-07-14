@@ -3,6 +3,7 @@
  * 使用 createWebHistory，包含路由守卫
  */
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 
 const routes = [
   // ── 公共 ──
@@ -166,18 +167,23 @@ const router = createRouter({
 })
 
 // ── 路由守卫 ──
-router.beforeEach((to, _from) => {
-  void to // 路由守卫待 authStore 接入后启用
-  // const authStore = useAuthStore()
-  // if (to.meta.requiresAuth !== false && !authStore.isLoggedIn) {
-  //   return { name: 'login', query: { redirect: to.fullPath } }
-  // }
-  // if (to.name === 'login' && authStore.isLoggedIn) {
-  //   return { name: 'dashboard' }
-  // }
-  // if (to.meta.requiresAdmin && authStore.user?.role !== 'admin') {
-  //   return { name: 'forbidden' }
-  // }
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+
+  if (authStore.token && !authStore.user) {
+    await authStore.fetchProfile()
+  }
+
+  if (to.meta.requiresAuth !== false && !authStore.isLoggedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'register' || to.name === 'landing')) {
+    return { name: 'dashboard' }
+  }
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return { name: 'forbidden' }
+  }
+  return true
 })
 
 export default router

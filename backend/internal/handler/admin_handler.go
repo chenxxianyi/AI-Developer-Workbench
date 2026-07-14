@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"ai-developer-workbench/internal/middleware"
 	"ai-developer-workbench/internal/model"
 	"ai-developer-workbench/pkg/response"
 
@@ -39,10 +40,26 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, "请提供状态")
+		response.ValidationError(c, "请提供账号状态")
 		return
 	}
-	h.db.Model(&model.User{}).Where("id = ?", c.Param("userId")).Update("status", req.Status)
+	if req.Status != "active" && req.Status != "disabled" {
+		response.ValidationError(c, "账号状态只能是 active 或 disabled")
+		return
+	}
+	if c.Param("userId") == middleware.GetUserID(c) && req.Status == "disabled" {
+		response.ValidationError(c, "不能停用当前登录账号")
+		return
+	}
+	result := h.db.Model(&model.User{}).Where("id = ?", c.Param("userId")).Update("status", req.Status)
+	if result.Error != nil {
+		response.InternalError(c, "更新用户状态失败")
+		return
+	}
+	if result.RowsAffected == 0 {
+		response.NotFound(c, "用户不存在")
+		return
+	}
 	response.Success(c, nil)
 }
 

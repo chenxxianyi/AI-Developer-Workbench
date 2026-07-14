@@ -47,7 +47,7 @@ async function loadProject() {
 }
 
 function exportProject() {
-  const base = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  const base = import.meta.env.VITE_API_BASE_URL || '/api'
   window.open(`${base}/projects/${projectId.value}/export`, '_blank')
 }
 

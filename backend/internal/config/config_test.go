@@ -18,105 +18,30 @@ func setTestEnv(key, value string) func() {
 	}
 }
 
-func TestLoadConfig_MockModeExplicitTrue(t *testing.T) {
-	restore := setTestEnv("DATABASE_DRIVER", "sqlite")
-	defer restore()
+func TestLoadConfig_RequiresAPIKey(t *testing.T) {
+	restoreDriver := setTestEnv("DATABASE_DRIVER", "sqlite")
+	defer restoreDriver()
+	restoreKey := setTestEnv("AI_API_KEY", "")
+	defer restoreKey()
 
-	os.Setenv("AI_MOCK_MODE", "true")
-	os.Setenv("AI_API_KEY", "")
-	defer func() {
-		os.Unsetenv("AI_MOCK_MODE")
-		os.Unsetenv("AI_API_KEY")
-	}()
+	_, err := LoadConfig("")
+	if err == nil || !strings.Contains(err.Error(), "AI_API_KEY is required") {
+		t.Fatalf("LoadConfig() error = %v, want missing AI_API_KEY error", err)
+	}
+}
+
+func TestLoadConfig_WithAPIKey(t *testing.T) {
+	restoreDriver := setTestEnv("DATABASE_DRIVER", "sqlite")
+	defer restoreDriver()
+	restoreKey := setTestEnv("AI_API_KEY", "sk-test-real-key")
+	defer restoreKey()
 
 	cfg, err := LoadConfig("")
 	if err != nil {
 		t.Fatalf("LoadConfig returned error: %v", err)
 	}
-	if !cfg.AI.MockMode {
-		t.Error("expected MockMode=true when AI_MOCK_MODE=true")
-	}
-	if !cfg.IsMockMode() {
-		t.Error("IsMockMode()=false, want true")
-	}
-}
-
-func TestLoadConfig_AutoMockWhenNoAPIKey(t *testing.T) {
-	restore := setTestEnv("DATABASE_DRIVER", "sqlite")
-	defer restore()
-
-	os.Setenv("AI_API_KEY", "")
-	os.Unsetenv("AI_MOCK_MODE")
-	defer os.Unsetenv("AI_API_KEY")
-
-	cfg, err := LoadConfig("")
-	if err != nil {
-		t.Fatalf("LoadConfig returned error: %v", err)
-	}
-	if !cfg.AI.MockMode {
-		t.Error("expected MockMode=true when AI_API_KEY is empty (auto-mock)")
-	}
-}
-
-func TestLoadConfig_RealModeWithAPIKey(t *testing.T) {
-	restore := setTestEnv("DATABASE_DRIVER", "sqlite")
-	defer restore()
-
-	os.Setenv("AI_API_KEY", "sk-test-real-key")
-	os.Setenv("AI_MOCK_MODE", "false")
-	defer func() {
-		os.Unsetenv("AI_API_KEY")
-		os.Unsetenv("AI_MOCK_MODE")
-	}()
-
-	cfg, err := LoadConfig("")
-	if err != nil {
-		t.Fatalf("LoadConfig returned error: %v", err)
-	}
-	if cfg.AI.MockMode {
-		t.Error("expected MockMode=false when AI_MOCK_MODE=false and API key is set")
-	}
-	if cfg.IsMockMode() {
-		t.Error("IsMockMode()=true, want false")
-	}
-}
-
-func TestLoadConfig_MockModeOverridesAPIKey(t *testing.T) {
-	restore := setTestEnv("DATABASE_DRIVER", "sqlite")
-	defer restore()
-
-	os.Setenv("AI_MOCK_MODE", "true")
-	os.Setenv("AI_API_KEY", "sk-some-key")
-	defer func() {
-		os.Unsetenv("AI_MOCK_MODE")
-		os.Unsetenv("AI_API_KEY")
-	}()
-
-	cfg, err := LoadConfig("")
-	if err != nil {
-		t.Fatalf("LoadConfig returned error: %v", err)
-	}
-	if !cfg.AI.MockMode {
-		t.Error("expected MockMode=true when AI_MOCK_MODE=true regardless of API key")
-	}
-}
-
-func TestIsMockMode(t *testing.T) {
-	tests := []struct {
-		name     string
-		cfg      Config
-		expected bool
-	}{
-		{"mock mode", Config{AI: AIConfig{MockMode: true}}, true},
-		{"real mode", Config{AI: AIConfig{MockMode: false}}, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cfg.IsMockMode(); got != tt.expected {
-				t.Errorf("IsMockMode()=%v, want %v", got, tt.expected)
-			}
-		})
+	if cfg.AI.APIKey != "sk-test-real-key" {
+		t.Fatalf("AI.APIKey = %q, want configured key", cfg.AI.APIKey)
 	}
 }
 

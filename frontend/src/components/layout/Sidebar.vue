@@ -6,13 +6,15 @@
 import { useRoute, RouterLink } from 'vue-router'
 import {
   Zap, LayoutDashboard, FolderKanban, Eye, Stethoscope, Bot,
-  FileText, Database, FileStack, Settings, X,
+  FileText, Database, FileStack, Settings, X, LogOut,
   Wand2, PenTool, Play, Monitor, Files, User, Shield,
 } from '@lucide/vue'
+import { useAuthStore } from '@/stores/authStore'
 
 const props = defineProps<{ mobileOpen: boolean }>()
 const emit = defineEmits<{ toggle: []; close: [] }>()
 const route = useRoute()
+const auth = useAuthStore()
 
 function isActive(path: string) { return route.path === path }
 function isSameOrChildPath(path: string) {
@@ -135,9 +137,25 @@ function itemActive(item: NavItem): boolean {
       </template>
     </nav>
 
-    <!-- User area placeholder -->
+    <!-- User area -->
     <div class="px-4 py-3 border-t border-border">
-      <RouterLink to="/login" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:bg-surface-muted transition-smooth">
+      <template v-if="auth.isLoggedIn">
+        <div class="flex items-center justify-between px-3 py-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-accent-soft flex items-center justify-center shrink-0">
+              <span class="text-sm font-semibold text-accent">{{ auth.user?.username?.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-text-primary truncate">{{ auth.user?.username }}</p>
+              <p class="text-xs text-text-muted truncate">{{ auth.user?.role === 'admin' ? '管理员' : '用户' }}</p>
+            </div>
+          </div>
+          <button @click="auth.logout(); window.location.href = '/login'" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
+            <LogOut :size="16" />
+          </button>
+        </div>
+      </template>
+      <RouterLink v-else to="/login" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:bg-surface-muted transition-smooth">
         <User :size="18" />
         <span class="text-sm">登录</span>
       </RouterLink>
@@ -170,7 +188,23 @@ function itemActive(item: NavItem): boolean {
       </template>
     </nav>
     <div class="px-4 py-3 border-t border-border">
-      <RouterLink to="/login" @click="emit('close')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:bg-surface-muted">
+      <template v-if="auth.isLoggedIn">
+        <div class="flex items-center justify-between px-3 py-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-accent-soft flex items-center justify-center shrink-0">
+              <span class="text-sm font-semibold text-accent">{{ auth.user?.username?.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-text-primary truncate">{{ auth.user?.username }}</p>
+              <p class="text-xs text-text-muted truncate">{{ auth.user?.role === 'admin' ? '管理员' : '用户' }}</p>
+            </div>
+          </div>
+          <button @click="auth.logout(); window.location.href = '/login'" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
+            <LogOut :size="16" />
+          </button>
+        </div>
+      </template>
+      <RouterLink v-else to="/login" @click="emit('close')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:bg-surface-muted">
         <User :size="18" /><span class="text-sm">登录</span>
       </RouterLink>
     </div>

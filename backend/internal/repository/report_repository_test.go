@@ -19,7 +19,7 @@ func TestValidStatusValues_AcceptsKnownStatuses(t *testing.T) {
 		_ = status
 	}
 
-	known := []string{"processing", "succeeded", "fallback", "failed"}
+	known := []string{"processing", "succeeded", "failed"}
 	for _, s := range known {
 		assert.True(t, valid[s], "status %q should be valid", s)
 	}
@@ -71,7 +71,7 @@ func TestList_StatusFieldInQuery(t *testing.T) {
 
 // TestList_AllStatusCombinations tests status+tools combinations.
 func TestList_AllStatusCombinations(t *testing.T) {
-	validStatuses := []string{"processing", "succeeded", "fallback", "failed"}
+	validStatuses := []string{"processing", "succeeded", "failed"}
 	validTools := model.ValidToolTypes()
 	valid := dto.ValidStatusValues()
 

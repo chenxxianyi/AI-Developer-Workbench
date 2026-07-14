@@ -10,7 +10,7 @@ type ToolMetaDTO struct {
 	UsageCount int64  `json:"usage_count"`
 }
 
-// Tool metadata definitions matching the frontend TOOL_FALLBACK_META.
+// Tool metadata definitions exposed by the tools API.
 var ToolMetaList = []ToolMetaDTO{
 	{
 		ToolType:   "ui_review",

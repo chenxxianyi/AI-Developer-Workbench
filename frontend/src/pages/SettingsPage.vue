@@ -6,7 +6,7 @@
 
 import { onMounted } from 'vue'
 import { useSystemStore } from '@/stores/systemStore'
-import { CheckCircle2, AlertCircle, Info, FlaskConical, Zap } from '@lucide/vue'
+import { CheckCircle2, AlertCircle, Info, Zap } from '@lucide/vue'
 
 const systemStore = useSystemStore()
 
@@ -45,32 +45,11 @@ const uploadLimits = systemStore.uploadLimits
           </span>
         </div>
 
-        <!-- Mock Mode Indicator -->
-        <div
-          :class="[
-            'flex items-center gap-3 px-4 py-3 rounded-md mb-4',
-            systemStore.isMockMode
-              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/40'
-              : 'bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700/40',
-          ]"
-        >
-          <FlaskConical
-            v-if="systemStore.isMockMode"
-            :size="20"
-            class="text-amber-600 dark:text-amber-400"
-          />
-          <Zap
-            v-else
-            :size="20"
-            class="text-emerald-600 dark:text-emerald-400"
-          />
+        <div class="flex items-center gap-3 px-4 py-3 rounded-md mb-4 bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700/40">
+          <Zap :size="20" class="text-emerald-600 dark:text-emerald-400" />
           <div>
-            <div class="font-semibold text-sm" :class="systemStore.isMockMode ? 'text-amber-800 dark:text-amber-200' : 'text-emerald-800 dark:text-emerald-200'">
-              {{ systemStore.isMockMode ? '演示模式' : '真实 AI 模式' }}
-            </div>
-            <div class="text-xs mt-0.5" :class="systemStore.isMockMode ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'">
-              {{ systemStore.isMockMode ? '当前使用 Mock 数据，不会调用外部 AI 服务。适合演示和本地测试。' : '当前连接真实 AI 服务，分析结果由 AI 生成。' }}
-            </div>
+            <div class="font-semibold text-sm text-emerald-800 dark:text-emerald-200">真实 AI 服务</div>
+            <div class="text-xs mt-0.5 text-emerald-600 dark:text-emerald-400">分析与生成结果均来自当前配置的 AI 服务。</div>
           </div>
         </div>
 

@@ -102,22 +102,7 @@ const totalToolUsage = computed(() => {
   return (Object.values(usage) as number[]).reduce((sum, count) => sum + count, 0)
 })
 
-const fallbackTools = computed(() => {
-  const usage: Partial<Record<ToolType, number>> = systemStore.dashboardStats?.tool_usage ?? {}
-  const toolTypes: ToolType[] = ['ui_review', 'project_doctor', 'agent_config', 'api_doc', 'db_schema']
-  const colors = ['accent', 'success', 'warning', 'danger', 'accent']
-
-  return toolTypes.map((toolType, index) => ({
-    tool_type: toolType,
-    color: colors[index],
-    usage_count: usage[toolType] ?? 0,
-  }))
-})
-
-const dashboardTools = computed(() => {
-  if (toolStore.tools.length) return toolStore.tools
-  return fallbackTools.value
-})
+const dashboardTools = computed(() => toolStore.tools)
 
 const maxToolUsage = computed(() => Math.max(1, ...dashboardTools.value.map((tool) => tool.usage_count)))
 

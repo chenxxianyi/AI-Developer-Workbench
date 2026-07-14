@@ -40,7 +40,6 @@ services:
       - UPLOAD_DIR=/app/uploads
       - TEMP_DIR=/app/temp
       - MAX_UPLOAD_SIZE_MB=20
-      - AI_MOCK_MODE=${AI_MOCK_MODE:-true}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - AI_BASE_URL=${AI_BASE_URL:-https://api.openai.com/v1}

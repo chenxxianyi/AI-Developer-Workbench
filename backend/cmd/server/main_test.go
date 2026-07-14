@@ -41,7 +41,13 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 	want := []string{
 		"DELETE /api/projects/:id",
 		"DELETE /api/reports/:id",
+		"GET /api/admin/models",
+		"GET /api/admin/projects",
+		"GET /api/admin/prompts",
+		"GET /api/admin/users",
+		"GET /api/admin/users/:userId",
 		"GET /api/ai/stats",
+		"GET /api/auth/profile",
 		"GET /api/dashboard/stats",
 		"GET /api/health",
 		"GET /api/jobs/:id",
@@ -57,6 +63,8 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"GET /api/system/status",
 		"GET /api/tools",
 		"PATCH /api/projects/:id",
+		"POST /api/auth/login",
+		"POST /api/auth/register",
 		"POST /api/jobs/:id/cancel",
 		"POST /api/jobs/:id/retry",
 		"POST /api/projects",
@@ -65,6 +73,10 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"POST /api/tools/db-schema/run",
 		"POST /api/tools/project-doctor/run",
 		"POST /api/tools/ui-review/run",
+		"PUT /api/admin/models/:id",
+		"PUT /api/admin/prompts/:id",
+		"PUT /api/admin/users/:userId/status",
+		"PUT /api/auth/profile",
 	}
 	sort.Strings(want)
 

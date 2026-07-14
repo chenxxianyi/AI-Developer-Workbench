@@ -171,10 +171,6 @@ func (f *fakeUIReviewReportService) CompareReports(_ context.Context, _, _ strin
 	return &dto.ReportCompareDTO{}, nil
 }
 
-func (f *fakeUIReviewReportService) FallbackReport(ctx context.Context, id string, reportJSON json.RawMessage, summary string) error {
-	return nil
-}
-
 func (f *fakeUIReviewReportService) GetReport(ctx context.Context, id string) (*dto.ReportDTO, error) {
 	return &dto.ReportDTO{ID: id, Title: f.report.Title}, nil
 }

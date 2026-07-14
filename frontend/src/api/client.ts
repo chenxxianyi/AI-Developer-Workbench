@@ -8,7 +8,7 @@ import type { ApiResponse, ApiErrorResponse } from '@/types/api'
 
 // Create Axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
   timeout: 100_000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -27,13 +27,14 @@ apiClient.interceptors.response.use(
       return response as any
     }
 
-    const body = response.data as ApiResponse<unknown>
+    const body = response.data as Record<string, unknown>
 
-    // Check if business code is not 0 (error)
-    if (body.code !== 0) {
+    // Backend error format: { error: { code: "UNAUTHORIZED", message: "..." } }
+    if (body.error) {
+      const err = body.error as { code?: string; message?: string }
       const error: ApiErrorResponse = {
-        code: body.code,
-        message: body.message,
+        code: 0,
+        message: err.message || '请求失败',
       }
       return Promise.reject(error)
     }

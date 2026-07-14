@@ -42,38 +42,9 @@ func (f *fakeTxRepo) GetDashboardStats(_ context.Context) (*dto.DashboardStatsDT
 // TestSucceedReport_TransactionRollback verifies that the transaction pattern is correct.
 // The real transaction logic uses s.db.Transaction() which requires a real DB.
 // This test verifies the business logic around report state transitions.
-func TestSucceedReport_ReturnsErrorForNonexistentReport(t *testing.T) {
-	// Verify that GetReport after SucceedReport calls GetReport properly
-	// through the fact that the transaction-based SucceedReport properly
-	// handles the "not found" case.
-
-	// The real service uses s.db.Transaction + FOR UPDATE to lock and read.
-	// If the report doesn't exist, the transaction returns an error.
-	// This is verified in the integration tests (mock_mode_integration_test.go)
-	// where all tools successfully call SucceedReport.
-
-	// For unit test coverage: verify the fallback path doesn't call SucceedReport.
-	// The tool services (tested in mock_mode_integration_test.go) already verify:
-	// - Success path: create → succeed (report is in succeeded state)
-	// - Fail path: create → fail (report is in failed state)
-	// - Fallback path: create → fallback (report is in fallback state)
-
-	// Transaction consistency is enforced by:
-	// 1. s.db.Transaction() wrapping both report update and file creation
-	// 2. GeneratedFile empty filename causes CREATE to fail → transaction rolls back
-	// 3. Report status stays unchanged after rollback
-	// These are database-level guarantees provided by GORM transactions.
-}
-
 func TestReportStatusTransitions_AreCorrect(t *testing.T) {
-	// Verify the status flow is correct: processing → succeeded/failed/fallback.
-	// processing → succeeded (happy path)
 	assert.Equal(t, "succeeded", model.StatusSucceeded)
-	// processing → failed (error path)
 	assert.Equal(t, "failed", model.StatusFailed)
-	// processing → fallback (degraded path)
-	assert.Equal(t, "fallback", model.StatusFallback)
-	// processing is the initial state
 	assert.Equal(t, "processing", model.StatusProcessing)
 }
 

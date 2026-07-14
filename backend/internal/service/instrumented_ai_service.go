@@ -10,7 +10,7 @@ import (
 
 // instrumentedAIService wraps AIService with observability recording.
 type instrumentedAIService struct {
-	inner    AIService
+	inner     AIService
 	aiRunRepo repository.AIRunRepository
 }
 
@@ -29,7 +29,6 @@ func (s *instrumentedAIService) GenerateJSON(ctx context.Context, input AIReques
 		ToolType:   input.ToolType,
 		Provider:   "unknown",
 		Model:      "unknown",
-		IsMock:     false,
 		DurationMs: durationMs,
 	}
 
