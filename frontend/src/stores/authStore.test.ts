@@ -34,6 +34,17 @@ describe('authStore', () => {
     expect(localStorage.getItem('auth_token')).toBe('test-token')
   })
 
+  it('register 成功后设置 token 和 user', async () => {
+    const auth = useAuthStore()
+    const api = (await import('@/api/client')).default
+    vi.mocked(api.post).mockResolvedValue({ token: 'register-token', user: { id: 'u2', username: 'new', email: 'new@test.com', role: 'user' } })
+
+    await auth.register('new', 'new@test.com', 'password')
+    expect(auth.isLoggedIn).toBe(true)
+    expect(auth.user?.username).toBe('new')
+    expect(localStorage.getItem('auth_token')).toBe('register-token')
+  })
+
   it('logout 清除状态', () => {
     const auth = useAuthStore()
     auth.token = 'token'

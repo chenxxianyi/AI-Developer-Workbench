@@ -32,6 +32,10 @@ const pageTitle = computed(() => {
   if (path.startsWith('/tools/db-schema')) return '数据库审查'
   if (path === '/reports') return '历史报告'
   if (path.startsWith('/reports/')) return '报告详情'
+  if (path === '/admin/models') return 'AI 模型管理'
+  if (path === '/admin/prompts') return 'Prompt 模板管理'
+  if (path === '/admin/users') return '用户管理'
+  if (path === '/admin/projects') return '项目管理'
   if (path === '/settings') return '系统状态'
 
   return 'AI Workbench'

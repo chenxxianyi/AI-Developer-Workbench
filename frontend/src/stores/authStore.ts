@@ -24,7 +24,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(username: string, email: string, password: string) {
-    await apiClient.post('/auth/register', { username, email, password })
+    const res = await apiClient.post('/auth/register', { username, email, password }) as any
+    token.value = res.token
+    user.value = res.user
+    localStorage.setItem('auth_token', res.token)
   }
 
   async function fetchProfile() {

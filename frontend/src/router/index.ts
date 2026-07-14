@@ -18,6 +18,12 @@ const routes = [
     component: () => import('@/pages/LoginPage.vue'),
     meta: { layout: 'landing', requiresAuth: false },
   },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/pages/RegisterPage.vue'),
+    meta: { layout: 'landing', requiresAuth: false },
+  },
 
   // ── 认证后 ──
   {
