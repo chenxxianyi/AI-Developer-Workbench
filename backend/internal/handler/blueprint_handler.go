@@ -19,7 +19,7 @@ func NewBlueprintHandler(db *gorm.DB) *BlueprintHandler {
 }
 
 func (h *BlueprintHandler) Get(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	var bp model.Blueprint
 	if err := h.db.Where("project_id = ?", projectID).Order("version desc").First(&bp).Error; err != nil {
 		response.NotFound(c, "蓝图不存在，请先生成")
@@ -29,7 +29,7 @@ func (h *BlueprintHandler) Get(c *gin.Context) {
 }
 
 func (h *BlueprintHandler) Save(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	var req struct {
 		Content string `json:"content" binding:"required"`
 	}
@@ -56,7 +56,7 @@ func (h *BlueprintHandler) Save(c *gin.Context) {
 }
 
 func (h *BlueprintHandler) Confirm(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	var bp model.Blueprint
 	if err := h.db.Where("project_id = ?", projectID).Order("version desc").First(&bp).Error; err != nil {
 		response.NotFound(c, "蓝图不存在")
@@ -67,7 +67,7 @@ func (h *BlueprintHandler) Confirm(c *gin.Context) {
 }
 
 func (h *BlueprintHandler) Generate(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	// TODO: integrate AI blueprint generator
 	bp := model.Blueprint{
 		ID: uuid.New().String(), ProjectID: projectID,
@@ -79,7 +79,7 @@ func (h *BlueprintHandler) Generate(c *gin.Context) {
 }
 
 func RegisterBlueprintRoutes(r *gin.RouterGroup, h *BlueprintHandler) {
-	bp := r.Group("/projects/:projectId/blueprint")
+	bp := r.Group("/projects/:id/blueprint")
 	bp.GET("", h.Get)
 	bp.POST("/generate", h.Generate)
 	bp.PUT("", h.Save)

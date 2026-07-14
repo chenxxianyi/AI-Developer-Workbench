@@ -12,8 +12,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useProjectStore()
 
-const isEdit = computed(() => !!route.params.id)
-const projectId = computed(() => (route.params.id as string) || '')
+const isEdit = computed(() => !!route.params.projectId)
+const projectId = computed(() => (route.params.projectId as string) || '')
 
 const name = ref('')
 const description = ref('')

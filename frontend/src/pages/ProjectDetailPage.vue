@@ -18,7 +18,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useProjectStore()
 
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => route.params.projectId as string)
 
 onMounted(async () => {
   await Promise.all([

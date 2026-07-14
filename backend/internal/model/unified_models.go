@@ -38,6 +38,8 @@ type Blueprint struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (Blueprint) TableName() string { return "project_blueprints" }
+
 // Task represents a generation/build/tool/report task (unified from Builder tasks + Workbench jobs).
 type Task struct {
 	ID          string     `gorm:"primaryKey;type:varchar(36)" json:"id"`

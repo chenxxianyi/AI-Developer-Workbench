@@ -55,6 +55,7 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"GET /api/projects/:id",
 		"GET /api/projects/:id/reports",
 		"GET /api/projects/:id/stats",
+		"GET /api/projects/:id/blueprint",
 		"GET /api/reports",
 		"GET /api/reports/:id",
 		"GET /api/reports/:id/compare/:targetId",
@@ -68,6 +69,8 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"POST /api/jobs/:id/cancel",
 		"POST /api/jobs/:id/retry",
 		"POST /api/projects",
+		"POST /api/projects/:id/blueprint/confirm",
+		"POST /api/projects/:id/blueprint/generate",
 		"POST /api/tools/agent-config/run",
 		"POST /api/tools/api-doc/run",
 		"POST /api/tools/db-schema/run",
@@ -77,6 +80,7 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"PUT /api/admin/prompts/:id",
 		"PUT /api/admin/users/:userId/status",
 		"PUT /api/auth/profile",
+		"PUT /api/projects/:id/blueprint",
 	}
 	sort.Strings(want)
 

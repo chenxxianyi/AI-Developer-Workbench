@@ -179,6 +179,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	)
 	authHandler := handler.NewAuthHandler(db, cfg.JWT.Secret, cfg.JWT.Expire)
 	adminHandler := handler.NewAdminHandler(db)
+	blueprintHandler := handler.NewBlueprintHandler(db)
 
 	router := gin.New()
 	// Cap uploaded bodies at the configured limit and return a clear 413 for
@@ -202,6 +203,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	handler.RegisterToolRoutes(api, reportRepo)
 	handler.RegisterReportRoutes(api, reportService)
 	handler.RegisterProjectRoutes(api, projectService)
+	handler.RegisterBlueprintRoutes(api, blueprintHandler)
 	handler.RegisterExportRoutes(api, exportService)
 	handler.RegisterToolRunRoutes(api, toolRunHandler)
 	handler.RegisterJobRoutes(api, jobService)
