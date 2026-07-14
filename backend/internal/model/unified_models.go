@@ -27,6 +27,8 @@ type Requirement struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (Requirement) TableName() string { return "project_requirements" }
+
 // Blueprint stores the AI-generated project blueprint.
 type Blueprint struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`

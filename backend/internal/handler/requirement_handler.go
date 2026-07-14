@@ -55,7 +55,7 @@ func (h *RequirementHandler) Save(c *gin.Context) {
 }
 
 func RegisterRequirementRoutes(r *gin.RouterGroup, h *RequirementHandler) {
-	req := r.Group("/projects/:projectId/requirements")
+	req := r.Group("/projects/:id/requirements")
 	req.GET("", h.Get)
 	req.PUT("", h.Save)
 }

@@ -56,6 +56,7 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"GET /api/projects/:id/reports",
 		"GET /api/projects/:id/stats",
 		"GET /api/projects/:id/blueprint",
+		"GET /api/projects/:id/requirements",
 		"GET /api/reports",
 		"GET /api/reports/:id",
 		"GET /api/reports/:id/compare/:targetId",
@@ -81,6 +82,7 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"PUT /api/admin/users/:userId/status",
 		"PUT /api/auth/profile",
 		"PUT /api/projects/:id/blueprint",
+		"PUT /api/projects/:id/requirements",
 	}
 	sort.Strings(want)
 

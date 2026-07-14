@@ -7,7 +7,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import {
   Zap, LayoutDashboard, FolderKanban, Eye, Stethoscope, Bot,
   FileText, Database, FileStack, Settings, X, LogOut,
-  Wand2, PenTool, Play, Monitor, Files, User, Shield,
+  User, Shield,
 } from '@lucide/vue'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -40,22 +40,12 @@ const sections: NavSection[] = [
     title: '概览',
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: '工作台', activeNames: ['dashboard'] },
-      {
-        to: '/projects',
-        icon: FolderKanban,
-        label: '项目',
-        activeNames: ['projects', 'project-overview', 'project-edit', 'project-requirements'],
-      },
     ],
   },
   {
-    title: '生成工作室',
+    title: '项目',
     items: [
-      { to: '/projects/new', icon: Wand2, label: '创建项目', activeNames: ['project-create'] },
-      { to: '/projects/1/blueprint', icon: PenTool, label: '蓝图设计', activeNames: ['project-blueprint'] },
-      { to: '/projects/1/generation', icon: Play, label: '代码生成', activeNames: ['project-generation'] },
-      { to: '/projects/1/preview', icon: Monitor, label: '在线预览', activeNames: ['project-preview'] },
-      { to: '/projects/1/files', icon: Files, label: '项目文件', activeNames: ['project-files'] },
+      { to: '/projects', icon: FolderKanban, label: '项目列表', activeNames: ['projects', 'project-create', 'project-overview', 'project-edit', 'project-requirements', 'project-blueprint', 'project-generation', 'project-preview', 'project-files'] },
     ],
   },
   {
