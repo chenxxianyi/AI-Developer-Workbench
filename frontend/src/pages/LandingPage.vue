@@ -1,233 +1,126 @@
 <script setup lang="ts">
-/**
- * Landing Page
- * Standalone layout (no AppShell)
- */
-
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
-  Zap,
-  LayoutDashboard,
-  ArrowDown,
-  ArrowRight,
-  Eye,
-  Stethoscope,
-  Bot,
-  FileText,
-  Database,
-  Wrench,
-  FileCheck,
-  Download,
-  CheckCircle2,
-  Terminal,
-  ExternalLink,
-  BookOpen,
-  ShieldCheck,
+  ArrowDown, ArrowRight, Bot, CheckCircle2, Code2, Database, Eye,
+  FileCheck2, FileCode, FileText, FolderPlus, GitBranch, LayoutDashboard, Monitor,
+  Package, Play, ShieldCheck, Sparkles, Stethoscope, WandSparkles,
+  Wrench, Zap,
 } from '@lucide/vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { getLandingNavLinkClass } from '@/utils/landingNav'
 
 const { t } = useI18n()
 const route = useRoute()
-
-const tools = computed(() => [
-  {
-    name: t('landing.tools.items.uiReview.name'),
-    subtitle: t('landing.tools.items.uiReview.subtitle'),
-    icon: 'Eye',
-    color: 'accent',
-    route: '/tools/ui-review',
-    description: t('landing.tools.items.uiReview.description'),
-  },
-  {
-    name: t('landing.tools.items.projectDoctor.name'),
-    subtitle: t('landing.tools.items.projectDoctor.subtitle'),
-    icon: 'Stethoscope',
-    color: 'success',
-    route: '/tools/project-doctor',
-    description: t('landing.tools.items.projectDoctor.description'),
-  },
-  {
-    name: t('landing.tools.items.agentConfig.name'),
-    subtitle: t('landing.tools.items.agentConfig.subtitle'),
-    icon: 'Bot',
-    color: 'warning',
-    route: '/tools/agent-config',
-    description: t('landing.tools.items.agentConfig.description'),
-  },
-  {
-    name: t('landing.tools.items.apiDoc.name'),
-    subtitle: t('landing.tools.items.apiDoc.subtitle'),
-    icon: 'FileText',
-    color: 'danger',
-    route: '/tools/api-doc',
-    description: t('landing.tools.items.apiDoc.description'),
-  },
-  {
-    name: t('landing.tools.items.dbSchema.name'),
-    subtitle: t('landing.tools.items.dbSchema.subtitle'),
-    icon: 'Database',
-    color: 'accent',
-    route: '/tools/db-schema',
-    description: t('landing.tools.items.dbSchema.description'),
-  },
-])
-
-const workflowSteps = computed(() => [
-  { num: 1, title: t('landing.workflow.steps.choose.title'), description: t('landing.workflow.steps.choose.description') },
-  { num: 2, title: t('landing.workflow.steps.analyze.title'), description: t('landing.workflow.steps.analyze.description') },
-  { num: 3, title: t('landing.workflow.steps.report.title'), description: t('landing.workflow.steps.report.description') },
-  { num: 4, title: t('landing.workflow.steps.export.title'), description: t('landing.workflow.steps.export.description') },
-])
-
-const features = computed(() => [
-  { title: t('landing.features.items.product.title'), description: t('landing.features.items.product.description'), icon: LayoutDashboard },
-  { title: t('landing.features.items.safety.title'), description: t('landing.features.items.safety.description'), icon: ShieldCheck },
-  { title: t('landing.features.items.output.title'), description: t('landing.features.items.output.description'), icon: FileCheck },
-  { title: t('landing.features.items.integration.title'), description: t('landing.features.items.integration.description'), icon: Bot },
-])
-
-const statItems = computed(() => [
-  { icon: Wrench, label: t('landing.stats.tools') },
-  { icon: FileCheck, label: t('landing.stats.analysis') },
-  { icon: Download, label: t('landing.stats.export') },
-])
-
-const qualityMetrics = computed(() => [
-  { label: t('landing.sampleReport.score'), value: '78', suffix: '/100', tone: 'text-warning' },
-  { label: t('landing.sampleReport.issues'), value: '5', suffix: '', tone: 'text-danger' },
-  { label: t('landing.stats.tools'), value: '5', suffix: '', tone: 'text-accent' },
-])
-
-const sampleIssues = computed(() => [
-  { level: 'H', text: t('landing.sampleReport.high'), levelClass: 'border-danger/30 bg-danger/15 text-red-200', barClass: 'w-4/5 bg-danger' },
-  { level: 'M', text: t('landing.sampleReport.medium'), levelClass: 'border-warning/30 bg-warning/15 text-amber-200', barClass: 'w-3/5 bg-warning' },
-  { level: 'L', text: t('landing.sampleReport.low'), levelClass: 'border-success/30 bg-success/15 text-emerald-200', barClass: 'w-2/5 bg-success' },
-])
-
-const terminalTiltStyle = ref<Record<string, string>>({
-  '--terminal-rotate-x': '0deg',
-  '--terminal-rotate-y': '0deg',
-  '--terminal-lift': '0px',
-  '--terminal-shadow-x': '0px',
-  '--terminal-shadow-y': '28px',
-  '--terminal-glow-x': '50%',
-  '--terminal-glow-y': '50%',
-})
-
-const heroGridStyle = ref<Record<string, string>>({
-  '--hero-grid-x': '50%',
-  '--hero-grid-y': '42%',
-  '--hero-grid-opacity': '0',
-})
-
 const isLandingNavCompact = ref(false)
 let landingNavScrollFrame: number | null = null
 
-const colorClassMap: Record<string, string> = {
-  accent: 'bg-accent-soft text-accent border-accent/10',
-  success: 'bg-success/10 text-success border-success/15',
-  warning: 'bg-warning/10 text-warning border-warning/15',
-  danger: 'bg-danger/10 text-danger border-danger/15',
-}
+const heroLightingStyle = ref<Record<string, string>>({
+  '--hero-light-x': '76%',
+  '--hero-light-y': '24%',
+  '--hero-light-opacity': '0.72',
+})
 
-function getIconComponent(iconName: string) {
-  const iconMap: Record<string, any> = {
-    Eye,
-    Stethoscope,
-    Bot,
-    FileText,
-    Database,
-    Wrench,
-    FileCheck,
-    Download,
-  }
-  return iconMap[iconName] || Zap
-}
+const productTiltStyle = ref<Record<string, string>>({
+  '--card-rotate-x': '1deg',
+  '--card-rotate-y': '-2deg',
+  '--card-translate-y': '0px',
+  '--card-shadow-x': '0px',
+  '--card-shadow-y': '36px',
+  '--card-glare-x': '68%',
+  '--card-glare-y': '18%',
+  '--card-glare-opacity': '0.28',
+})
 
-function getToolIconClass(color: string) {
-  return colorClassMap[color] || colorClassMap.accent
-}
+const studioStages = computed(() => [
+  { icon: FolderPlus, label: t('landing.studio.stages.project'), note: '01' },
+  { icon: FileText, label: t('landing.studio.stages.requirements'), note: '02' },
+  { icon: GitBranch, label: t('landing.studio.stages.blueprint'), note: '03' },
+  { icon: Code2, label: t('landing.studio.stages.generation'), note: '04' },
+  { icon: Monitor, label: t('landing.studio.stages.preview'), note: '05' },
+  { icon: Package, label: t('landing.studio.stages.delivery'), note: '06' },
+])
 
-function handleTerminalPointerMove(event: PointerEvent) {
-  if (event.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return
-  }
+const tools = computed(() => [
+  { name: t('landing.tools.items.uiReview.name'), description: t('landing.tools.items.uiReview.description'), icon: Eye, route: '/tools/ui-review', tone: 'blue' },
+  { name: t('landing.tools.items.projectDoctor.name'), description: t('landing.tools.items.projectDoctor.description'), icon: Stethoscope, route: '/tools/project-doctor', tone: 'green' },
+  { name: t('landing.tools.items.agentConfig.name'), description: t('landing.tools.items.agentConfig.description'), icon: Bot, route: '/tools/agent-config', tone: 'amber' },
+  { name: t('landing.tools.items.apiDoc.name'), description: t('landing.tools.items.apiDoc.description'), icon: FileText, route: '/tools/api-doc', tone: 'violet' },
+  { name: t('landing.tools.items.dbSchema.name'), description: t('landing.tools.items.dbSchema.description'), icon: Database, route: '/tools/db-schema', tone: 'rose' },
+])
 
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
-  const x = (event.clientX - rect.left) / rect.width - 0.5
-  const y = (event.clientY - rect.top) / rect.height - 0.5
-  const rotateX = y * -8
-  const rotateY = x * 10
+const workflowSteps = computed(() => [
+  { icon: FileText, title: t('landing.workflow.steps.brief.title'), description: t('landing.workflow.steps.brief.description') },
+  { icon: GitBranch, title: t('landing.workflow.steps.blueprint.title'), description: t('landing.workflow.steps.blueprint.description') },
+  { icon: WandSparkles, title: t('landing.workflow.steps.generate.title'), description: t('landing.workflow.steps.generate.description') },
+  { icon: FileCheck2, title: t('landing.workflow.steps.ship.title'), description: t('landing.workflow.steps.ship.description') },
+])
 
-  terminalTiltStyle.value = {
-    '--terminal-rotate-x': `${rotateX.toFixed(2)}deg`,
-    '--terminal-rotate-y': `${rotateY.toFixed(2)}deg`,
-    '--terminal-lift': '-6px',
-    '--terminal-shadow-x': `${(-x * 24).toFixed(1)}px`,
-    '--terminal-shadow-y': `${(30 + Math.abs(y) * 14).toFixed(1)}px`,
-    '--terminal-glow-x': `${((x + 0.5) * 100).toFixed(1)}%`,
-    '--terminal-glow-y': `${((y + 0.5) * 100).toFixed(1)}%`,
-  }
-}
 
-function resetTerminalTilt() {
-  terminalTiltStyle.value = {
-    '--terminal-rotate-x': '0deg',
-    '--terminal-rotate-y': '0deg',
-    '--terminal-lift': '0px',
-    '--terminal-shadow-x': '0px',
-    '--terminal-shadow-y': '28px',
-    '--terminal-glow-x': '50%',
-    '--terminal-glow-y': '50%',
-  }
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function handleHeroPointerMove(event: PointerEvent) {
-  if (event.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return
-  }
+  if (event.pointerType === 'touch' || prefersReducedMotion()) return
 
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
   const x = ((event.clientX - rect.left) / rect.width) * 100
   const y = ((event.clientY - rect.top) / rect.height) * 100
 
-  heroGridStyle.value = {
-    '--hero-grid-x': `${Math.max(0, Math.min(100, x)).toFixed(2)}%`,
-    '--hero-grid-y': `${Math.max(0, Math.min(100, y)).toFixed(2)}%`,
-    '--hero-grid-opacity': '1',
+  heroLightingStyle.value = {
+    '--hero-light-x': `${Math.max(0, Math.min(100, x)).toFixed(2)}%`,
+    '--hero-light-y': `${Math.max(0, Math.min(100, y)).toFixed(2)}%`,
+    '--hero-light-opacity': '0.92',
   }
 }
 
-function resetHeroGridGlow() {
-  heroGridStyle.value = {
-    ...heroGridStyle.value,
-    '--hero-grid-opacity': '0',
+function resetHeroLighting() {
+  heroLightingStyle.value = {
+    '--hero-light-x': '76%',
+    '--hero-light-y': '24%',
+    '--hero-light-opacity': '0.72',
   }
 }
 
-function updateLandingNavState() {
-  const scrollY = window.scrollY
+function handleProductPointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch' || prefersReducedMotion()) return
 
-  if (!isLandingNavCompact.value && scrollY > 72) {
-    isLandingNavCompact.value = true
-    return
-  }
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const x = (event.clientX - rect.left) / rect.width - 0.5
+  const y = (event.clientY - rect.top) / rect.height - 0.5
 
-  if (isLandingNavCompact.value && scrollY < 24) {
-    isLandingNavCompact.value = false
+  productTiltStyle.value = {
+    '--card-rotate-x': `${(-y * 9).toFixed(2)}deg`,
+    '--card-rotate-y': `${(x * 11).toFixed(2)}deg`,
+    '--card-translate-y': '-8px',
+    '--card-shadow-x': `${(-x * 28).toFixed(1)}px`,
+    '--card-shadow-y': `${(42 + Math.abs(y) * 18).toFixed(1)}px`,
+    '--card-glare-x': `${((x + 0.5) * 100).toFixed(1)}%`,
+    '--card-glare-y': `${((y + 0.5) * 100).toFixed(1)}%`,
+    '--card-glare-opacity': '0.48',
   }
 }
 
+function resetProductTilt() {
+  productTiltStyle.value = {
+    '--card-rotate-x': '1deg',
+    '--card-rotate-y': '-2deg',
+    '--card-translate-y': '0px',
+    '--card-shadow-x': '0px',
+    '--card-shadow-y': '36px',
+    '--card-glare-x': '68%',
+    '--card-glare-y': '18%',
+    '--card-glare-opacity': '0.28',
+  }
+}
+
+function updateLandingNavState() { isLandingNavCompact.value = window.scrollY > 40 }
 function handleLandingNavScroll() {
-  if (landingNavScrollFrame !== null) {
-    return
-  }
-
+  if (landingNavScrollFrame !== null) return
   landingNavScrollFrame = window.requestAnimationFrame(() => {
     landingNavScrollFrame = null
     updateLandingNavState()
@@ -238,421 +131,284 @@ onMounted(() => {
   updateLandingNavState()
   window.addEventListener('scroll', handleLandingNavScroll, { passive: true })
 })
-
 onUnmounted(() => {
   window.removeEventListener('scroll', handleLandingNavScroll)
-
-  if (landingNavScrollFrame !== null) {
-    window.cancelAnimationFrame(landingNavScrollFrame)
-  }
+  if (landingNavScrollFrame !== null) window.cancelAnimationFrame(landingNavScrollFrame)
 })
 </script>
 
 <template>
-  <div class="min-h-screen overflow-x-hidden bg-background text-text-primary">
-    <!-- Navigation -->
+  <div class="landing-page min-h-screen overflow-x-hidden bg-background text-text-primary">
     <nav
-      class="landing-nav fixed z-50 overflow-hidden rounded-xl border border-border/80 bg-surface/92 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-md"
+      class="landing-nav fixed z-50 rounded-2xl border border-border/80 bg-surface/90 shadow-[0_16px_48px_rgba(15,23,42,0.10)] backdrop-blur-xl"
       :class="{ 'landing-nav--compact': isLandingNavCompact }"
+      aria-label="Primary navigation"
     >
-      <div class="landing-nav__inner mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-3 md:gap-6 md:px-7">
-        <RouterLink to="/" class="flex min-w-0 items-center gap-3.5 transition-smooth hover:opacity-85">
-          <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-accent shadow-[0_10px_24px_rgba(37,99,235,0.28)] md:h-12 md:w-12">
-            <Zap :size="24" class="text-white" />
-          </div>
-          <span class="hidden truncate text-xl font-bold text-text-primary sm:inline md:text-2xl">AI Workbench</span>
+      <div class="landing-nav__inner mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <RouterLink to="/" class="group flex min-w-0 items-center gap-3 rounded-lg" aria-label="AI Developer Workbench">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] transition-transform duration-200 group-hover:-translate-y-0.5"><Zap :size="21" /></span>
+          <span class="hidden truncate text-lg font-bold tracking-[-0.02em] text-text-primary sm:block">AI Workbench</span>
         </RouterLink>
 
-        <div class="hidden items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 p-1 md:flex">
+        <div class="hidden items-center gap-1 rounded-xl border border-border/70 bg-background/70 p-1 md:flex">
           <RouterLink to="/" :class="getLandingNavLinkClass(route.hash, '')">{{ t('landing.nav.home') }}</RouterLink>
+          <RouterLink :to="{ path: '/', hash: '#studio' }" :class="getLandingNavLinkClass(route.hash, '#studio')">{{ t('landing.nav.studio') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#tools' }" :class="getLandingNavLinkClass(route.hash, '#tools')">{{ t('landing.nav.tools') }}</RouterLink>
           <RouterLink :to="{ path: '/', hash: '#workflow' }" :class="getLandingNavLinkClass(route.hash, '#workflow')">{{ t('landing.nav.workflow') }}</RouterLink>
-          <RouterLink :to="{ path: '/', hash: '#features' }" :class="getLandingNavLinkClass(route.hash, '#features')">{{ t('landing.nav.features') }}</RouterLink>
         </div>
 
-        <div class="flex flex-shrink-0 items-center gap-3">
-          <div class="landing-language-switcher">
-            <LanguageSwitcher />
-          </div>
-          <RouterLink
-            to="/dashboard"
-            class="hidden min-h-11 items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-base font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] transition-smooth hover:-translate-y-0.5 hover:bg-accent/90 hover:shadow-[0_14px_28px_rgba(37,99,235,0.30)] sm:inline-flex"
-          >
-            {{ t('landing.nav.start') }}
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
+          <RouterLink to="/projects/new" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-text-primary px-4 py-2 text-sm font-bold text-white transition-colors duration-200 hover:bg-accent sm:px-5">
+            <Sparkles :size="16" /><span class="hidden sm:inline">{{ t('landing.nav.start') }}</span>
           </RouterLink>
         </div>
       </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section
-      class="relative overflow-hidden px-4 pb-12 pt-20 md:px-8 md:pb-14 md:pt-24"
-      :style="heroGridStyle"
-      @pointermove="handleHeroPointerMove"
-      @pointerleave="resetHeroGridGlow"
-      @pointercancel="resetHeroGridGlow"
-    >
-      <div class="landing-grid-pattern absolute inset-0" aria-hidden="true"></div>
-      <div class="landing-grid-glow absolute inset-0" aria-hidden="true"></div>
+    <main>
+      <section
+        class="hero-section relative px-4 pb-20 pt-32 md:px-8 md:pb-24 md:pt-40"
+        :style="heroLightingStyle"
+        @pointermove="handleHeroPointerMove"
+        @pointerleave="resetHeroLighting"
+        @pointercancel="resetHeroLighting"
+      >
+        <div class="hero-grid absolute inset-0" aria-hidden="true"></div>
+        <div class="hero-interactive-light absolute inset-0" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--one" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--two" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--three" aria-hidden="true"></div>
 
-      <div class="relative mx-auto max-w-content">
-        <div class="grid min-h-[auto] items-center gap-10 md:min-h-[620px] lg:grid-cols-[minmax(0,0.82fr)_minmax(520px,1.08fr)] lg:gap-14">
+        <div class="relative mx-auto grid max-w-content items-center gap-14 lg:grid-cols-[minmax(0,0.92fr)_minmax(520px,1.08fr)] lg:gap-16">
           <div class="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
-            <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-sm font-semibold text-text-secondary shadow-sm">
-              <ShieldCheck :size="16" class="text-success" />
-              <span>AI Developer Workbench</span>
+            <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-surface/80 px-3.5 py-1.5 text-sm font-semibold text-accent shadow-sm backdrop-blur">
+              <Sparkles :size="15" /><span>{{ t('landing.hero.eyebrow') }}</span>
             </div>
-
-            <h1 class="mx-auto max-w-[10em] text-2xl font-bold leading-tight text-text-primary sm:max-w-[12em] sm:text-4xl md:max-w-none md:text-5xl lg:mx-0 lg:text-6xl">
-              {{ t('landing.hero.title') }}
+            <h1 class="text-balance text-4xl font-bold leading-[1.08] tracking-[-0.045em] text-text-primary sm:text-5xl md:text-6xl lg:text-[68px]">
+              {{ t('landing.hero.titleLead') }} <span class="hero-title-accent">{{ t('landing.hero.titleAccent') }}</span> {{ t('landing.hero.titleTail') }}
             </h1>
+            <p class="mx-auto mt-7 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl lg:mx-0">{{ t('landing.hero.description') }}</p>
 
-            <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary md:text-xl lg:mx-0">
-              {{ t('landing.hero.description') }}
-            </p>
-
-            <div class="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row lg:justify-start">
-              <RouterLink
-                to="/dashboard"
-                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-accent px-7 py-3 font-semibold text-white shadow-sm transition-smooth hover:bg-accent/90 hover:shadow-md"
-              >
-                <LayoutDashboard :size="20" />
-                {{ t('landing.hero.enter') }}
+            <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+              <RouterLink to="/projects/new" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-bold text-white shadow-[0_14px_30px_rgba(37,99,235,0.22)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-[0_18px_36px_rgba(37,99,235,0.28)]">
+                <WandSparkles :size="19" />{{ t('landing.hero.studioCta') }}<ArrowRight :size="18" />
               </RouterLink>
-              <a
-                href="#tools"
-                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-7 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:border-accent/30 hover:bg-surface-muted"
-              >
-                <ArrowDown :size="20" />
-                {{ t('landing.hero.learnMore') }}
+              <a href="#tools" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border bg-surface/80 px-6 py-3 font-bold text-text-primary shadow-sm backdrop-blur transition-colors duration-200 hover:border-accent/30 hover:bg-accent-soft">
+                <Wrench :size="18" />{{ t('landing.hero.toolsCta') }}
               </a>
             </div>
 
-            <div class="mt-9 grid gap-3 text-sm text-text-muted sm:grid-cols-3">
-              <div
-                v-for="item in statItems"
-                :key="item.label"
-                class="flex items-center justify-center gap-2 rounded-lg border border-border bg-surface/70 px-3 py-3 lg:justify-start"
-              >
-                <component :is="item.icon" :size="16" class="text-accent" />
-                <span>{{ item.label }}</span>
-              </div>
+            <div class="mt-9 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm font-medium text-text-muted lg:justify-start">
+              <span class="inline-flex items-center gap-2"><CheckCircle2 :size="16" class="text-success" />{{ t('landing.hero.proof.blueprint') }}</span>
+              <span class="inline-flex items-center gap-2"><CheckCircle2 :size="16" class="text-success" />{{ t('landing.hero.proof.preview') }}</span>
+              <span class="inline-flex items-center gap-2"><CheckCircle2 :size="16" class="text-success" />{{ t('landing.hero.proof.quality') }}</span>
             </div>
           </div>
 
           <div
-            class="terminal-showcase relative mx-auto w-full max-w-xl min-w-0 lg:max-w-none"
-            :style="terminalTiltStyle"
-            @pointermove="handleTerminalPointerMove"
-            @pointerleave="resetTerminalTilt"
-            @pointercancel="resetTerminalTilt"
+            class="hero-product-shell relative mx-auto w-full max-w-2xl lg:max-w-none"
+            :style="productTiltStyle"
+            @pointermove="handleProductPointerMove"
+            @pointerleave="resetProductTilt"
+            @pointercancel="resetProductTilt"
           >
-            <p class="mb-5 text-left text-sm font-medium tracking-wide text-text-muted md:text-base">
-              图 01 — 一场 AI 项目交付会话，缓存依然温热
-            </p>
-
-            <div class="terminal-window overflow-hidden rounded-[28px] bg-[#202326] shadow-[0_28px_80px_rgba(24,24,27,0.22)] ring-1 ring-black/10">
-              <div class="relative flex h-14 items-center justify-center border-b border-white/8 px-5 md:h-16">
-                <div class="absolute left-5 flex items-center gap-2.5">
-                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
-                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
-                  <span class="h-3 w-3 rounded-full bg-[#52575d]"></span>
-                </div>
-                <div class="flex items-center gap-2 font-mono text-sm font-semibold text-white/38 md:text-lg">
-                  <Terminal :size="18" />
-                  <span>~/workspace — ai-workbench</span>
-                </div>
-              </div>
-
-              <div class="min-h-[320px] px-5 py-7 font-mono text-sm leading-relaxed text-white/76 md:min-h-[390px] md:px-9 md:py-10 md:text-base lg:text-lg">
-                <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span class="text-accent">◆</span>
-                  <span class="font-bold text-white/86">ai-workbench</span>
-                  <span class="text-white/35">v0.1.0 · codex · ~/project</span>
-                </div>
-
-                <div class="mb-4 flex items-start gap-3">
-                  <span class="text-[#8b5cf6]">›</span>
-                  <span class="font-semibold text-white/90">review UI quality and project structure</span>
-                </div>
-
-                <div class="mb-3 flex items-start gap-3">
-                  <span class="text-[#5fd18a]">✓</span>
-                  <span>
-                    scan
-                    <span class="text-white/38">frontend/src/pages/LandingPage.vue</span>
-                    <span class="font-semibold text-[#5fd18a]"> ok</span>
-                  </span>
-                </div>
-
-                <div class="mb-3 flex items-start gap-3">
-                  <span class="text-[#5fd18a]">✓</span>
-                  <span>
-                    generate
-                    <span class="text-white/38">AGENTS.md prompt</span>
-                    <span class="font-semibold text-[#5fd18a]"> ready</span>
-                  </span>
-                </div>
-
-                <div class="mb-3 flex items-start gap-3">
-                  <span class="text-[#5fd18a]">✓</span>
-                  <span>
-                    run
-                    <span class="text-white/38">npm run build</span>
-                    <span class="font-semibold text-[#5fd18a]"> passed</span>
-                    <span class="text-white/36"> (0.74s)</span>
-                  </span>
-                </div>
-
-                <div class="flex items-start gap-3 text-white/10">
-                  <span>●</span>
-                  <span>5 tools · cache 92.4% → 96.8%</span>
-                </div>
-              </div>
-
-              <div class="grid gap-3 border-t border-white/8 px-5 py-4 font-mono text-sm text-white/42 sm:grid-cols-4 md:px-9 md:text-base">
-                <div>cache <span class="font-bold text-white/82">96.8%</span></div>
-                <div>session <span class="font-bold text-white/82">4m</span></div>
-                <div>model <span class="font-bold text-white/82">codex</span></div>
-                <div class="sm:text-right">cost <span class="font-bold text-white/82">$0.002</span></div>
-              </div>
+            <div class="hero-product-glow" aria-hidden="true"></div>
+            <div class="hero-floating-badge hero-floating-badge--top hidden sm:flex" aria-hidden="true">
+              <CheckCircle2 :size="14" />
+              <span>{{ t('landing.hero.proof.blueprint') }}</span>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Tools Section -->
-    <section id="tools" class="border-y border-border bg-surface px-4 py-16 md:px-8 md:py-20">
-      <div class="mx-auto max-w-content">
-        <div class="mb-10 grid gap-4 md:grid-cols-[0.8fr_1fr] md:items-end">
-          <h2 class="text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.tools.title') }}</h2>
-          <p class="text-lg leading-relaxed text-text-secondary">
-            {{ t('landing.tools.description') }}
-          </p>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-          <RouterLink
-            v-for="(tool, index) in tools"
-            :key="tool.name"
-            :to="tool.route"
-            class="group rounded-lg border border-border bg-background p-5 transition-smooth hover:border-accent/40 hover:bg-surface hover:shadow-md md:p-6"
-            :class="index < 3 ? 'lg:col-span-2' : 'lg:col-span-3'"
-          >
-            <div class="mb-5 flex items-start justify-between gap-4">
-              <div :class="['flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border', getToolIconClass(tool.color)]">
-                <component
-                  :is="getIconComponent(tool.icon)"
-                  :size="24"
-                />
-              </div>
-              <ArrowRight :size="18" class="mt-1 text-text-muted transition-smooth group-hover:translate-x-1 group-hover:text-accent" />
+            <div class="hero-floating-badge hero-floating-badge--bottom hidden sm:flex" aria-hidden="true">
+              <ShieldCheck :size="14" />
+              <span>{{ t('landing.hero.proof.quality') }}</span>
             </div>
-
-            <h3 class="mb-2 text-xl font-semibold text-text-primary">{{ tool.name }}</h3>
-            <p class="mb-4 text-sm font-semibold text-text-muted">{{ tool.subtitle }}</p>
-            <p class="leading-relaxed text-text-secondary">{{ tool.description }}</p>
-          </RouterLink>
-        </div>
-      </div>
-    </section>
-
-    <!-- Workflow Section -->
-    <section id="workflow" class="px-4 py-16 md:px-8 md:py-20">
-      <div class="mx-auto max-w-content">
-        <div class="mx-auto mb-12 max-w-3xl text-center">
-          <h2 class="mb-4 text-3xl font-bold text-text-primary md:text-4xl">{{ t('landing.workflow.title') }}</h2>
-          <p class="text-lg leading-relaxed text-text-secondary">
-            {{ t('landing.workflow.description') }}
-          </p>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-4">
-          <div
-            v-for="step in workflowSteps"
-            :key="step.num"
-            class="rounded-lg border border-border bg-surface p-5 shadow-sm"
-          >
-            <div class="mb-5 flex items-center justify-between">
-              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
-                {{ step.num }}
-              </div>
-              <div class="hidden h-px flex-1 bg-border md:ml-4 md:block"></div>
-            </div>
-            <h3 class="mb-2 text-lg font-semibold text-text-primary">{{ step.title }}</h3>
-            <p class="leading-relaxed text-text-secondary">{{ step.description }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="features-lab relative overflow-hidden border-y border-border px-4 py-16 md:px-8 md:py-24">
-      <div class="relative mx-auto max-w-content">
-        <div class="mb-10 grid gap-5 lg:grid-cols-[0.82fr_1fr] lg:items-end">
-          <div>
-            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/15 bg-surface/80 px-3 py-1 text-sm font-semibold text-accent shadow-sm">
-              <Terminal :size="15" />
-              <span>{{ t('landing.features.kicker') }}</span>
-            </div>
-            <h2 class="max-w-2xl text-3xl font-bold leading-tight text-text-primary md:text-4xl">
-              {{ t('landing.features.title') }}
-            </h2>
-          </div>
-          <p class="max-w-2xl text-lg leading-relaxed text-text-secondary lg:justify-self-end">
-            {{ t('landing.tools.description') }}
-          </p>
-        </div>
-
-        <div class="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)] lg:items-stretch">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div
-              v-for="feature in features"
-              :key="feature.title"
-              class="feature-card group relative overflow-hidden rounded-lg border border-border bg-surface/85 p-5 shadow-sm backdrop-blur transition-smooth hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-            >
-              <div class="mb-5 flex items-center justify-between gap-4">
-                <div class="flex h-11 w-11 items-center justify-center rounded-lg border border-accent/10 bg-accent-soft text-accent transition-smooth group-hover:border-accent/25 group-hover:bg-accent group-hover:text-white">
-                  <component :is="feature.icon" :size="22" />
-                </div>
-                <CheckCircle2 :size="18" class="text-success/80" />
-              </div>
-              <h3 class="mb-2 text-lg font-semibold text-text-primary">{{ feature.title }}</h3>
-              <p class="leading-relaxed text-text-secondary">{{ feature.description }}</p>
-            </div>
-          </div>
-
-          <div class="quality-panel relative overflow-hidden rounded-lg border border-slate-800 bg-[#151a21] p-4 text-white shadow-[0_24px_70px_rgba(15,23,42,0.28)] md:p-6">
-            <div class="relative z-10">
-              <div class="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-                <div class="flex items-center gap-3">
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
-                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
-                    <span class="h-2.5 w-2.5 rounded-full bg-white/25"></span>
-                  </div>
-                  <div class="font-mono text-sm font-semibold text-white/72">{{ t('landing.sampleReport.title') }}</div>
-                </div>
-                <div class="inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  <CheckCircle2 :size="14" />
-                  <span>{{ t('landing.sampleReport.promptReady') }}</span>
-                </div>
-              </div>
-
-              <div class="grid gap-5 md:grid-cols-[170px_1fr]">
-                <div class="quality-score-orb flex h-36 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] md:aspect-square md:h-auto">
-                  <div class="text-center">
-                    <div class="font-mono text-5xl font-bold leading-none text-white">78</div>
-                    <div class="mt-2 text-xs font-semibold text-white/42">{{ t('landing.sampleReport.qualityLabel') }}</div>
+            <div class="hero-product-card relative overflow-hidden rounded-[26px] border border-slate-700/80 bg-[#111827]">
+              <div class="hero-card-glare" aria-hidden="true"></div>
+              <div class="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300"><WandSparkles :size="18" /></span>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-white">{{ t('landing.hero.preview.title') }}</p>
+                    <p class="truncate text-xs text-slate-400">{{ t('landing.hero.preview.subtitle') }}</p>
                   </div>
                 </div>
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>{{ t('landing.hero.preview.running') }}
+                </span>
+              </div>
 
-                <div class="min-w-0">
-                  <div class="mb-4 grid grid-cols-3 gap-2">
-                    <div
-                      v-for="metric in qualityMetrics"
-                      :key="metric.label"
-                      class="rounded-md border border-white/10 bg-white/[0.035] px-3 py-3"
-                    >
-                      <div class="mb-1 truncate text-xs font-medium text-white/42">{{ metric.label }}</div>
-                      <div class="font-mono text-xl font-bold text-white">
-                        <span :class="metric.tone">{{ metric.value }}</span><span class="text-sm text-white/42">{{ metric.suffix }}</span>
-                      </div>
+              <div class="grid sm:grid-cols-[190px_1fr]">
+                <aside class="border-b border-white/10 bg-white/[0.025] p-4 sm:border-b-0 sm:border-r sm:p-5">
+                  <p class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ t('landing.hero.preview.pipeline') }}</p>
+                  <div class="grid grid-cols-3 gap-2 sm:grid-cols-1">
+                    <div v-for="(stage, index) in studioStages" :key="stage.note" class="flex min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs sm:text-sm" :class="index === 3 ? 'bg-blue-500/15 text-blue-200' : index < 3 ? 'text-slate-300' : 'text-slate-500'">
+                      <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border" :class="index < 3 ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : index === 3 ? 'border-blue-400/20 bg-blue-400/10 text-blue-300' : 'border-white/10 bg-white/[0.03]'">
+                        <CheckCircle2 v-if="index < 3" :size="13" /><Play v-else-if="index === 3" :size="12" fill="currentColor" /><span v-else class="text-[10px] font-bold">{{ stage.note }}</span>
+                      </span>
+                      <span class="truncate">{{ stage.label }}</span>
                     </div>
                   </div>
+                </aside>
 
-                  <div class="space-y-3">
-                    <div
-                      v-for="issue in sampleIssues"
-                      :key="issue.text"
-                      class="grid grid-cols-[auto_1fr] items-center gap-3 rounded-md border border-white/10 bg-black/12 px-3 py-3 sm:grid-cols-[auto_1fr_84px]"
-                    >
-                      <span :class="['flex h-7 w-7 items-center justify-center rounded-md border font-mono text-xs font-bold', issue.levelClass]">
-                        {{ issue.level }}
-                      </span>
-                      <span class="min-w-0 text-sm leading-relaxed text-white/72">{{ issue.text }}</span>
-                      <span class="col-span-2 h-1.5 overflow-hidden rounded-full bg-white/10 sm:col-span-1">
-                        <span :class="['block h-full rounded-full', issue.barClass]"></span>
-                      </span>
-                    </div>
+                <div class="min-w-0 p-5 sm:p-6">
+                  <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300">{{ t('landing.hero.preview.current') }}</p><h2 class="mt-1 text-lg font-bold text-white">{{ t('landing.hero.preview.generating') }}</h2></div>
+                    <span class="font-mono text-sm font-semibold text-blue-300">72%</span>
                   </div>
-                </div>
-              </div>
-
-              <div class="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:grid-cols-4">
-                <div
-                  v-for="step in workflowSteps"
-                  :key="step.num"
-                  class="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] px-3 py-3"
-                >
-                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-white/10 font-mono text-xs font-bold text-white">
-                    0{{ step.num }}
-                  </span>
-                  <span class="truncate text-sm font-semibold text-white/70">{{ step.title }}</span>
+                  <div class="mb-6 h-2 overflow-hidden rounded-full bg-white/10"><div class="generation-progress h-full w-[72%] rounded-full bg-gradient-to-r from-blue-500 to-cyan-300"></div></div>
+                  <div class="code-panel rounded-xl border border-white/10 bg-black/25 p-4 font-mono text-xs leading-6 text-slate-400 sm:text-sm">
+                    <p><span class="text-violet-300">const</span> <span class="text-blue-200">project</span> = <span class="text-amber-200">await</span> studio.generate&#40;&#41;</p>
+                    <p><span class="text-emerald-300">✓</span> src/pages/Dashboard.vue</p>
+                    <p><span class="text-emerald-300">✓</span> src/components/AppShell.vue</p>
+                    <p><span class="text-blue-300">●</span> {{ t('landing.hero.preview.log') }}</p>
+                  </div>
+                  <div class="mt-5 grid grid-cols-3 gap-2">
+                    <div class="hero-metric-card rounded-lg border border-white/10 bg-white/[0.035] px-3 py-3"><FileCode :size="16" class="mb-2 text-blue-300" /><p class="text-xs text-slate-500">{{ t('landing.hero.preview.files') }}</p><p class="mt-1 text-sm font-bold text-white">24</p></div>
+                    <div class="hero-metric-card rounded-lg border border-white/10 bg-white/[0.035] px-3 py-3"><Monitor :size="16" class="mb-2 text-cyan-300" /><p class="text-xs text-slate-500">{{ t('landing.hero.preview.pages') }}</p><p class="mt-1 text-sm font-bold text-white">8</p></div>
+                    <div class="hero-metric-card rounded-lg border border-white/10 bg-white/[0.035] px-3 py-3"><ShieldCheck :size="16" class="mb-2 text-emerald-300" /><p class="text-xs text-slate-500">{{ t('landing.hero.preview.checks') }}</p><p class="mt-1 text-sm font-bold text-white">12/12</p></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- CTA Section -->
-    <section class="cta-command relative overflow-hidden px-4 py-14 text-white md:px-8 md:py-16">
-      <div class="relative mx-auto max-w-content">
-        <div class="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-white/62">
-              <Terminal :size="15" />
-              <span>{{ t('landing.cta.command') }}</span>
+      <section id="studio" class="scroll-mt-28 border-y border-border bg-surface px-4 py-16 md:px-8 md:py-20">
+        <div class="mx-auto max-w-content">
+          <div class="mb-9 grid gap-4 lg:grid-cols-[0.85fr_1fr] lg:items-end">
+            <div>
+              <p class="section-kicker"><Sparkles :size="15" />{{ t('landing.overview.kicker') }}</p>
+              <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-text-primary md:text-4xl">{{ t('landing.overview.title') }}</h2>
             </div>
-            <h2 class="max-w-2xl text-3xl font-bold leading-tight md:text-4xl">{{ t('landing.cta.title') }}</h2>
-            <p class="mt-4 max-w-2xl text-lg leading-relaxed text-white/68">
-              {{ t('landing.cta.description') }}
-            </p>
+            <p class="max-w-xl text-base leading-7 text-text-secondary lg:justify-self-end">{{ t('landing.overview.description') }}</p>
           </div>
-          <div class="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
-            <RouterLink
-              to="/dashboard"
-              class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-text-primary shadow-sm transition-smooth hover:bg-accent hover:text-white"
-            >
-              <LayoutDashboard :size="20" />
-              {{ t('landing.cta.button') }}
-              <ArrowRight :size="18" />
+
+          <div class="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
+            <article class="studio-card relative overflow-hidden rounded-[24px] bg-[#111827] p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.16)] md:p-8">
+              <div class="studio-card-grid absolute inset-0" aria-hidden="true"></div>
+              <div class="relative">
+                <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="max-w-xl">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-blue-300/10 px-3 py-1 text-sm font-semibold text-blue-200"><WandSparkles :size="15" />{{ t('landing.studio.badge') }}</span>
+                    <h3 class="mt-4 text-2xl font-bold tracking-[-0.03em] md:text-3xl">{{ t('landing.studio.title') }}</h3>
+                    <p class="mt-3 max-w-xl text-sm leading-6 text-slate-300">{{ t('landing.studio.description') }}</p>
+                  </div>
+                  <RouterLink to="/projects/new" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition-colors duration-200 hover:bg-blue-100">
+                    {{ t('landing.studio.cta') }}<ArrowRight :size="16" />
+                  </RouterLink>
+                </div>
+
+                <div class="mt-7 grid grid-cols-2 gap-3 md:grid-cols-3">
+                  <div v-for="stage in studioStages" :key="stage.note" class="group rounded-xl border border-white/10 bg-white/[0.045] p-3.5 transition-colors duration-200 hover:border-blue-300/30 hover:bg-blue-300/[0.08]">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-blue-200"><component :is="stage.icon" :size="18" /></span>
+                      <span class="font-mono text-xs font-bold text-slate-500">{{ stage.note }}</span>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-100">{{ stage.label }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-5 text-xs font-medium text-slate-300">
+                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{{ t('landing.studio.outputs.source') }}</span>
+                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{{ t('landing.studio.outputs.preview') }}</span>
+                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{{ t('landing.studio.outputs.blueprint') }}</span>
+                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{{ t('landing.studio.outputs.package') }}</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="flex flex-col rounded-[24px] border border-border bg-background p-6 md:p-8">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-accent/15 bg-accent-soft text-accent"><Wrench :size="23" /></div>
+              <span class="mt-6 text-sm font-bold uppercase tracking-[0.14em] text-accent">{{ t('landing.toolbox.badge') }}</span>
+              <h3 class="mt-3 text-2xl font-bold tracking-[-0.025em] text-text-primary md:text-3xl">{{ t('landing.toolbox.title') }}</h3>
+              <p class="mt-4 leading-7 text-text-secondary">{{ t('landing.toolbox.description') }}</p>
+              <div class="mt-7 space-y-3">
+                <div class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3"><Eye :size="17" class="text-accent" /><span class="text-sm font-semibold text-text-primary">{{ t('landing.tools.items.uiReview.name') }}</span></div>
+                <div class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3"><Stethoscope :size="17" class="text-success" /><span class="text-sm font-semibold text-text-primary">{{ t('landing.tools.items.projectDoctor.name') }}</span></div>
+                <div class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3"><Bot :size="17" class="text-warning" /><span class="text-sm font-semibold text-text-primary">{{ t('landing.tools.items.agentConfig.name') }}</span></div>
+              </div>
+              <a href="#tools" class="mt-auto inline-flex min-h-11 items-center gap-2 pt-7 text-sm font-bold text-accent hover:text-blue-700">{{ t('landing.toolbox.cta') }}<ArrowDown :size="16" /></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="tools" class="scroll-mt-28 px-4 py-16 md:px-8 md:py-20">
+        <div class="mx-auto max-w-content">
+          <div class="mx-auto mb-9 max-w-2xl text-center">
+            <p class="section-kicker justify-center"><Wrench :size="15" />{{ t('landing.tools.kicker') }}</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-text-primary md:text-4xl">{{ t('landing.tools.title') }}</h2>
+            <p class="mt-4 text-base leading-7 text-text-secondary">{{ t('landing.tools.description') }}</p>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            <RouterLink v-for="(tool, index) in tools" :key="tool.name" :to="tool.route" class="tool-card group flex min-h-[220px] flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[0_18px_44px_rgba(15,23,42,0.10)]" :class="index < 3 ? 'lg:col-span-2' : 'lg:col-span-3'">
+              <div class="flex items-start justify-between gap-4">
+                <span class="tool-icon flex h-12 w-12 items-center justify-center rounded-xl border" :data-tone="tool.tone"><component :is="tool.icon" :size="22" /></span>
+                <ArrowRight :size="18" class="text-text-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-accent" />
+              </div>
+              <h3 class="mt-6 text-lg font-bold tracking-[-0.02em] text-text-primary">{{ tool.name }}</h3>
+              <p class="mt-2 flex-1 text-sm leading-6 text-text-secondary">{{ tool.description }}</p>
+              <span class="mt-5 text-sm font-bold text-accent">{{ t('landing.tools.open') }}</span>
             </RouterLink>
-            <div class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-5 py-3 font-mono text-sm text-white/64">
-              <CheckCircle2 :size="16" class="text-success" />
-              <span>{{ t('landing.stats.analysis') }} · {{ t('landing.stats.export') }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflow" class="workflow-section scroll-mt-28 border-y border-border px-4 py-16 md:px-8 md:py-20">
+        <div class="mx-auto max-w-content">
+          <div class="mx-auto mb-9 max-w-2xl text-center">
+            <p class="section-kicker justify-center"><GitBranch :size="15" />{{ t('landing.workflow.kicker') }}</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-[-0.035em] text-text-primary md:text-4xl">{{ t('landing.workflow.title') }}</h2>
+            <p class="mt-4 text-base leading-7 text-text-secondary">{{ t('landing.workflow.description') }}</p>
+          </div>
+
+          <ol class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <li v-for="(step, index) in workflowSteps" :key="step.title" class="workflow-card rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <div class="flex items-center justify-between gap-3">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent"><component :is="step.icon" :size="19" /></span>
+                <span class="font-mono text-xs font-bold text-text-muted">0{{ index + 1 }}</span>
+              </div>
+              <h3 class="mt-5 text-lg font-bold text-text-primary">{{ step.title }}</h3>
+              <p class="mt-2 text-sm leading-6 text-text-secondary">{{ step.description }}</p>
+            </li>
+          </ol>
+
+          <div class="mt-7 text-center">
+            <RouterLink to="/projects/new" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-text-primary px-5 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-accent">{{ t('landing.workflow.cta') }}<ArrowRight :size="16" /></RouterLink>
+          </div>
+        </div>
+      </section>
+
+      <section class="px-4 pb-8 md:px-8 md:pb-12">
+        <div class="cta-panel relative mx-auto max-w-content overflow-hidden rounded-[28px] bg-accent px-6 py-10 text-white shadow-[0_28px_70px_rgba(37,99,235,0.24)] md:px-10 md:py-12 lg:px-14">
+          <div class="cta-grid absolute inset-0" aria-hidden="true"></div>
+          <div class="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-blue-100"><Zap :size="16" />{{ t('landing.cta.kicker') }}</p>
+              <h2 class="mt-3 max-w-2xl text-3xl font-bold tracking-[-0.035em] md:text-4xl">{{ t('landing.cta.title') }}</h2>
+              <p class="mt-3 max-w-xl text-base leading-7 text-blue-100">{{ t('landing.cta.description') }}</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <RouterLink to="/projects/new" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-7 py-3 font-bold text-accent transition-colors duration-200 hover:bg-blue-50"><WandSparkles :size="18" />{{ t('landing.cta.primary') }}<ArrowRight :size="17" /></RouterLink>
+              <RouterLink to="/dashboard" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-7 py-3 font-bold text-white transition-colors duration-200 hover:bg-white/20"><LayoutDashboard :size="18" />{{ t('landing.cta.secondary') }}</RouterLink>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-border bg-surface px-4 py-10 md:px-8">
-      <div class="mx-auto max-w-content">
-        <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div class="flex items-center gap-3">
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-              <Zap :size="20" class="text-white" />
-            </div>
-            <span class="text-lg font-semibold text-text-primary">AI Developer Workbench</span>
-          </div>
-
-          <div class="text-sm text-text-muted">
-            {{ t('landing.footer.tagline') }}
-          </div>
-
-          <div class="flex items-center gap-4">
-            <a href="#" class="text-text-secondary transition-smooth hover:text-accent">
-              <ExternalLink :size="20" />
-            </a>
-            <a href="#" class="text-text-secondary transition-smooth hover:text-accent">
-              <BookOpen :size="20" />
-            </a>
-          </div>
+    <footer class="px-4 py-8 md:px-8">
+      <div class="mx-auto flex max-w-content flex-col items-center justify-between gap-5 border-t border-border pt-8 text-center sm:flex-row sm:text-left">
+        <div class="flex items-center gap-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-text-primary text-white"><Zap :size="18" /></span>
+          <div><p class="font-bold text-text-primary">AI Developer Workbench</p><p class="mt-0.5 text-xs text-text-muted">{{ t('landing.footer.tagline') }}</p></div>
+        </div>
+        <div class="flex items-center gap-5 text-sm font-semibold text-text-secondary">
+          <a href="#studio" class="hover:text-accent">{{ t('landing.nav.studio') }}</a>
+          <a href="#tools" class="hover:text-accent">{{ t('landing.nav.tools') }}</a>
+          <RouterLink to="/dashboard" class="hover:text-accent">Dashboard</RouterLink>
         </div>
       </div>
     </footer>
@@ -660,291 +416,223 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+:global(html) { scroll-behavior: smooth; }
+
 .landing-nav {
-  top: 0.75rem;
-  left: 50%;
-  width: calc(100vw - 1.5rem);
-  transform: translateX(-50%) translateZ(0);
-  transition:
-    width 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 720ms ease-out,
-    background-color 720ms ease-out;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  transition: top 220ms ease, box-shadow 220ms ease;
 }
+.landing-nav--compact { top: 8px; box-shadow: 0 12px 34px rgba(15, 23, 42, 0.13); }
 
-.landing-nav__inner {
-  min-height: 64px;
-  transition:
-    min-height 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    padding 900ms cubic-bezier(0.16, 1, 0.3, 1);
+.hero-section {
+  --hero-light-x: 76%;
+  --hero-light-y: 24%;
+  --hero-light-opacity: 0.72;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(37, 99, 235, 0.13), transparent 31%),
+    radial-gradient(circle at 82% 32%, rgba(14, 165, 233, 0.11), transparent 30%),
+    linear-gradient(180deg, #fbfdff 0%, var(--color-background) 78%);
 }
-
-.landing-nav--compact {
-  width: min(1120px, calc(100vw - 4rem));
-  transform: translateX(-50%) translateZ(0);
-  background-color: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.14);
-}
-
-.landing-nav--compact .landing-nav__inner {
-  min-height: 60px;
-  padding-block: 0.625rem;
-}
-
-@media (min-width: 768px) {
-  .landing-nav {
-    top: 1.25rem;
-    width: calc(100vw - 2.5rem);
-  }
-
-  .landing-nav__inner {
-    min-height: 72px;
-  }
-
-  .landing-nav--compact {
-    width: min(1040px, calc(100vw - 7.5rem));
-    transform: translateX(-50%) translateZ(0);
-  }
-
-  .landing-nav--compact .landing-nav__inner {
-    min-height: 62px;
-    padding-inline: 1.25rem;
-  }
-}
-
-@media (max-width: 639px) {
-  .landing-nav--compact {
-    width: calc(100vw - 1.5rem);
-  }
-
-  .landing-nav--compact .landing-nav__inner {
-    min-height: 64px;
-    padding-block: 0.75rem;
-  }
-}
-
-.landing-grid-pattern {
+.hero-grid {
+  opacity: 0.5;
   background-image:
-    linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+    linear-gradient(rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+  background-position: 0 0, 0 0;
+  background-size: 46px 46px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 82%);
 }
-
-.landing-grid-glow {
+.hero-interactive-light {
+  opacity: var(--hero-light-opacity);
+  background:
+    radial-gradient(circle at var(--hero-light-x) var(--hero-light-y), rgba(255, 255, 255, 0.95) 0%, rgba(125, 211, 252, 0.32) 12%, rgba(37, 99, 235, 0.14) 26%, transparent 48%);
+  mix-blend-mode: screen;
   pointer-events: none;
-  opacity: var(--hero-grid-opacity);
-  background-image:
-    linear-gradient(rgba(37, 99, 235, 0.38) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 99, 235, 0.38) 1px, transparent 1px),
-    radial-gradient(
-      circle at var(--hero-grid-x) var(--hero-grid-y),
-      rgba(37, 99, 235, 0.24),
-      rgba(37, 99, 235, 0.1) 28%,
-      transparent 56%
-    );
-  background-position:
-    0 0,
-    0 0,
-    0 0;
-  background-size:
-    44px 44px,
-    44px 44px,
-    100% 100%;
-  mask-image:
-    radial-gradient(
-      circle 280px at var(--hero-grid-x) var(--hero-grid-y),
-      black 0%,
-      rgba(0, 0, 0, 0.9) 36%,
-      transparent 76%
-    ),
-    linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
-  mask-composite: intersect;
-  transition: opacity 180ms ease-out;
+  transition: opacity 260ms ease;
+}
+.hero-orb {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.2;
+  pointer-events: none;
+  will-change: transform;
+}
+.hero-orb--one { top: 90px; left: -100px; background: #60a5fa; animation: orb-drift-a 12s ease-in-out infinite; }
+.hero-orb--two { right: -90px; bottom: 40px; background: #22d3ee; animation: orb-drift-b 14s ease-in-out infinite; }
+.hero-orb--three { top: 42%; left: 42%; width: 190px; height: 190px; background: #a78bfa; opacity: 0.12; animation: orb-drift-c 16s ease-in-out infinite; }
+
+.hero-title-accent { color: var(--color-accent); position: relative; white-space: nowrap; }
+.hero-title-accent::after {
+  content: '';
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  bottom: -5px;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), rgba(14, 165, 233, 0.5));
+  transform: skewX(-16deg);
+  z-index: -1;
 }
 
-.terminal-showcase {
-  --terminal-rotate-x: 0deg;
-  --terminal-rotate-y: 0deg;
-  --terminal-lift: 0px;
-  --terminal-shadow-x: 0px;
-  --terminal-shadow-y: 28px;
-  --terminal-glow-x: 50%;
-  --terminal-glow-y: 50%;
+.hero-product-shell {
+  --card-rotate-x: 1deg;
+  --card-rotate-y: -2deg;
+  --card-translate-y: 0px;
+  --card-shadow-x: 0px;
+  --card-shadow-y: 36px;
+  --card-glare-x: 68%;
+  --card-glare-y: 18%;
+  --card-glare-opacity: 0.28;
   perspective: 1200px;
-}
-
-.terminal-window {
-  color-scheme: dark;
-  position: relative;
-  transform:
-    translateY(var(--terminal-lift))
-    rotateX(var(--terminal-rotate-x))
-    rotateY(var(--terminal-rotate-y));
   transform-style: preserve-3d;
-  transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hero-product-card {
+  transform: translateY(var(--card-translate-y)) rotateX(var(--card-rotate-x)) rotateY(var(--card-rotate-y));
+  transform-origin: center;
+  transform-style: preserve-3d;
   box-shadow:
-    var(--terminal-shadow-x) var(--terminal-shadow-y) 70px rgba(15, 23, 42, 0.24),
-    0 10px 24px rgba(15, 23, 42, 0.14);
-  will-change: transform, box-shadow;
+    var(--card-shadow-x) var(--card-shadow-y) 92px rgba(15, 23, 42, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  will-change: transform;
 }
-
-.terminal-window::before {
-  content: '';
+.hero-card-glare {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      circle at var(--terminal-glow-x) var(--terminal-glow-y),
-      rgba(255, 255, 255, 0.16),
-      rgba(255, 255, 255, 0.04) 28%,
-      transparent 55%
-    );
-  opacity: 0;
-  transition: opacity 180ms ease-out;
-}
-
-.terminal-showcase:hover .terminal-window::before {
-  opacity: 1;
-}
-
-.terminal-window > * {
-  position: relative;
   z-index: 2;
-  transform: translateZ(18px);
-}
-
-.features-lab {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 247, 245, 0.92)),
-    linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px);
-  background-size:
-    100% 100%,
-    36px 36px,
-    36px 36px;
-}
-
-.features-lab::before {
-  content: '';
-  position: absolute;
-  inset: 0;
   pointer-events: none;
+  opacity: var(--card-glare-opacity);
   background:
-    radial-gradient(circle at 18% 16%, rgba(37, 99, 235, 0.12), transparent 26%),
-    radial-gradient(circle at 86% 54%, rgba(22, 163, 74, 0.1), transparent 24%);
+    radial-gradient(circle at var(--card-glare-x) var(--card-glare-y), rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08) 18%, transparent 42%);
+  mix-blend-mode: screen;
+  transition: opacity 220ms ease;
 }
-
-.feature-card::before {
-  content: '';
+.hero-product-card > :not(.hero-card-glare) { position: relative; z-index: 3; }
+.hero-product-glow {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.11), transparent 38%);
-  opacity: 0;
-  transition: opacity 200ms ease-out;
+  inset: 12% 6% -4%;
+  border-radius: 32px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(34, 211, 238, 0.18));
+  filter: blur(44px);
+  transform: translateZ(-60px);
 }
-
-.feature-card:hover::before {
-  opacity: 1;
-}
-
-.quality-panel::before {
-  content: '';
+.hero-floating-badge {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  z-index: 8;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 9px 12px;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+.hero-floating-badge--top { top: 9%; right: -18px; transform: translateZ(64px) rotate(2deg); }
+.hero-floating-badge--bottom { left: -18px; bottom: 12%; transform: translateZ(72px) rotate(-2deg); }
+.hero-metric-card {
+  transform: translateZ(22px);
+  transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+.hero-metric-card:hover {
+  transform: translateZ(30px) translateY(-2px);
+  border-color: rgba(125, 211, 252, 0.3);
+  background: rgba(255, 255, 255, 0.065);
+}
+.generation-progress {
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.52);
+  animation: progress-pulse 2.4s ease-in-out infinite;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.studio-card-grid,
+.cta-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
   background-size: 34px 34px;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 86%);
+  mask-image: linear-gradient(135deg, black, transparent 80%);
 }
 
-.quality-panel::after {
+.tool-icon[data-tone='blue'] { border-color: rgba(37, 99, 235, 0.14); background: #dbeafe; color: #2563eb; }
+.tool-icon[data-tone='green'] { border-color: rgba(22, 163, 74, 0.14); background: #dcfce7; color: #15803d; }
+.tool-icon[data-tone='amber'] { border-color: rgba(217, 119, 6, 0.14); background: #fef3c7; color: #b45309; }
+.tool-icon[data-tone='violet'] { border-color: rgba(124, 58, 237, 0.14); background: #ede9fe; color: #7c3aed; }
+.tool-icon[data-tone='rose'] { border-color: rgba(225, 29, 72, 0.14); background: #ffe4e6; color: #e11d48; }
+
+.workflow-section {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(37, 99, 235, 0.08), transparent 24%),
+    #f3f6fb;
+}
+.workflow-card { transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease; }
+.workflow-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.cta-panel { isolation: isolate; }
+.cta-panel::after {
   content: '';
   position: absolute;
-  inset: -30%;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 76% 18%, rgba(37, 99, 235, 0.26), transparent 24%),
-    radial-gradient(circle at 28% 78%, rgba(22, 163, 74, 0.18), transparent 24%);
-  opacity: 0.86;
+  right: -110px;
+  bottom: -180px;
+  width: 420px;
+  height: 420px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  filter: blur(12px);
 }
 
-.quality-score-orb {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(37, 99, 235, 0.26), transparent 46%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+@keyframes progress-pulse {
+  0%, 100% { opacity: 0.86; }
+  50% { opacity: 1; }
+}
+@keyframes orb-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(34px, -18px, 0) scale(1.08); }
+}
+@keyframes orb-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-28px, 22px, 0) scale(1.06); }
+}
+@keyframes orb-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, 28px, 0) scale(1.12); }
 }
 
-.cta-command {
-  background:
-    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.3), transparent 26%),
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    #111827;
-  background-size:
-    100% 100%,
-    40px 40px,
-    40px 40px,
-    100% 100%;
+@media (max-width: 1023px) {
+  .hero-product-card { transform: none; }
+  .hero-floating-badge { transform: none; }
 }
-
-.cta-command::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(21, 26, 33, 0.08), rgba(17, 24, 39, 0.88));
+@media (max-width: 639px) {
+  .landing-nav { left: 10px; right: 10px; top: 10px; }
+  .hero-title-accent { white-space: normal; }
+  .code-panel { overflow-x: auto; }
 }
-
-@media (max-width: 479px) {
-  :global(html),
-  :global(body) {
-    overflow-x: hidden;
-  }
-
-  .terminal-window {
-    border-radius: 1.25rem;
-  }
-
-  .landing-language-switcher :deep(svg) {
-    display: none;
-  }
-
-  .landing-language-switcher :deep(button) {
-    min-width: 2rem;
-    padding-inline: 0.4rem;
-  }
-
-  .quality-panel {
-    padding: 1rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .landing-grid-glow {
-    display: none;
-  }
-
-  .landing-nav,
-  .landing-nav__inner,
-  .terminal-window,
-  .terminal-window::before {
-    transition: none;
-  }
-
-  .terminal-window {
-    transform: none;
-  }
-
-  .feature-card {
-    transform: none;
-  }
+  :global(html) { scroll-behavior: auto; }
+  .generation-progress, .hero-orb { animation: none; }
+  .workflow-card, .hero-product-card, .hero-floating-badge { transition: none; transform: none; }
 }
 </style>
