@@ -177,7 +177,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth !== false && !authStore.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'register' || to.name === 'landing')) {
+  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'register')) {
     return { name: 'dashboard' }
   }
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
@@ -187,3 +187,4 @@ router.beforeEach(async (to) => {
 })
 
 export default router
+

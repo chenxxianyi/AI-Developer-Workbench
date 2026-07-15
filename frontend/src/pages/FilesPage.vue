@@ -147,7 +147,6 @@ onMounted(loadFiles)
                 : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary',
               file.is_dir ? 'cursor-default' : 'cursor-pointer',
             ]"
-            role="listitem"
             @click="viewFile(file)"
           >
             <component
@@ -223,3 +222,4 @@ onMounted(loadFiles)
     </div>
   </ProjectStageShell>
 </template>
+

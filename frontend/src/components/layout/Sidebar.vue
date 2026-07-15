@@ -3,7 +3,7 @@
  * Sidebar — 统一导航
  * 分组：项目 | 生成工作室 | AI 工具 | 报告 | 管理后台 | 系统
  */
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import {
   Zap, LayoutDashboard, FolderKanban, Eye, Stethoscope, Bot,
   FileText, Database, FileStack, Settings, X, LogOut,
@@ -14,7 +14,13 @@ import { useAuthStore } from '@/stores/authStore'
 const props = defineProps<{ mobileOpen: boolean }>()
 const emit = defineEmits<{ toggle: []; close: [] }>()
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
+
+function handleLogout() {
+  auth.logout()
+  router.push('/login')
+}
 
 function isActive(path: string) { return route.path === path }
 function isSameOrChildPath(path: string) {
@@ -140,7 +146,7 @@ function itemActive(item: NavItem): boolean {
               <p class="text-xs text-text-muted truncate">{{ auth.user?.role === 'admin' ? '管理员' : '用户' }}</p>
             </div>
           </div>
-          <button @click="auth.logout(); window.location.href = '/login'" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
+          <button @click="handleLogout" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
             <LogOut :size="16" />
           </button>
         </div>
@@ -189,7 +195,7 @@ function itemActive(item: NavItem): boolean {
               <p class="text-xs text-text-muted truncate">{{ auth.user?.role === 'admin' ? '管理员' : '用户' }}</p>
             </div>
           </div>
-          <button @click="auth.logout(); window.location.href = '/login'" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
+          <button @click="handleLogout" class="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-smooth" title="退出登录">
             <LogOut :size="16" />
           </button>
         </div>

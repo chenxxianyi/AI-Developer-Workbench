@@ -4,7 +4,7 @@
  */
 
 import axios, { AxiosError, type AxiosInstance } from 'axios'
-import type { ApiResponse, ApiErrorResponse } from '@/types/api'
+import type { ApiErrorResponse } from '@/types/api'
 
 // Create Axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -110,3 +110,4 @@ function normalizeError(data: unknown): ApiErrorResponse {
   }
   return { code: typeof obj.code === 'number' ? obj.code : 0, message: (obj.message as string) || '请求失败' }
 }
+

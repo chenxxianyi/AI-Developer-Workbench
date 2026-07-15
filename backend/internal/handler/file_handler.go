@@ -17,7 +17,7 @@ func NewFileHandler(ws *service.WorkspaceService) *FileHandler {
 }
 
 func (h *FileHandler) ListFiles(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	subPath := c.DefaultQuery("path", ".")
 
 	entries, err := h.ws.ListDir(projectID, subPath)
@@ -38,7 +38,7 @@ func (h *FileHandler) ListFiles(c *gin.Context) {
 }
 
 func (h *FileHandler) GetFileContent(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	filePath := c.Query("path")
 	if filePath == "" {
 		response.ValidationError(c, "请指定文件路径")
@@ -53,15 +53,15 @@ func (h *FileHandler) GetFileContent(c *gin.Context) {
 
 	isText := service.IsTextFile(filePath)
 	response.Success(c, gin.H{
-		"path":     filePath,
-		"content":  string(data),
-		"size":     len(data),
+		"path":      filePath,
+		"content":   string(data),
+		"size":      len(data),
 		"is_binary": !isText,
 	})
 }
 
 func (h *FileHandler) ExportProject(c *gin.Context) {
-	projectID := c.Param("projectId")
+	projectID := c.Param("id")
 	c.Header("Content-Type", "application/zip")
 	c.Header("Content-Disposition", "attachment; filename=project-"+projectID+".zip")
 
@@ -72,7 +72,7 @@ func (h *FileHandler) ExportProject(c *gin.Context) {
 }
 
 func RegisterFileRoutes(r *gin.RouterGroup, h *FileHandler) {
-	f := r.Group("/projects/:projectId")
+	f := r.Group("/projects/:id")
 	f.GET("/files", h.ListFiles)
 	f.GET("/files/content", h.GetFileContent)
 	f.GET("/export", h.ExportProject)

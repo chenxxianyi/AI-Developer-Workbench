@@ -18,6 +18,7 @@ import (
 	"ai-developer-workbench/internal/repository"
 	"ai-developer-workbench/internal/service"
 	toolservice "ai-developer-workbench/internal/service/tools"
+	"ai-developer-workbench/pkg/sse"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -179,8 +180,15 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	)
 	authHandler := handler.NewAuthHandler(db, cfg.JWT.Secret, cfg.JWT.Expire)
 	adminHandler := handler.NewAdminHandler(db)
-	blueprintHandler := handler.NewBlueprintHandler(db)
+	aiGenerationService := service.NewAIGenerationService(db, aiService)
+	blueprintHandler := handler.NewBlueprintHandler(db, aiGenerationService)
 	requirementHandler := handler.NewRequirementHandler(db)
+	broker := sse.NewBroker()
+	workspaceService := service.NewWorkspaceService(cfg.Workspace.RootDir)
+	taskService := service.NewTaskService(db, broker)
+	taskHandler := handler.NewTaskHandler(taskService, broker, workspaceService, aiGenerationService)
+	fileHandler := handler.NewFileHandler(workspaceService)
+	buildHandler := handler.NewBuildHandler(workspaceService)
 
 	router := gin.New()
 	// Cap uploaded bodies at the configured limit and return a clear 413 for
@@ -206,6 +214,9 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	handler.RegisterProjectRoutes(api, projectService)
 	handler.RegisterRequirementRoutes(api, requirementHandler)
 	handler.RegisterBlueprintRoutes(api, blueprintHandler)
+	handler.RegisterTaskRoutes(api, taskHandler)
+	handler.RegisterFileRoutes(api, fileHandler)
+	handler.RegisterBuildRoutes(api, buildHandler)
 	handler.RegisterExportRoutes(api, exportService)
 	handler.RegisterToolRunRoutes(api, toolRunHandler)
 	handler.RegisterJobRoutes(api, jobService)

@@ -136,13 +136,14 @@ test.describe('v0.2 regression', () => {
     await mockApi(page)
 
     await page.goto('/dashboard')
-    await expect(page.getByText('当前状态')).toBeVisible()
-    await expect(page.getByText('演示').first()).toBeVisible()
+    await expect(page.getByText(/服务正常/)).toBeVisible()
+    await expect(page.getByRole('heading', { name: '生成工作流' })).toBeVisible()
 
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: '系统状态', level: 1 })).toBeVisible()
-    await expect(page.getByText('演示模式')).toBeVisible()
-    await expect(page.getByText('当前使用 Mock 数据，不会调用外部 AI 服务。')).toBeVisible()
+    await expect(page.getByText('真实 AI 服务')).toBeVisible()
+    await expect(page.getByText('AI 服务商')).toBeVisible()
+    await expect(page.getByText('mock-text')).toBeVisible()
   })
 
   test('Reports page supports status/tool filtering and non-scored reports', async ({ page }) => {
@@ -202,7 +203,7 @@ test.describe('v0.2 regression', () => {
     await mockApi(page)
     await page.goto('/projects/project-1')
 
-    await expect(page.getByRole('heading', { name: 'AI Developer Workbench' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'AI Developer Workbench', level: 1 })).toBeVisible()
     await expect(page.getByRole('heading', { name: '质量趋势（近 30 天）' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '最新产物' })).toBeVisible()
     await expect(page.getByText('migration.sql')).toBeVisible()
@@ -252,6 +253,10 @@ test.describe('v0.2 regression', () => {
 })
 
 async function mockApi(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('auth_token', 'e2e-token')
+  })
+
   const deleteRequests: string[] = []
 
   await page.route(/https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/api\/.*/, async (route) => {
@@ -259,6 +264,11 @@ async function mockApi(page: Page) {
     const url = new URL(request.url())
     const path = url.pathname
     const method = request.method()
+
+    if (path === '/api/auth/profile') {
+      await route.fulfill(apiOk({ id: 'user-e2e', username: 'e2e', email: 'e2e@example.com', role: 'admin' }))
+      return
+    }
 
     if (path === '/api/health') {
       await route.fulfill(apiOk({ status: 'ok', timestamp: '2026-07-07T07:00:00Z' }))

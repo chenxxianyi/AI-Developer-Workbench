@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -92,40 +92,45 @@ async function startGeneration() {
   }
 }
 
+function handleTaskEvent(event: MessageEvent) {
+  try {
+    const data = JSON.parse(event.data)
+    progress.value = Number(data.progress) || 0
+    currentStage.value = data.message || data.stage || ''
+    statusText.value = data.status === 'running' ? '生成中' : data.status || statusText.value
+
+    if (data.type === 'task_completed') {
+      progress.value = 100
+      completed.value = true
+      running.value = false
+      statusText.value = '生成完成'
+      addLog('代码生成已完成', 'success')
+      eventSource?.close()
+    } else if (data.type === 'task_failed') {
+      failed.value = true
+      running.value = false
+      statusText.value = '生成失败'
+      error.value = data.message || '代码生成失败'
+      addLog(`生成失败：${data.message || '未知错误'}`, 'error')
+      eventSource?.close()
+    } else if (data.message) {
+      addLog(data.message)
+    }
+  } catch {
+    addLog('收到无法解析的任务消息', 'warn')
+  }
+}
+
 function connectSSE(id: string) {
   const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
   const token = localStorage.getItem('auth_token')
   const url = `${base}/tasks/${id}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
 
   eventSource = new EventSource(url)
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data)
-      progress.value = Number(data.progress) || 0
-      currentStage.value = data.message || data.stage || ''
-      statusText.value = data.status === 'running' ? '生成中' : data.status || statusText.value
-
-      if (data.type === 'task_completed') {
-        progress.value = 100
-        completed.value = true
-        running.value = false
-        statusText.value = '生成完成'
-        addLog('代码生成已完成', 'success')
-        eventSource?.close()
-      } else if (data.type === 'task_failed') {
-        failed.value = true
-        running.value = false
-        statusText.value = '生成失败'
-        error.value = data.message || '代码生成失败'
-        addLog(`生成失败：${data.message || '未知错误'}`, 'error')
-        eventSource?.close()
-      } else if (data.message) {
-        addLog(data.message)
-      }
-    } catch {
-      addLog('收到无法解析的任务消息', 'warn')
-    }
-  }
+  eventSource.onmessage = handleTaskEvent
+  eventSource.addEventListener('stage_progress', handleTaskEvent as EventListener)
+  eventSource.addEventListener('task_completed', handleTaskEvent as EventListener)
+  eventSource.addEventListener('task_failed', handleTaskEvent as EventListener)
   eventSource.onerror = () => {
     if (running.value) addLog('实时连接暂时中断，正在等待重连', 'warn')
   }
@@ -325,3 +330,4 @@ onUnmounted(() => eventSource?.close())
     </div>
   </ProjectStageShell>
 </template>
+
