@@ -143,7 +143,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	fileService := service.NewFileService(cfg, reportAssetRepo)
 	zipService := service.NewZipService(cfg.Upload.TempDir)
 
-	var aiService service.AIService = service.NewOpenAICompatibleService(&cfg.AI)
+	var aiService service.AIService = service.NewConfigurableAIService(db, &cfg.AI)
 	aiService = service.NewInstrumentedAIService(aiService, aiRunRepo)
 	exportService := service.NewExportService(reportRepo, generatedFileRepo)
 
@@ -179,7 +179,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		apiDocService,
 	)
 	authHandler := handler.NewAuthHandler(db, cfg.JWT.Secret, cfg.JWT.Expire)
-	adminHandler := handler.NewAdminHandler(db)
+	adminHandler := handler.NewAdminHandler(db, cfg)
 	aiGenerationService := service.NewAIGenerationService(db, aiService)
 	blueprintHandler := handler.NewBlueprintHandler(db, aiGenerationService)
 	requirementHandler := handler.NewRequirementHandler(db)
@@ -207,7 +207,7 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	api := router.Group("/api")
 	handler.RegisterHealthRoutes(api, db)
-	handler.RegisterSystemRoutes(api, cfg)
+	handler.RegisterSystemRoutes(api, cfg, db)
 	handler.RegisterDashboardRoutes(api, reportService)
 	handler.RegisterToolRoutes(api, reportRepo)
 	handler.RegisterReportRoutes(api, reportService)

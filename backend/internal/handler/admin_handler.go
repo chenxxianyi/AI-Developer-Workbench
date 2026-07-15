@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"strings"
+
+	"ai-developer-workbench/internal/config"
 	"ai-developer-workbench/internal/middleware"
 	"ai-developer-workbench/internal/model"
 	"ai-developer-workbench/pkg/response"
@@ -11,11 +14,12 @@ import (
 
 // AdminHandler handles admin endpoints (models, prompts, users, projects).
 type AdminHandler struct {
-	db *gorm.DB
+	db  *gorm.DB
+	cfg *config.Config
 }
 
-func NewAdminHandler(db *gorm.DB) *AdminHandler {
-	return &AdminHandler{db: db}
+func NewAdminHandler(db *gorm.DB, cfg *config.Config) *AdminHandler {
+	return &AdminHandler{db: db, cfg: cfg}
 }
 
 // ── Users ──
@@ -71,18 +75,186 @@ func (h *AdminHandler) ListProjects(c *gin.Context) {
 	response.Success(c, projects)
 }
 
-// ── AI Models ──
+// AI Models
+
+type modelPresetRequest struct {
+	Name           string `json:"name"`
+	Provider       string `json:"provider"`
+	BaseURL        string `json:"base_url"`
+	Model          string `json:"model"`
+	VisionModel    string `json:"vision_model"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+	MaxRetries     int    `json:"max_retries"`
+	Status         string `json:"status"`
+	IsDefault      bool   `json:"is_default"`
+}
 
 func (h *AdminHandler) ListModels(c *gin.Context) {
-	// Placeholder — AI models table not yet migrated
-	response.Success(c, []gin.H{
-		{"id": "1", "name": "GPT-4.1", "provider": "openai", "status": "active"},
-		{"id": "2", "name": "Claude 3.5", "provider": "anthropic", "status": "active"},
-	})
+	if err := h.ensureConfiguredModelPreset(); err != nil {
+		response.InternalError(c, "failed to initialize model presets")
+		return
+	}
+
+	var models []model.ModelPreset
+	if err := h.db.Order("is_default desc, updated_at desc").Find(&models).Error; err != nil {
+		response.InternalError(c, "failed to load model presets")
+		return
+	}
+	response.Success(c, models)
+}
+
+func (h *AdminHandler) CreateModel(c *gin.Context) {
+	var req modelPresetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, "invalid model preset payload")
+		return
+	}
+	preset, ok := h.modelPresetFromRequest(req, nil)
+	if !ok {
+		response.ValidationError(c, "name, provider, base URL, and model ID are required")
+		return
+	}
+	if err := h.saveModelPreset(preset); err != nil {
+		response.InternalError(c, "failed to save model preset")
+		return
+	}
+	response.Created(c, preset)
 }
 
 func (h *AdminHandler) UpdateModel(c *gin.Context) {
+	var existing model.ModelPreset
+	if err := h.db.First(&existing, "id = ?", c.Param("id")).Error; err != nil {
+		response.NotFound(c, "model preset not found")
+		return
+	}
+
+	var req modelPresetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, "invalid model preset payload")
+		return
+	}
+	preset, ok := h.modelPresetFromRequest(req, &existing)
+	if !ok {
+		response.ValidationError(c, "name, provider, base URL, and model ID are required")
+		return
+	}
+	if err := h.saveModelPreset(preset); err != nil {
+		response.InternalError(c, "failed to save model preset")
+		return
+	}
+	response.Success(c, preset)
+}
+
+func (h *AdminHandler) DeleteModel(c *gin.Context) {
+	var existing model.ModelPreset
+	if err := h.db.First(&existing, "id = ?", c.Param("id")).Error; err != nil {
+		response.NotFound(c, "model preset not found")
+		return
+	}
+	if existing.IsDefault {
+		response.ValidationError(c, "default model cannot be deleted; switch default model first")
+		return
+	}
+	if err := h.db.Delete(&existing).Error; err != nil {
+		response.InternalError(c, "failed to save model preset")
+		return
+	}
 	response.Success(c, nil)
+}
+
+func (h *AdminHandler) ensureConfiguredModelPreset() error {
+	if h.cfg == nil {
+		return nil
+	}
+	name := strings.TrimSpace(h.cfg.AI.Model)
+	if name == "" {
+		name = "Current AI Model"
+	}
+	var existing model.ModelPreset
+	err := h.db.Where("provider = ? AND base_url = ? AND model = ?", h.cfg.AI.Provider, h.cfg.AI.BaseURL, h.cfg.AI.Model).First(&existing).Error
+	if err == nil {
+		updates := map[string]interface{}{
+			"vision_model":    h.cfg.AI.VisionModel,
+			"timeout_seconds": h.cfg.AI.TimeoutSeconds,
+			"max_retries":     h.cfg.AI.MaxRetries,
+			"status":          "active",
+		}
+		return h.db.Model(&existing).Updates(updates).Error
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+
+	var count int64
+	if err := h.db.Model(&model.ModelPreset{}).Count(&count).Error; err != nil {
+		return err
+	}
+	preset := &model.ModelPreset{
+		Name:           name,
+		Provider:       h.cfg.AI.Provider,
+		BaseURL:        h.cfg.AI.BaseURL,
+		Model:          h.cfg.AI.Model,
+		VisionModel:    h.cfg.AI.VisionModel,
+		TimeoutSeconds: h.cfg.AI.TimeoutSeconds,
+		MaxRetries:     h.cfg.AI.MaxRetries,
+		Status:         "active",
+		IsDefault:      count == 0,
+	}
+	return h.db.Create(preset).Error
+}
+
+func (h *AdminHandler) modelPresetFromRequest(req modelPresetRequest, existing *model.ModelPreset) (*model.ModelPreset, bool) {
+	preset := &model.ModelPreset{}
+	if existing != nil {
+		*preset = *existing
+	}
+
+	name := strings.TrimSpace(req.Name)
+	provider := strings.TrimSpace(req.Provider)
+	baseURL := strings.TrimRight(strings.TrimSpace(req.BaseURL), "/")
+	modelID := strings.TrimSpace(req.Model)
+	visionModel := strings.TrimSpace(req.VisionModel)
+	status := strings.TrimSpace(req.Status)
+	if status == "" {
+		status = "active"
+	}
+	if status != "active" && status != "disabled" {
+		return nil, false
+	}
+	if name == "" || provider == "" || baseURL == "" || modelID == "" {
+		return nil, false
+	}
+	if visionModel == "" {
+		visionModel = modelID
+	}
+	preset.Name = name
+	preset.Provider = provider
+	preset.BaseURL = baseURL
+	preset.Model = modelID
+	preset.VisionModel = visionModel
+	preset.Status = status
+	preset.IsDefault = req.IsDefault
+	preset.TimeoutSeconds = req.TimeoutSeconds
+	if preset.TimeoutSeconds <= 0 {
+		preset.TimeoutSeconds = 180
+	}
+	preset.MaxRetries = req.MaxRetries
+	if preset.MaxRetries < 0 {
+		preset.MaxRetries = 0
+	}
+	return preset, true
+}
+
+func (h *AdminHandler) saveModelPreset(preset *model.ModelPreset) error {
+	return h.db.Transaction(func(tx *gorm.DB) error {
+		if preset.IsDefault {
+			if err := tx.Model(&model.ModelPreset{}).Where("id <> ?", preset.ID).Update("is_default", false).Error; err != nil {
+				return err
+			}
+			preset.Status = "active"
+		}
+		return tx.Save(preset).Error
+	})
 }
 
 // ── Prompts ──
@@ -108,7 +280,9 @@ func RegisterAdminRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	admin.GET("/projects", h.ListProjects)
 
 	admin.GET("/models", h.ListModels)
+	admin.POST("/models", h.CreateModel)
 	admin.PUT("/models/:id", h.UpdateModel)
+	admin.DELETE("/models/:id", h.DeleteModel)
 
 	admin.GET("/prompts", h.ListPrompts)
 	admin.PUT("/prompts/:id", h.UpdatePrompt)

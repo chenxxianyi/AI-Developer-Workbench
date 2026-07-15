@@ -17,6 +17,7 @@ type ModelPreset struct {
 	VisionModel    string    `gorm:"type:varchar(128);not null" json:"vision_model"`
 	TimeoutSeconds int       `gorm:"not null;default:90" json:"timeout_seconds"`
 	MaxRetries     int       `gorm:"not null;default:1" json:"max_retries"`
+	Status         string    `gorm:"type:varchar(20);not null;default:active" json:"status"`
 	IsDefault      bool      `gorm:"not null;default:false" json:"is_default"`
 	CreatedAt      time.Time `gorm:"not null" json:"created_at"`
 	UpdatedAt      time.Time `gorm:"not null" json:"updated_at"`
