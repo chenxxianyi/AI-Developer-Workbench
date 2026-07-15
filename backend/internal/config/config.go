@@ -183,7 +183,7 @@ func LoadConfig(envFile string) (*Config, error) {
 			APIKey:         getEnv("AI_API_KEY", ""),
 			Model:          getEnv("AI_MODEL", "gpt-4.1"),
 			VisionModel:    getEnv("AI_VISION_MODEL", "gpt-4.1"),
-			TimeoutSeconds: getEnvInt("AI_TIMEOUT_SECONDS", 90),
+			TimeoutSeconds: getEnvInt("AI_TIMEOUT_SECONDS", 180),
 			MaxRetries:     getEnvInt("AI_MAX_RETRIES", 1),
 		},
 		CORS: CORSConfig{

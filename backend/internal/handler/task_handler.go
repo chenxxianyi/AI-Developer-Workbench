@@ -74,7 +74,7 @@ func (h *TaskHandler) runGenerationTask(taskID, projectID string) {
 	}
 
 	h.taskSvc.PublishProgress(taskID, "ai_generation", 25, "正在调用真实 AI 生成项目代码")
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	result, err := h.aiGenSvc.GenerateProjectFiles(ctx, projectID)
 	if err != nil {

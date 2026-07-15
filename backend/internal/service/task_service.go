@@ -146,8 +146,9 @@ func (s *TaskService) PublishEvent(taskID string, event sse.Event) {
 	s.broker.Publish(taskID, event)
 }
 
-// PublishProgress is a convenience method for progress updates.
+// PublishProgress persists progress and sends an SSE event.
 func (s *TaskService) PublishProgress(taskID string, stage string, progress int, message string) {
+	_ = s.UpdateProgress(taskID, progress, stage, message)
 	s.PublishEvent(taskID, sse.Event{
 		Type:      "stage_progress",
 		TaskID:    taskID,

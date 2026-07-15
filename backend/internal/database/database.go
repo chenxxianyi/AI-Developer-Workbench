@@ -75,6 +75,8 @@ func RunMigrations(db *gorm.DB, autoMigrate bool) error {
 		&model.GeneratedFile{},
 		&model.ReportAsset{},
 		&model.Project{},
+		&model.Task{},
+		&model.ProjectFile{},
 		&model.Job{},
 		&model.AIRun{},
 		&model.RuleTemplate{},
