@@ -2,6 +2,9 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"sync"
 	"time"
 
 	"ai-developer-workbench/internal/service"
@@ -17,10 +20,13 @@ type TaskHandler struct {
 	broker   *sse.Broker
 	ws       *service.WorkspaceService
 	aiGenSvc *service.AIGenerationService
+	builder  projectBuilder
+	cancelMu sync.Mutex
+	cancels  map[string]context.CancelFunc
 }
 
-func NewTaskHandler(taskSvc *service.TaskService, broker *sse.Broker, ws *service.WorkspaceService, aiGenSvc *service.AIGenerationService) *TaskHandler {
-	return &TaskHandler{taskSvc: taskSvc, broker: broker, ws: ws, aiGenSvc: aiGenSvc}
+func NewTaskHandler(taskSvc *service.TaskService, broker *sse.Broker, ws *service.WorkspaceService, aiGenSvc *service.AIGenerationService, builder projectBuilder) *TaskHandler {
+	return &TaskHandler{taskSvc: taskSvc, broker: broker, ws: ws, aiGenSvc: aiGenSvc, builder: builder, cancels: make(map[string]context.CancelFunc)}
 }
 
 func (h *TaskHandler) Create(c *gin.Context) {
@@ -47,20 +53,39 @@ func (h *TaskHandler) Create(c *gin.Context) {
 	}
 
 	if req.Type == "generation" {
-		go h.runGenerationTask(task.ID, req.ProjectID)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		h.cancelMu.Lock()
+		h.cancels[task.ID] = cancel
+		h.cancelMu.Unlock()
+		go h.runGenerationTask(ctx, task.ID, req.ProjectID)
 	}
 
 	response.Created(c, task)
 }
 
-func (h *TaskHandler) runGenerationTask(taskID, projectID string) {
-	time.Sleep(150 * time.Millisecond)
+func (h *TaskHandler) runGenerationTask(ctx context.Context, taskID, projectID string) {
+	defer func() {
+		h.cancelMu.Lock()
+		if cancel := h.cancels[taskID]; cancel != nil {
+			cancel()
+			delete(h.cancels, taskID)
+		}
+		h.cancelMu.Unlock()
+	}()
+	select {
+	case <-time.After(150 * time.Millisecond):
+	case <-ctx.Done():
+		return
+	}
 	if err := h.taskSvc.Start(taskID); err != nil {
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return
+		}
 		h.taskSvc.PublishFailed(taskID, err.Error())
 		return
 	}
 
-	h.taskSvc.PublishProgress(taskID, "prepare", 10, "正在准备项目工作区")
+	h.taskSvc.PublishProgress(taskID, "prepare", 5, "正在加载结构化需求和已确认蓝图")
 	if h.aiGenSvc == nil {
 		errMsg := "AI 代码生成服务未初始化"
 		_ = h.taskSvc.Fail(taskID, "AI_SERVICE_NOT_READY", errMsg)
@@ -73,18 +98,22 @@ func (h *TaskHandler) runGenerationTask(taskID, projectID string) {
 		return
 	}
 
-	h.taskSvc.PublishProgress(taskID, "ai_generation", 25, "正在调用真实 AI 生成项目代码")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
+	h.taskSvc.PublishProgress(taskID, "ai_generation", 20, "正在按功能和模块生成真实应用代码")
 	result, err := h.aiGenSvc.GenerateProjectFiles(ctx, projectID)
 	if err != nil {
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return
+		}
 		_ = h.taskSvc.Fail(taskID, "AI_GENERATION_ERROR", err.Error())
 		h.taskSvc.PublishFailed(taskID, err.Error())
 		return
 	}
 
-	h.taskSvc.PublishProgress(taskID, "write_files", 70, "正在写入 AI 生成的项目文件")
+	h.taskSvc.PublishProgress(taskID, "write_files", 55, fmt.Sprintf("正在写入 %d 个生成文件", len(result.Files)))
 	for _, file := range result.Files {
+		if ctx.Err() != nil {
+			return
+		}
 		if err := h.ws.WriteFile(projectID, file.Path, []byte(file.Content)); err != nil {
 			_ = h.taskSvc.Fail(taskID, "WRITE_FILE_ERROR", err.Error())
 			h.taskSvc.PublishFailed(taskID, err.Error())
@@ -92,8 +121,55 @@ func (h *TaskHandler) runGenerationTask(taskID, projectID string) {
 		}
 	}
 
-	h.taskSvc.PublishProgress(taskID, "finalize", 90, "正在整理资源、配置和依赖文件")
-	if err := h.taskSvc.Complete(taskID, "AI code generation completed"); err != nil {
+	if h.builder == nil {
+		errMsg := "构建验证服务未初始化"
+		_ = h.taskSvc.Fail(taskID, "BUILD_SERVICE_NOT_READY", errMsg)
+		h.taskSvc.PublishFailed(taskID, errMsg)
+		return
+	}
+	h.taskSvc.PublishProgress(taskID, "build", 70, "正在运行测试并执行生产构建")
+	var buildOutput string
+	for attempt := 0; attempt < 3; attempt++ {
+		buildOutput, err = h.builder.Build(ctx, projectID)
+		if err == nil {
+			break
+		}
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return
+		}
+		if attempt == 2 {
+			_ = h.taskSvc.Fail(taskID, "BUILD_VALIDATION_ERROR", err.Error())
+			h.taskSvc.PublishFailed(taskID, "生成代码经过两轮自动修复后仍未通过验证: "+err.Error())
+			return
+		}
+		h.taskSvc.PublishProgress(taskID, "repair", 76+attempt*7, fmt.Sprintf("构建验证失败，正在进行第 %d 轮定向修复", attempt+1))
+		repaired, repairErr := h.aiGenSvc.RepairProjectFiles(ctx, projectID, result, err.Error())
+		if repairErr != nil {
+			_ = h.taskSvc.Fail(taskID, "AUTO_REPAIR_ERROR", repairErr.Error())
+			h.taskSvc.PublishFailed(taskID, "自动修复失败: "+repairErr.Error())
+			return
+		}
+		for _, file := range repaired.Files {
+			if err := h.ws.WriteFile(projectID, file.Path, []byte(file.Content)); err != nil {
+				_ = h.taskSvc.Fail(taskID, "REPAIR_WRITE_ERROR", err.Error())
+				h.taskSvc.PublishFailed(taskID, err.Error())
+				return
+			}
+		}
+		result = repaired
+	}
+
+	h.taskSvc.PublishProgress(taskID, "verify", 92, "构建已通过，正在确认预览产物")
+	if _, err := h.ws.ReadFile(projectID, "dist/index.html"); err != nil {
+		_ = h.taskSvc.Fail(taskID, "PREVIEW_ARTIFACT_MISSING", err.Error())
+		h.taskSvc.PublishFailed(taskID, "构建未生成可用的预览入口")
+		return
+	}
+	resultSummary := fmt.Sprintf("Generated %d files and passed the production build", len(result.Files))
+	if len(buildOutput) > 0 {
+		resultSummary += "."
+	}
+	if err := h.taskSvc.Complete(taskID, resultSummary); err != nil {
 		h.taskSvc.PublishFailed(taskID, err.Error())
 		return
 	}
@@ -114,6 +190,12 @@ func (h *TaskHandler) Stream(c *gin.Context) {
 }
 
 func (h *TaskHandler) Cancel(c *gin.Context) {
+	h.cancelMu.Lock()
+	cancel := h.cancels[c.Param("id")]
+	h.cancelMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
 	if err := h.taskSvc.Cancel(c.Param("id")); err != nil {
 		response.BusinessError(c, err.Error())
 		return

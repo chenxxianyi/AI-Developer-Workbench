@@ -28,6 +28,11 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		CORS: config.CORSConfig{
 			AllowOrigins: []string{"http://localhost:5173"},
 		},
+		Workspace: config.WorkspaceConfig{
+			RootDir:             t.TempDir(),
+			BuildTimeoutSec:     600,
+			MaxConcurrentBuilds: 1,
+		},
 	}
 
 	router := buildRouter(cfg, &gorm.DB{})
@@ -57,9 +62,11 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"GET /api/projects/:id/reports",
 		"GET /api/projects/:id/stats",
 		"GET /api/projects/:id/blueprint",
+		"GET /api/projects/:id/build",
 		"GET /api/projects/:id/export",
 		"GET /api/projects/:id/files",
 		"GET /api/projects/:id/files/content",
+		"GET /api/projects/:id/preview/*filepath",
 		"GET /api/projects/:id/requirements",
 		"GET /api/reports",
 		"GET /api/reports/:id",
@@ -94,6 +101,7 @@ func TestBuildRouterRegistersAllAPIRoutes(t *testing.T) {
 		"PUT /api/auth/profile",
 		"PUT /api/projects/:id/blueprint",
 		"PUT /api/projects/:id/requirements",
+		"POST /api/projects/:id/requirements/assist",
 	}
 	sort.Strings(want)
 

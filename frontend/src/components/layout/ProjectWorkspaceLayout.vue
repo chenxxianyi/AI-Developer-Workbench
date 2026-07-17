@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import {
+  CheckCircle2,
+  Circle,
   Download,
   ExternalLink,
   FileStack,
@@ -9,10 +11,12 @@ import {
   Files,
   FolderKanban,
   LayoutDashboard,
+  LockKeyhole,
   Monitor,
   PenTool,
   Play,
 } from '@lucide/vue'
+import apiClient from '@/api/client'
 import { getProject } from '@/api/projects'
 import type { Project } from '@/types/project'
 
@@ -20,13 +24,17 @@ const route = useRoute()
 const projectId = computed(() => route.params.projectId as string)
 const project = ref<Project | null>(null)
 const loading = ref(false)
+const requirementsReady = ref(false)
+const blueprintConfirmed = ref(false)
 
-const navItems = computed(() => [
+const workflowItems = computed(() => [
+  { to: `/projects/${projectId.value}/requirements`, icon: FileText, label: '需求', complete: requirementsReady.value, enabled: true },
+  { to: `/projects/${projectId.value}/blueprint`, icon: PenTool, label: '蓝图', complete: blueprintConfirmed.value, enabled: requirementsReady.value },
+  { to: `/projects/${projectId.value}/generation`, icon: Play, label: '生成', complete: false, enabled: blueprintConfirmed.value },
+  { to: `/projects/${projectId.value}/preview`, icon: Monitor, label: '预览', complete: false, enabled: blueprintConfirmed.value },
+])
+const resourceItems = computed(() => [
   { to: `/projects/${projectId.value}`, icon: LayoutDashboard, label: '概览' },
-  { to: `/projects/${projectId.value}/requirements`, icon: FileText, label: '需求' },
-  { to: `/projects/${projectId.value}/blueprint`, icon: PenTool, label: '蓝图' },
-  { to: `/projects/${projectId.value}/generation`, icon: Play, label: '生成' },
-  { to: `/projects/${projectId.value}/preview`, icon: Monitor, label: '预览' },
   { to: `/projects/${projectId.value}/files`, icon: Files, label: '文件' },
   { to: `/projects/${projectId.value}/reports`, icon: FileStack, label: '报告' },
 ])
@@ -46,12 +54,32 @@ async function loadProject() {
   }
 }
 
+async function loadWorkflow() {
+  requirementsReady.value = false
+  blueprintConfirmed.value = false
+  try {
+    const requirement: any = await apiClient.get(`/projects/${projectId.value}/requirements`)
+    const content = typeof requirement?.content === 'string' ? JSON.parse(requirement.content) : requirement?.content
+    requirementsReady.value = Boolean(
+      content?.goal
+      && content?.target_users?.length
+      && content?.must_have_features?.length
+      && content?.acceptance_criteria?.length,
+    )
+  } catch { /* no valid requirement yet */ }
+  try {
+    const blueprint: any = await apiClient.get(`/projects/${projectId.value}/blueprint`)
+    blueprintConfirmed.value = blueprint?.status === 'confirmed'
+  } catch { /* no blueprint yet */ }
+}
+
 function exportProject() {
   const base = import.meta.env.VITE_API_BASE_URL || '/api'
   window.open(`${base}/projects/${projectId.value}/export`, '_blank')
 }
 
-watch(projectId, loadProject, { immediate: true })
+watch(projectId, () => { void loadProject(); void loadWorkflow() }, { immediate: true })
+watch(() => route.path, () => { void loadWorkflow() })
 </script>
 
 <template>
@@ -98,22 +126,38 @@ watch(projectId, loadProject, { immediate: true })
         </div>
       </div>
 
-      <nav class="overflow-x-auto border-t border-border px-2" aria-label="项目工作区导航">
-        <div class="flex min-w-max items-center gap-1">
+      <nav class="border-t border-border px-3 py-3" aria-label="项目交付流程">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-text-muted">交付流程</span>
+          <span class="text-xs text-text-muted">确认上一步后继续</span>
+        </div>
+        <ol class="flex min-w-max items-center overflow-x-auto">
+          <li v-for="(item, index) in workflowItems" :key="item.label" class="flex items-center">
           <RouterLink
-            v-for="item in navItems"
-            :key="item.label"
+            v-if="item.enabled"
             :to="item.to"
             :aria-current="route.path === item.to ? 'page' : undefined"
             :class="[
-              'relative flex min-h-11 items-center gap-2 px-3 text-sm font-medium transition-colors duration-200',
+              'flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors duration-200',
               route.path === item.to
-                ? 'text-accent after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-accent'
-                : 'text-text-muted hover:text-text-primary',
+                ? 'bg-accent-soft text-accent'
+                : item.complete ? 'text-success hover:bg-success/5' : 'text-text-muted hover:bg-surface-muted hover:text-text-primary',
             ]"
           >
-            <component :is="item.icon" :size="16" />
-            {{ item.label }}
+            <CheckCircle2 v-if="item.complete" :size="17" />
+            <Circle v-else :size="17" />
+            <span>{{ index + 1 }}. {{ item.label }}</span>
+          </RouterLink>
+          <span v-else class="flex min-h-10 cursor-not-allowed items-center gap-2 rounded-lg px-3 text-sm font-medium text-text-muted/60" :title="`请先完成${index === 1 ? '需求' : '蓝图确认'}`">
+            <LockKeyhole :size="16" /><span>{{ index + 1 }}. {{ item.label }}</span>
+          </span>
+          <span v-if="index < workflowItems.length - 1" class="mx-1 h-px w-5 bg-border" aria-hidden="true" />
+          </li>
+        </ol>
+        <div class="mt-3 flex flex-wrap items-center gap-1 border-t border-border pt-3">
+          <span class="mr-2 text-xs font-semibold uppercase tracking-wide text-text-muted">项目资源</span>
+          <RouterLink v-for="item in resourceItems" :key="item.label" :to="item.to" :class="['flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors', route.path === item.to ? 'bg-surface-muted text-text-primary' : 'text-text-muted hover:text-text-primary']">
+            <component :is="item.icon" :size="16" />{{ item.label }}
           </RouterLink>
         </div>
       </nav>

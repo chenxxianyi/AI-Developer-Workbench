@@ -9,17 +9,18 @@ import (
 
 // Project represents a project profile that reports can be associated with.
 type Project struct {
-	ID            string         `gorm:"type:char(36);primaryKey" json:"id"`
-	Name          string         `gorm:"type:varchar(128);not null" json:"name"`
-	Description   string         `gorm:"type:text" json:"description"`
-	RepoURL       string         `gorm:"type:varchar(512)" json:"repo_url"`
-	FrontendStack string         `gorm:"type:varchar(256)" json:"frontend_stack"`
-	BackendStack  string         `gorm:"type:varchar(256)" json:"backend_stack"`
-	Database      string         `gorm:"type:varchar(128)" json:"database"`
-	UIStyle       string         `gorm:"type:varchar(256)" json:"ui_style"`
-	CodingRules   string         `gorm:"type:text" json:"coding_rules"`
-	CreatedAt     time.Time      `gorm:"not null" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"not null" json:"updated_at"`
+	ID            string    `gorm:"type:char(36);primaryKey" json:"id"`
+	Name          string    `gorm:"type:varchar(128);not null" json:"name"`
+	ProjectType   string    `gorm:"type:varchar(32);not null;default:utility_app" json:"project_type"`
+	Description   string    `gorm:"type:text" json:"description"`
+	RepoURL       string    `gorm:"type:varchar(512)" json:"repo_url"`
+	FrontendStack string    `gorm:"type:varchar(256)" json:"frontend_stack"`
+	BackendStack  string    `gorm:"type:varchar(256)" json:"backend_stack"`
+	Database      string    `gorm:"type:varchar(128)" json:"database"`
+	UIStyle       string    `gorm:"type:varchar(256)" json:"ui_style"`
+	CodingRules   string    `gorm:"type:text" json:"coding_rules"`
+	CreatedAt     time.Time `gorm:"not null" json:"created_at"`
+	UpdatedAt     time.Time `gorm:"not null" json:"updated_at"`
 
 	// Reports associated with this project (0..N). On project delete the FK is
 	// SET NULL so historical reports survive (product rule: no cascade delete).

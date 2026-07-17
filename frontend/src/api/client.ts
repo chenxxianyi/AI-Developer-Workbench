@@ -72,9 +72,12 @@ apiClient.interceptors.response.use(
 
     // Handle timeout
     if (error.code === 'ECONNABORTED') {
+      const seconds = typeof error.config?.timeout === 'number' && error.config.timeout > 0
+        ? Math.round(error.config.timeout / 1000)
+        : 0
       return Promise.reject({
         code: -1,
-        message: '请求超时，请稍后重试',
+        message: seconds ? `请求超过 ${seconds} 秒仍未完成，请稍后重试` : '请求超时，请稍后重试',
       })
     }
 

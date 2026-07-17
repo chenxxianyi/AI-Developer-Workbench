@@ -7,19 +7,23 @@ import {
   CheckCircle2,
   FileText,
   FolderPlus,
+  Gamepad2,
+  Gauge,
+  LayoutDashboard,
   Loader2,
   Monitor,
+  Newspaper,
   Search,
+  ShoppingCart,
+  Wrench,
 } from '@lucide/vue'
 import { createProject } from '@/api/projects'
 import ProjectStageShell from '@/components/project/ProjectStageShell.vue'
 import ToolFormSection from '@/components/tool/ToolFormSection.vue'
-import type { Project } from '@/types/project'
-
-type ProjectType = 'website' | 'analysis'
+import type { Project, ProjectType } from '@/types/project'
 
 const step = ref(1)
-const selectedType = ref<ProjectType>('website')
+const selectedType = ref<ProjectType>('interactive_app')
 const creating = ref(false)
 const error = ref('')
 const createdProject = ref<Project | null>(null)
@@ -31,13 +35,49 @@ const form = reactive({
 
 const projectTypes = [
   {
-    value: 'website' as const,
-    icon: Monitor,
-    title: '生成新网站',
-    description: '从需求和蓝图开始，进入完整的代码生成流程。',
+    value: 'interactive_app' as const,
+    icon: Gamepad2,
+    title: '互动应用 / 游戏',
+    description: '适合游戏、编辑器和强交互工具，重点生成状态与业务规则。',
   },
   {
-    value: 'analysis' as const,
+    value: 'dashboard' as const,
+    icon: LayoutDashboard,
+    title: '管理后台',
+    description: '适合运营和业务系统，重点生成导航、列表、表单与数据状态。',
+  },
+  {
+    value: 'data_product' as const,
+    icon: Gauge,
+    title: '数据看板',
+    description: '适合统计和分析产品，重点生成指标、筛选、图表和空状态。',
+  },
+  {
+    value: 'content_site' as const,
+    icon: Newspaper,
+    title: '内容网站',
+    description: '适合官网、资讯、博客和文档，重点生成信息架构和内容体验。',
+  },
+  {
+    value: 'ecommerce' as const,
+    icon: ShoppingCart,
+    title: '电商应用',
+    description: '适合商品和订单流程，重点生成商品浏览、购物车和结算状态。',
+  },
+  {
+    value: 'utility_app' as const,
+    icon: Wrench,
+    title: '工具型应用',
+    description: '适合计算、转换和效率工具，重点生成输入、处理和结果逻辑。',
+  },
+  {
+    value: 'landing_page' as const,
+    icon: Monitor,
+    title: '营销落地页',
+    description: '适合活动和产品宣传，仅此类型默认使用转化型页面结构。',
+  },
+  {
+    value: 'analysis_existing' as const,
     icon: Search,
     title: '分析已有项目',
     description: '创建项目档案后，关联项目文件并运行质量诊断。',
@@ -51,7 +91,7 @@ const backendStacks = new Set(['Node.js', 'Go'])
 const stepText = computed(() => `第 ${step.value} 步，共 3 步`)
 const primaryNextRoute = computed(() => {
   if (!createdProject.value) return '/projects'
-  return selectedType.value === 'analysis'
+  return selectedType.value === 'analysis_existing'
     ? `/tools/project-doctor?project_id=${createdProject.value.id}`
     : `/projects/${createdProject.value.id}/requirements`
 })
@@ -64,6 +104,7 @@ async function submitProject() {
   try {
     createdProject.value = await createProject({
       name: form.name.trim(),
+      project_type: selectedType.value,
       description: form.description.trim() || undefined,
       frontend_stack: form.techStacks.filter((stack) => frontendStacks.has(stack)).join(' + ') || undefined,
       backend_stack: form.techStacks.filter((stack) => backendStacks.has(stack)).join(' + ') || undefined,
@@ -173,7 +214,7 @@ async function submitProject() {
             </ToolFormSection>
 
             <ToolFormSection
-              v-if="selectedType === 'website'"
+              v-if="selectedType !== 'analysis_existing'"
               label="技术栈偏好"
               optional
               as-label
@@ -236,7 +277,7 @@ async function submitProject() {
                   :to="primaryNextRoute"
                   class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-white transition-smooth hover:bg-accent/80"
                 >
-                  {{ selectedType === 'analysis' ? '开始项目诊断' : '填写项目需求' }}
+                  {{ selectedType === 'analysis_existing' ? '开始项目诊断' : '填写项目需求' }}
                   <ArrowRight :size="16" />
                 </RouterLink>
                 <RouterLink

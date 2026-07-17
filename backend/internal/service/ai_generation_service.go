@@ -15,6 +15,7 @@ import (
 
 const (
 	ToolTypeBlueprintGeneration = "blueprint_generation"
+	ToolTypeGenerationPlan      = "generation_plan"
 	ToolTypeCodeGeneration      = "code_generation"
 )
 
@@ -45,15 +46,51 @@ type BlueprintDataModelSpec struct {
 	Fields []string `json:"fields"`
 }
 
+type BlueprintUserFlowSpec struct {
+	Name  string   `json:"name"`
+	Steps []string `json:"steps"`
+}
+
+type BlueprintFeatureSpec struct {
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	Priority           string   `json:"priority"`
+	Description        string   `json:"description"`
+	AcceptanceCriteria []string `json:"acceptance_criteria"`
+}
+
+type BlueprintStateSpec struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type BlueprintVisualSystemSpec struct {
+	Style         string `json:"style"`
+	Colors        string `json:"colors"`
+	Layout        string `json:"layout"`
+	Accessibility string `json:"accessibility"`
+}
+
 type BlueprintAIResult struct {
+	SchemaVersion       int                        `json:"schema_version"`
+	AppType             string                     `json:"app_type"`
 	ProductPositioning  string                     `json:"product_positioning"`
 	TechStack           string                     `json:"tech_stack"`
 	UIStyle             string                     `json:"ui_style,omitempty"`
 	Pages               []BlueprintPageSpec        `json:"pages"`
 	Components          []string                   `json:"components,omitempty"`
+	UserFlows           []BlueprintUserFlowSpec    `json:"user_flows,omitempty"`
+	Features            []BlueprintFeatureSpec     `json:"features,omitempty"`
+	InteractionRules    []string                   `json:"interaction_rules,omitempty"`
+	StateModel          []BlueprintStateSpec       `json:"state_model,omitempty"`
+	DomainRules         []string                   `json:"domain_rules,omitempty"`
 	APIEndpoints        []BlueprintAPIEndpointSpec `json:"api_endpoints,omitempty"`
 	DataModels          []BlueprintDataModelSpec   `json:"data_models,omitempty"`
+	VisualSystem        BlueprintVisualSystemSpec  `json:"visual_system,omitempty"`
+	AcceptanceCriteria  []string                   `json:"acceptance_criteria,omitempty"`
+	TestPlan            []string                   `json:"test_plan,omitempty"`
 	ImplementationNotes []string                   `json:"implementation_notes,omitempty"`
+	OpenQuestions       []string                   `json:"open_questions,omitempty"`
 }
 
 type GeneratedProjectFile struct {
@@ -64,6 +101,20 @@ type GeneratedProjectFile struct {
 type CodeGenerationAIResult struct {
 	Files []GeneratedProjectFile `json:"files"`
 	Notes []string               `json:"notes,omitempty"`
+}
+
+type GenerationPlanFile struct {
+	Path         string   `json:"path"`
+	Purpose      string   `json:"purpose"`
+	FeatureIDs   []string `json:"feature_ids"`
+	Dependencies []string `json:"dependencies,omitempty"`
+}
+
+type GenerationPlan struct {
+	ApplicationType   string               `json:"application_type"`
+	Architecture      string               `json:"architecture"`
+	Files             []GenerationPlanFile `json:"files"`
+	VerificationSteps []string             `json:"verification_steps"`
 }
 
 type CodeGenerationContentSpec struct {
@@ -112,10 +163,11 @@ func (s *AIGenerationService) GenerateBlueprint(ctx context.Context, projectID s
 	requirements := s.loadLatestRequirementContent(projectID)
 
 	systemPrompt := `你是资深产品架构师和全栈技术负责人。你必须只返回合法 JSON 对象，不要使用 Markdown，不要解释。`
-	userPrompt := fmt.Sprintf(`请基于以下项目信息生成一个可执行的网站/应用蓝图。
+	userPrompt := fmt.Sprintf(`请基于以下项目信息生成一个可执行、可评审、可测试的应用蓝图。
 
 项目信息：
 - 名称：%s
+- 项目类型：%s
 - 描述：%s
 - 前端技术栈偏好：%s
 - 后端技术栈偏好：%s
@@ -128,21 +180,37 @@ func (s *AIGenerationService) GenerateBlueprint(ctx context.Context, projectID s
 
 请返回 JSON，结构必须为：
 {
+  "schema_version": 2,
+  "app_type": "项目类型",
   "product_positioning": "一句话产品定位",
   "tech_stack": "推荐技术栈",
   "ui_style": "视觉风格说明",
   "pages": [{"name":"页面名","route":"/route","purpose":"页面目标","key_sections":["区块"]}],
+  "user_flows": [{"name":"流程名","steps":["步骤"]}],
+  "features": [{"id":"F-001","name":"功能名","priority":"must|should","description":"具体行为","acceptance_criteria":["可验证条件"]}],
   "components": ["关键组件"],
+  "interaction_rules": ["交互规则"],
+  "state_model": [{"name":"状态名","description":"状态含义和变化"}],
+  "domain_rules": ["业务或领域规则"],
   "api_endpoints": [{"method":"GET","path":"/api/example","description":"用途"}],
   "data_models": [{"name":"模型名","fields":["字段"]}],
-  "implementation_notes": ["实现注意事项"]
+  "visual_system": {"style":"视觉风格","colors":"颜色策略","layout":"布局策略","accessibility":"无障碍要求"},
+  "acceptance_criteria": ["全局验收标准"],
+  "test_plan": ["核心测试"],
+  "implementation_notes": ["实现注意事项"],
+  "open_questions": []
 }
 
 约束：
 - pages 至少包含首页。
 - route 必须以 / 开头。
+- 每项 must 功能必须有明确、可执行、可测试的行为和验收标准。
+- 互动应用必须描述核心状态、领域规则和交互流程；管理后台必须描述导航、列表、表单和数据状态。
+- 只有 landing_page 或用户明确提出时才允许默认生成价格、客户案例和联系表单。
+- 不得虚构用户数量、价格、客户或业务数据。
 - 内容必须贴合用户需求，不要返回示例占位。`,
 		project.Name,
+		project.ProjectType,
 		util.RedactText(project.Description),
 		project.FrontendStack,
 		project.BackendStack,
@@ -178,17 +246,23 @@ func (s *AIGenerationService) GenerateProjectFiles(ctx context.Context, projectI
 		return nil, err
 	}
 	requirements := safePromptJSON(s.loadLatestRequirementContent(projectID), 3500)
-	blueprint := s.loadLatestBlueprintContent(projectID)
+	blueprint := s.loadConfirmedBlueprintContent(projectID)
 	if strings.TrimSpace(blueprint) == "" {
-		return nil, fmt.Errorf("blueprint is missing; generate and confirm blueprint first")
+		return nil, fmt.Errorf("confirmed blueprint is missing; generate, review and confirm a blueprint first")
 	}
 	blueprint = compactBlueprintForCodegen(blueprint)
+	plan, err := s.generateProjectPlan(ctx, project, requirements, blueprint)
+	if err != nil {
+		return nil, err
+	}
+	planJSON, _ := json.Marshal(plan)
 
-	systemPrompt := `You are a senior product copywriter and frontend content architect. Return a valid JSON object only. Do not use Markdown or explanations.`
-	userPrompt := fmt.Sprintf(`Create compact page content for a runnable Vue 3 landing page based on the requirement and blueprint.
+	systemPrompt := `You are a senior Vue 3 product engineer. Generate complete, runnable application source files. Return one valid JSON object only, without Markdown or explanations.`
+	userPrompt := fmt.Sprintf(`Generate a functional Vue 3 + TypeScript application based strictly on the confirmed requirement and blueprint.
 
 Project info:
 - Name: %s
+- Application type: %s
 - Description: %s
 - UI style: %s
 - Coding rules: %s
@@ -199,33 +273,44 @@ Requirement summary JSON:
 Blueprint summary JSON:
 %s
 
+Approved generation plan JSON:
+%s
+
 Return JSON exactly in this shape:
 {
-  "product_name": "product or project name",
-  "tagline": "short tagline",
-  "hero_title": "conversion focused hero title",
-  "hero_subtitle": "one paragraph hero subtitle",
-  "primary_cta": "primary button text",
-  "secondary_cta": "secondary button text",
-  "metrics": [{"value":"98%%","label":"metric label"}],
-  "features": [{"title":"feature title","description":"feature description"}],
-  "cases": [{"name":"customer/case name","result":"case result"}],
-  "pricing": [{"name":"plan name","price":"price text","description":"plan description","items":["item"]}],
-  "contact_title": "lead form title",
-  "contact_subtitle": "lead form subtitle",
-  "notes": ["implementation note"]
+  "files": [
+    {"path":"package.json","content":"complete file content"},
+    {"path":"tsconfig.json","content":"complete file content"},
+    {"path":"index.html","content":"complete file content"},
+    {"path":"src/main.ts","content":"complete file content"},
+    {"path":"src/App.vue","content":"complete file content"}
+  ],
+  "notes": ["implemented scope or known limitation"]
 }
 
 Hard requirements:
-- Keep the response compact: 3 metrics, 4 to 6 features, 2 to 3 cases, and 3 pricing plans.
-- Use the same language as the requirement/blueprint when possible.
-- The content must be specific to this project; do not return generic placeholders.`,
+- Generate an actual application, not a page that merely describes the requested product.
+- Implement every must-have feature and acceptance criterion from the confirmed inputs.
+- Use multiple focused files for domain logic, state and reusable components when the application is interactive.
+- Include package.json, tsconfig.json, index.html, src/main.ts and src/App.vue. Keep the total at 24 files or fewer.
+- package.json must use pinned compatible versions and only scripts named dev, build, preview and test. Never add lifecycle scripts.
+- Include vue-tsc so the build service can run an explicit typecheck. Allowed packages are vue, vue-router, pinia, vite, typescript, vue-tsc, @vitejs/plugin-vue, vitest, @vue/test-utils and jsdom. Prefer no extra dependency.
+- Use simple non-shell scripts: vite, vite build, vite preview and vitest run. The test script must terminate without watch mode.
+- Do not use external APIs, remote assets, secrets, fake metrics, invented pricing or customer claims unless explicitly required.
+- For interactive applications, implement real state transitions and domain behavior. For games, include legal actions, turn state, restart and a deterministic playable opponent when required.
+- For dashboards, implement navigation, meaningful local sample data, filters, loading/empty states and forms described by the blueprint.
+- Only landing_page applications may default to marketing sections; other application types must prioritize the core task UI.
+- Use accessible semantic HTML, responsive CSS and visible keyboard focus.
+- Do not wrap file content in Markdown fences.
+- Use the same language as the requirement and blueprint.`,
 		project.Name,
+		project.ProjectType,
 		util.RedactText(project.Description),
 		project.UIStyle,
 		util.RedactText(project.CodingRules),
 		requirements,
 		blueprint,
+		string(planJSON),
 	)
 
 	aiResult, err := s.ai.GenerateJSON(ctx, AIRequest{
@@ -237,22 +322,151 @@ Hard requirements:
 		return nil, err
 	}
 
-	var spec CodeGenerationContentSpec
-	if err := util.ParseAIResponseInto(aiResult.JSONText, &spec); err != nil {
+	var result CodeGenerationAIResult
+	if err := util.ParseAIResponseInto(aiResult.JSONText, &result); err != nil {
 		return nil, fmt.Errorf("parse code generation AI response: %w", err)
 	}
-	normalizeContentSpec(&spec, project)
-	files, err := renderVueProjectFiles(project, spec)
+	if err := validateGeneratedFiles(result.Files); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (s *AIGenerationService) generateProjectPlan(ctx context.Context, project *model.Project, requirements, blueprint string) (*GenerationPlan, error) {
+	systemPrompt := `You are a senior software architect. Return one valid JSON object only. Plan a compact Vue application before code generation.`
+	userPrompt := fmt.Sprintf(`Create a file and verification plan for this application.
+
+Project: %s
+Application type: %s
+Requirements: %s
+Confirmed blueprint: %s
+
+Return:
+{"application_type":"type","architecture":"short architecture summary","files":[{"path":"src/example.ts","purpose":"why this file exists","feature_ids":["F-001"],"dependencies":[]}],"verification_steps":["test behavior"]}
+
+Constraints:
+- Include package.json, tsconfig.json, index.html, src/main.ts and src/App.vue.
+- Plan 24 files or fewer and map every must feature to at least one file.
+- Interactive applications must separate domain rules/state from visual components.
+- Do not plan pricing, contact forms or marketing proof unless explicitly required.`,
+		project.Name, project.ProjectType, requirements, blueprint)
+	result, err := s.ai.GenerateJSON(ctx, AIRequest{ToolType: ToolTypeGenerationPlan, SystemPrompt: systemPrompt, UserPrompt: userPrompt})
+	if err != nil {
+		return nil, fmt.Errorf("generate project plan: %w", err)
+	}
+	var plan GenerationPlan
+	if err := util.ParseAIResponseInto(result.JSONText, &plan); err != nil {
+		return nil, fmt.Errorf("parse generation plan: %w", err)
+	}
+	if len(plan.Files) == 0 || len(plan.Files) > 24 {
+		return nil, fmt.Errorf("generation plan must contain 1 to 24 files")
+	}
+	required := map[string]bool{"package.json": false, "tsconfig.json": false, "index.html": false, "src/main.ts": false, "src/App.vue": false}
+	for _, file := range plan.Files {
+		path := filepath.ToSlash(strings.TrimSpace(file.Path))
+		if _, ok := required[path]; ok {
+			required[path] = true
+		}
+	}
+	for path, found := range required {
+		if !found {
+			return nil, fmt.Errorf("generation plan is missing %s", path)
+		}
+	}
+	return &plan, nil
+}
+
+// RepairProjectFiles performs a scoped repair after deterministic verification
+// fails. The returned result is the complete merged project, not only patches.
+func (s *AIGenerationService) RepairProjectFiles(ctx context.Context, projectID string, current *CodeGenerationAIResult, verificationError string) (*CodeGenerationAIResult, error) {
+	project, err := s.loadProject(projectID)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateGeneratedFiles(files); err != nil {
+	type repairFile struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+	filesForPrompt := make([]repairFile, 0, len(current.Files))
+	remaining := 70000
+	for _, file := range current.Files {
+		if remaining <= 0 {
+			break
+		}
+		content := util.TruncateText(file.Content, min(remaining, 14000))
+		remaining -= len(content)
+		filesForPrompt = append(filesForPrompt, repairFile{Path: file.Path, Content: content})
+	}
+	currentJSON, _ := json.Marshal(filesForPrompt)
+	systemPrompt := `You repair Vue 3 + TypeScript projects from deterministic test or build errors. Return one valid JSON object only, without Markdown.`
+	userPrompt := fmt.Sprintf(`Repair only files related to the verification error. Preserve working functionality and the confirmed product scope.
+
+Project: %s
+Application type: %s
+
+Verification error:
+%s
+
+Current project files (some large files may be truncated):
+%s
+
+Return only changed complete files:
+{"files":[{"path":"relative/path","content":"complete corrected content"}],"notes":["repair summary"]}
+
+Constraints:
+- Do not add dependencies unless absolutely required and allowed by the existing package policy.
+- Do not remove requested functionality to make the build pass.
+- Never use Markdown fences, absolute paths or path traversal.
+- Keep changes scoped to the error.`,
+		project.Name,
+		project.ProjectType,
+		util.TruncateText(verificationError, 10000),
+		string(currentJSON),
+	)
+	aiResult, err := s.ai.GenerateJSON(ctx, AIRequest{ToolType: ToolTypeCodeGeneration, SystemPrompt: systemPrompt, UserPrompt: userPrompt})
+	if err != nil {
 		return nil, err
 	}
-	return &CodeGenerationAIResult{Files: files, Notes: spec.Notes}, nil
+	var patch CodeGenerationAIResult
+	if err := util.ParseAIResponseInto(aiResult.JSONText, &patch); err != nil {
+		return nil, fmt.Errorf("parse repair AI response: %w", err)
+	}
+	if len(patch.Files) == 0 {
+		return nil, fmt.Errorf("AI repair returned no changed files")
+	}
+	merged := make(map[string]GeneratedProjectFile, len(current.Files)+len(patch.Files))
+	for _, file := range current.Files {
+		merged[filepath.ToSlash(file.Path)] = file
+	}
+	for _, file := range patch.Files {
+		path := filepath.ToSlash(strings.TrimSpace(file.Path))
+		if path == "" || strings.HasPrefix(path, "/") || strings.Contains(path, "..") || filepath.IsAbs(path) || strings.TrimSpace(file.Content) == "" {
+			return nil, fmt.Errorf("AI repair returned an invalid file: %s", file.Path)
+		}
+		if _, exists := merged[path]; !exists {
+			return nil, fmt.Errorf("AI repair attempted to add an unplanned file: %s", path)
+		}
+		file.Path = path
+		merged[path] = file
+	}
+	result := &CodeGenerationAIResult{Notes: append(current.Notes, patch.Notes...)}
+	for _, original := range current.Files {
+		result.Files = append(result.Files, merged[filepath.ToSlash(original.Path)])
+	}
+	if err := validateGeneratedFiles(result.Files); err != nil {
+		return nil, fmt.Errorf("validate repaired files: %w", err)
+	}
+	return result, nil
 }
 
 func normalizeContentSpec(spec *CodeGenerationContentSpec, project *model.Project) {
+	// Legacy landing-page content normalization is intentionally disabled.
+	// New generation parses CodeGenerationAIResult directly.
+	_ = spec
+	_ = project
+	return
+
+	// Deprecated implementation below is unreachable.
 	if strings.TrimSpace(spec.ProductName) == "" {
 		spec.ProductName = project.Name
 	}
@@ -304,6 +518,14 @@ func normalizeContentSpec(spec *CodeGenerationContentSpec, project *model.Projec
 }
 
 func renderVueProjectFiles(project *model.Project, spec CodeGenerationContentSpec) ([]GeneratedProjectFile, error) {
+	// Retained temporarily for source compatibility with old branches. The
+	// generic generation pipeline must never fall back to this marketing page.
+	_ = project
+	_ = spec
+	return nil, fmt.Errorf("legacy landing-page renderer is disabled")
+
+	// Deprecated implementation below is unreachable and will be removed after
+	// legacy branch compatibility is no longer required.
 	features, err := json.MarshalIndent(spec.Features, "", "  ")
 	if err != nil {
 		return nil, err
@@ -460,9 +682,9 @@ func (s *AIGenerationService) loadLatestRequirementContent(projectID string) str
 	return req.Content
 }
 
-func (s *AIGenerationService) loadLatestBlueprintContent(projectID string) string {
+func (s *AIGenerationService) loadConfirmedBlueprintContent(projectID string) string {
 	var bp model.Blueprint
-	if err := s.db.Where("project_id = ?", projectID).Order("version desc").First(&bp).Error; err != nil {
+	if err := s.db.Where("project_id = ? AND status = ?", projectID, "confirmed").Order("version desc").First(&bp).Error; err != nil {
 		return ""
 	}
 	return bp.Content
@@ -491,11 +713,20 @@ func compactBlueprintForCodegen(value string) string {
 	var bp BlueprintAIResult
 	if err := json.Unmarshal([]byte(value), &bp); err == nil {
 		compact := BlueprintAIResult{
+			SchemaVersion:       bp.SchemaVersion,
+			AppType:             bp.AppType,
 			ProductPositioning:  util.TruncateText(bp.ProductPositioning, 800),
 			TechStack:           util.TruncateText(bp.TechStack, 300),
 			UIStyle:             util.TruncateText(bp.UIStyle, 500),
 			Pages:               bp.Pages,
 			Components:          bp.Components,
+			UserFlows:           bp.UserFlows,
+			Features:            bp.Features,
+			InteractionRules:    bp.InteractionRules,
+			StateModel:          bp.StateModel,
+			DomainRules:         bp.DomainRules,
+			AcceptanceCriteria:  bp.AcceptanceCriteria,
+			TestPlan:            bp.TestPlan,
 			ImplementationNotes: bp.ImplementationNotes,
 		}
 		if len(compact.Pages) > 8 {
@@ -515,6 +746,10 @@ func compactBlueprintForCodegen(value string) string {
 }
 
 func normalizeBlueprint(result *BlueprintAIResult, project *model.Project) {
+	result.SchemaVersion = 2
+	if strings.TrimSpace(result.AppType) == "" {
+		result.AppType = project.ProjectType
+	}
 	if strings.TrimSpace(result.TechStack) == "" {
 		result.TechStack = strings.TrimSpace(strings.Join([]string{project.FrontendStack, project.BackendStack}, " + "))
 	}
@@ -529,6 +764,14 @@ func normalizeBlueprint(result *BlueprintAIResult, project *model.Project) {
 			result.Pages[i].Route = "/" + result.Pages[i].Route
 		}
 	}
+	for i := range result.Features {
+		if strings.TrimSpace(result.Features[i].ID) == "" {
+			result.Features[i].ID = fmt.Sprintf("F-%03d", i+1)
+		}
+		if strings.TrimSpace(result.Features[i].Priority) == "" {
+			result.Features[i].Priority = "must"
+		}
+	}
 }
 
 func validateBlueprint(result BlueprintAIResult) error {
@@ -537,6 +780,22 @@ func validateBlueprint(result BlueprintAIResult) error {
 	}
 	if len(result.Pages) == 0 {
 		return fmt.Errorf("AI 返回的蓝图缺少 pages")
+	}
+	if result.SchemaVersion >= 2 {
+		if strings.TrimSpace(result.AppType) == "" {
+			return fmt.Errorf("AI 返回的蓝图缺少 app_type")
+		}
+		if len(result.Features) == 0 {
+			return fmt.Errorf("AI 返回的蓝图缺少 features")
+		}
+		for _, feature := range result.Features {
+			if strings.EqualFold(feature.Priority, "must") && (strings.TrimSpace(feature.Name) == "" || len(feature.AcceptanceCriteria) == 0) {
+				return fmt.Errorf("必须功能 %s 缺少名称或验收标准", feature.ID)
+			}
+		}
+		if len(result.OpenQuestions) > 0 {
+			return fmt.Errorf("蓝图仍有 %d 个未决问题", len(result.OpenQuestions))
+		}
 	}
 	return nil
 }
@@ -550,12 +809,14 @@ func validateGeneratedFiles(files []GeneratedProjectFile) error {
 	}
 
 	required := map[string]bool{
-		"package.json": false,
-		"index.html":   false,
-		"src/main.ts":  false,
-		"src/App.vue":  false,
+		"package.json":  false,
+		"tsconfig.json": false,
+		"index.html":    false,
+		"src/main.ts":   false,
+		"src/App.vue":   false,
 	}
 	seen := map[string]bool{}
+	totalBytes := 0
 	for _, file := range files {
 		path := filepath.ToSlash(strings.TrimSpace(file.Path))
 		if path == "" {
@@ -571,14 +832,109 @@ func validateGeneratedFiles(files []GeneratedProjectFile) error {
 		if strings.TrimSpace(file.Content) == "" {
 			return fmt.Errorf("AI 返回的文件内容为空: %s", path)
 		}
+		if len(file.Content) > 256*1024 {
+			return fmt.Errorf("AI 返回的单个文件过大: %s", path)
+		}
+		totalBytes += len(file.Content)
+		if totalBytes > 2*1024*1024 {
+			return fmt.Errorf("AI 返回的项目总大小超过 2MB")
+		}
 		if _, ok := required[path]; ok {
 			required[path] = true
+		}
+		if path == "package.json" {
+			var packageFile struct {
+				Scripts         map[string]string `json:"scripts"`
+				Dependencies    map[string]string `json:"dependencies"`
+				DevDependencies map[string]string `json:"devDependencies"`
+			}
+			if err := json.Unmarshal([]byte(file.Content), &packageFile); err != nil {
+				return fmt.Errorf("AI 返回的 package.json 无效: %w", err)
+			}
+			if strings.TrimSpace(packageFile.Scripts["build"]) == "" {
+				return fmt.Errorf("package.json 缺少 build 脚本")
+			}
+			for script := range packageFile.Scripts {
+				switch script {
+				case "dev", "build", "preview", "test":
+				default:
+					return fmt.Errorf("package.json 包含不允许的脚本: %s", script)
+				}
+			}
+			for name, script := range packageFile.Scripts {
+				if strings.ContainsAny(script, ";&|><`$") {
+					return fmt.Errorf("package.json 脚本包含不安全的 shell 操作: %s", name)
+				}
+				fields := strings.Fields(script)
+				if len(fields) == 0 || (fields[0] != "vite" && fields[0] != "vitest") {
+					return fmt.Errorf("package.json 脚本命令不在允许列表: %s", name)
+				}
+			}
+			allowedPackages := map[string]bool{
+				"vue": true, "vue-router": true, "pinia": true,
+				"vite": true, "typescript": true, "vue-tsc": true, "@vitejs/plugin-vue": true,
+				"vitest": true, "@vue/test-utils": true, "jsdom": true,
+			}
+			for name := range packageFile.Dependencies {
+				if !allowedPackages[name] {
+					return fmt.Errorf("package.json 包含不允许的依赖: %s", name)
+				}
+			}
+			for name := range packageFile.DevDependencies {
+				if !allowedPackages[name] {
+					return fmt.Errorf("package.json 包含不允许的开发依赖: %s", name)
+				}
+			}
+			if packageFile.Dependencies["vue-tsc"] == "" && packageFile.DevDependencies["vue-tsc"] == "" {
+				return fmt.Errorf("package.json 缺少用于类型检查的 vue-tsc")
+			}
 		}
 	}
 	for path, ok := range required {
 		if !ok {
 			return fmt.Errorf("AI 返回的文件缺少必需文件: %s", path)
 		}
+	}
+	return nil
+}
+
+// ValidateBlueprintContent validates a stored blueprint before confirmation.
+func ValidateBlueprintContent(content string) error {
+	var result BlueprintAIResult
+	if err := json.Unmarshal([]byte(content), &result); err != nil {
+		return fmt.Errorf("蓝图 JSON 无效: %w", err)
+	}
+	return validateBlueprint(result)
+}
+
+// ValidateBlueprintAgainstRequirements applies deterministic confirmation
+// gates using both versioned inputs.
+func ValidateBlueprintAgainstRequirements(blueprintContent, requirementContent string) error {
+	var blueprint BlueprintAIResult
+	if err := json.Unmarshal([]byte(blueprintContent), &blueprint); err != nil {
+		return fmt.Errorf("蓝图 JSON 无效: %w", err)
+	}
+	if err := validateBlueprint(blueprint); err != nil {
+		return err
+	}
+	var requirement struct {
+		SchemaVersion    int      `json:"schema_version"`
+		MustHaveFeatures []string `json:"must_have_features"`
+	}
+	if err := json.Unmarshal([]byte(requirementContent), &requirement); err != nil {
+		return fmt.Errorf("需求 JSON 无效: %w", err)
+	}
+	if requirement.SchemaVersion < 2 {
+		return nil
+	}
+	mustCount := 0
+	for _, feature := range blueprint.Features {
+		if strings.EqualFold(feature.Priority, "must") {
+			mustCount++
+		}
+	}
+	if mustCount < len(requirement.MustHaveFeatures) {
+		return fmt.Errorf("必须功能覆盖不足：需求 %d 项，蓝图仅 %d 项", len(requirement.MustHaveFeatures), mustCount)
 	}
 	return nil
 }

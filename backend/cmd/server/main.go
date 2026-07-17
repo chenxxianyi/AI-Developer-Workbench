@@ -182,13 +182,19 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	adminHandler := handler.NewAdminHandler(db, cfg)
 	aiGenerationService := service.NewAIGenerationService(db, aiService)
 	blueprintHandler := handler.NewBlueprintHandler(db, aiGenerationService)
-	requirementHandler := handler.NewRequirementHandler(db)
+	requirementAssistService := service.NewRequirementAssistService(db, aiService)
+	requirementHandler := handler.NewRequirementHandler(db, requirementAssistService)
 	broker := sse.NewBroker()
 	workspaceService := service.NewWorkspaceService(cfg.Workspace.RootDir)
+	buildService := service.NewBuildService(
+		workspaceService,
+		cfg.Workspace.BuildTimeoutSec,
+		cfg.Workspace.MaxConcurrentBuilds,
+	)
 	taskService := service.NewTaskService(db, broker)
-	taskHandler := handler.NewTaskHandler(taskService, broker, workspaceService, aiGenerationService)
+	taskHandler := handler.NewTaskHandler(taskService, broker, workspaceService, aiGenerationService, buildService)
 	fileHandler := handler.NewFileHandler(workspaceService)
-	buildHandler := handler.NewBuildHandler(workspaceService)
+	buildHandler := handler.NewBuildHandler(workspaceService, buildService)
 
 	router := gin.New()
 	// Cap uploaded bodies at the configured limit and return a clear 413 for
@@ -232,6 +238,10 @@ func buildRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 func newHTTPServer(cfg *config.Config, router http.Handler) *http.Server {
 	writeTimeout := time.Duration(cfg.AI.TimeoutSeconds+30) * time.Second
+	buildWriteTimeout := time.Duration(cfg.Workspace.BuildTimeoutSec+30) * time.Second
+	if buildWriteTimeout > writeTimeout {
+		writeTimeout = buildWriteTimeout
+	}
 	if writeTimeout < 2*time.Minute {
 		writeTimeout = 2 * time.Minute
 	}

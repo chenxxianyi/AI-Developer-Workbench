@@ -40,6 +40,7 @@ func TestProjectServiceCreateValidatesAndNormalizesInput(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Workbench", project.Name)
 	assert.Equal(t, "Local quality workspace", project.Description)
+	assert.Equal(t, "utility_app", project.ProjectType)
 
 	_, err = svc.Create(context.Background(), dto.ProjectCreateDTO{
 		Name:    "Invalid URL",
@@ -52,6 +53,9 @@ func TestProjectServiceCreateValidatesAndNormalizesInput(t *testing.T) {
 		Description: string(make([]byte, dto.ProjectDescriptionMaxLength+1)),
 	})
 	require.ErrorContains(t, err, "description")
+
+	_, err = svc.Create(context.Background(), dto.ProjectCreateDTO{Name: "Invalid type", ProjectType: "unknown"})
+	require.ErrorContains(t, err, "project_type")
 }
 
 func TestProjectServiceListIncludesReportAggregates(t *testing.T) {

@@ -9,6 +9,7 @@ import type { QualityTrendPoint } from './system'
 export interface Project {
   id: string
   name: string
+  project_type?: ProjectType
   description: string
   repo_url: string
   frontend_stack: string
@@ -23,6 +24,7 @@ export interface Project {
 export interface ProjectSummary {
   id: string
   name: string
+  project_type?: ProjectType
   description: string
   repo_url: string
   report_count: number
@@ -65,6 +67,7 @@ export interface ProjectDeleteResult {
 
 export interface ProjectCreateInput {
   name: string
+  project_type?: ProjectType
   description?: string
   repo_url?: string
   frontend_stack?: string
@@ -76,6 +79,7 @@ export interface ProjectCreateInput {
 
 export interface ProjectUpdateInput {
   name?: string
+  project_type?: ProjectType
   description?: string
   repo_url?: string
   frontend_stack?: string
@@ -84,6 +88,16 @@ export interface ProjectUpdateInput {
   ui_style?: string
   coding_rules?: string
 }
+
+export type ProjectType =
+  | 'interactive_app'
+  | 'dashboard'
+  | 'data_product'
+  | 'content_site'
+  | 'ecommerce'
+  | 'utility_app'
+  | 'landing_page'
+  | 'analysis_existing'
 
 export interface ProjectListParams {
   search?: string

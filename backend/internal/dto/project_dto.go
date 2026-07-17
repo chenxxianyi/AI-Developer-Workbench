@@ -9,9 +9,21 @@ const (
 	ProjectCodingRulesMaxLength = 12000
 )
 
+var ValidProjectTypes = map[string]bool{
+	"interactive_app":   true,
+	"dashboard":         true,
+	"data_product":      true,
+	"content_site":      true,
+	"ecommerce":         true,
+	"utility_app":       true,
+	"landing_page":      true,
+	"analysis_existing": true,
+}
+
 // ProjectCreateDTO is the input for creating a project.
 type ProjectCreateDTO struct {
 	Name          string `json:"name" binding:"required"`
+	ProjectType   string `json:"project_type"`
 	Description   string `json:"description"`
 	RepoURL       string `json:"repo_url"`
 	FrontendStack string `json:"frontend_stack"`
@@ -24,6 +36,7 @@ type ProjectCreateDTO struct {
 // ProjectUpdateDTO is the input for updating a project. All fields optional.
 type ProjectUpdateDTO struct {
 	Name          *string `json:"name"`
+	ProjectType   *string `json:"project_type"`
 	Description   *string `json:"description"`
 	RepoURL       *string `json:"repo_url"`
 	FrontendStack *string `json:"frontend_stack"`
@@ -37,6 +50,7 @@ type ProjectUpdateDTO struct {
 type ProjectDTO struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
+	ProjectType   string `json:"project_type"`
 	Description   string `json:"description"`
 	RepoURL       string `json:"repo_url"`
 	FrontendStack string `json:"frontend_stack"`
@@ -52,6 +66,7 @@ type ProjectDTO struct {
 type ProjectSummaryDTO struct {
 	ID           string   `json:"id"`
 	Name         string   `json:"name"`
+	ProjectType  string   `json:"project_type"`
 	Description  string   `json:"description"`
 	RepoURL      string   `json:"repo_url"`
 	ReportCount  int64    `json:"report_count"`

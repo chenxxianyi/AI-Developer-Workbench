@@ -38,6 +38,7 @@ Thumbs.db
 # Uploads and temp (generated content)
 uploads/*
 temp/*
+workspace/*
 !uploads/.gitkeep
 !temp/.gitkeep
 

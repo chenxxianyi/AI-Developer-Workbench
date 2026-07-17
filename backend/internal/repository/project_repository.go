@@ -71,6 +71,7 @@ func (r *projectRepository) List(ctx context.Context, query dto.ListProjectsQuer
 	type projectListRow struct {
 		ID            string
 		Name          string
+		ProjectType   string
 		Description   string
 		RepoURL       string
 		FrontendStack string
@@ -102,6 +103,7 @@ func (r *projectRepository) List(ctx context.Context, query dto.ListProjectsQuer
 			Project: model.Project{
 				ID:            row.ID,
 				Name:          row.Name,
+				ProjectType:   row.ProjectType,
 				Description:   row.Description,
 				RepoURL:       row.RepoURL,
 				FrontendStack: row.FrontendStack,

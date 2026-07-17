@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   AlertCircle,
@@ -15,6 +15,7 @@ const route = useRoute()
 const projectId = route.params.projectId as string
 const previewUrl = ref('')
 const rebuilding = ref(false)
+const checking = ref(true)
 const error = ref('')
 
 async function rebuild() {
@@ -22,7 +23,11 @@ async function rebuild() {
   rebuilding.value = true
   error.value = ''
   try {
-    const result = await apiClient.post(`/projects/${projectId}/build`) as { preview_url?: string }
+    const result = await apiClient.post(
+      `/projects/${projectId}/build`,
+      undefined,
+      { timeout: 650_000 },
+    ) as { preview_url?: string }
     previewUrl.value = result.preview_url || ''
     if (!previewUrl.value) error.value = '构建已完成，但没有返回可用的预览地址'
   } catch (err: any) {
@@ -31,6 +36,20 @@ async function rebuild() {
     rebuilding.value = false
   }
 }
+
+async function loadPreviewStatus() {
+  checking.value = true
+  try {
+    const result = await apiClient.get(`/projects/${projectId}/build`) as { ready?: boolean; preview_url?: string }
+    if (result.ready) previewUrl.value = result.preview_url || ''
+  } catch {
+    // A project without a successful build starts in the empty state.
+  } finally {
+    checking.value = false
+  }
+}
+
+onMounted(loadPreviewStatus)
 </script>
 
 <template>
@@ -69,7 +88,9 @@ async function rebuild() {
       {{ error }}
     </div>
 
-    <section v-if="previewUrl" class="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+    <section v-if="checking" class="h-[520px] animate-pulse rounded-lg border border-border bg-surface-muted" aria-label="正在检查预览状态" />
+
+    <section v-else-if="previewUrl" class="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted/70 px-4 py-3">
         <div class="flex min-w-0 items-center gap-3">
           <div class="flex items-center gap-1.5" aria-hidden="true">
@@ -87,7 +108,7 @@ async function rebuild() {
         :src="previewUrl"
         title="项目在线预览"
         class="h-[70vh] min-h-[460px] w-full bg-white"
-        sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+        sandbox="allow-forms allow-modals allow-popups allow-scripts allow-downloads"
       />
     </section>
 

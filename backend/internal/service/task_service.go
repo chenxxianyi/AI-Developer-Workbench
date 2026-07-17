@@ -110,7 +110,17 @@ func (s *TaskService) Fail(taskID string, errorCode, errorDetail string) error {
 
 // Cancel transitions a running task to cancelled.
 func (s *TaskService) Cancel(taskID string) error {
-	return s.db.Model(&model.Task{}).Where("id = ? AND status = ?", taskID, "running").Update("status", "cancelled").Error
+	now := time.Now()
+	result := s.db.Model(&model.Task{}).
+		Where("id = ? AND status IN ?", taskID, []string{"pending", "running"}).
+		Updates(map[string]interface{}{"status": "cancelled", "finished_at": &now})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("only pending or running tasks can be cancelled")
+	}
+	return nil
 }
 
 // Retry resets a failed task back to pending (if retryable and within limit).

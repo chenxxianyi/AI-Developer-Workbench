@@ -40,6 +40,7 @@ func (s *projectService) Create(ctx context.Context, input dto.ProjectCreateDTO)
 
 	project := &model.Project{
 		Name:          input.Name,
+		ProjectType:   input.ProjectType,
 		Description:   input.Description,
 		RepoURL:       input.RepoURL,
 		FrontendStack: input.FrontendStack,
@@ -76,6 +77,7 @@ func (s *projectService) List(ctx context.Context, query dto.ListProjectsQuery) 
 		items = append(items, dto.ProjectSummaryDTO{
 			ID:           p.ID,
 			Name:         p.Name,
+			ProjectType:  p.ProjectType,
 			Description:  p.Description,
 			RepoURL:      p.RepoURL,
 			ReportCount:  item.ReportCount,
@@ -101,6 +103,7 @@ func (s *projectService) Update(ctx context.Context, id string, input dto.Projec
 
 	next := dto.ProjectCreateDTO{
 		Name:          project.Name,
+		ProjectType:   project.ProjectType,
 		Description:   project.Description,
 		RepoURL:       project.RepoURL,
 		FrontendStack: project.FrontendStack,
@@ -111,6 +114,9 @@ func (s *projectService) Update(ctx context.Context, id string, input dto.Projec
 	}
 	if input.Name != nil {
 		next.Name = *input.Name
+	}
+	if input.ProjectType != nil {
+		next.ProjectType = *input.ProjectType
 	}
 	if input.Description != nil {
 		next.Description = *input.Description
@@ -139,6 +145,7 @@ func (s *projectService) Update(ctx context.Context, id string, input dto.Projec
 	}
 
 	project.Name = next.Name
+	project.ProjectType = next.ProjectType
 	project.Description = next.Description
 	project.RepoURL = next.RepoURL
 	project.FrontendStack = next.FrontendStack
@@ -213,6 +220,7 @@ func (s *projectService) toDTO(p *model.Project) *dto.ProjectDTO {
 	return &dto.ProjectDTO{
 		ID:            p.ID,
 		Name:          p.Name,
+		ProjectType:   p.ProjectType,
 		Description:   p.Description,
 		RepoURL:       p.RepoURL,
 		FrontendStack: p.FrontendStack,
@@ -227,6 +235,10 @@ func (s *projectService) toDTO(p *model.Project) *dto.ProjectDTO {
 
 func normalizeProjectInput(input dto.ProjectCreateDTO) dto.ProjectCreateDTO {
 	input.Name = strings.TrimSpace(input.Name)
+	input.ProjectType = strings.TrimSpace(input.ProjectType)
+	if input.ProjectType == "" {
+		input.ProjectType = "utility_app"
+	}
 	input.Description = strings.TrimSpace(input.Description)
 	input.RepoURL = strings.TrimSpace(input.RepoURL)
 	input.FrontendStack = strings.TrimSpace(input.FrontendStack)
@@ -240,6 +252,9 @@ func normalizeProjectInput(input dto.ProjectCreateDTO) dto.ProjectCreateDTO {
 func validateProjectInput(input dto.ProjectCreateDTO) error {
 	if input.Name == "" {
 		return fmt.Errorf("project name is required")
+	}
+	if !dto.ValidProjectTypes[input.ProjectType] {
+		return fmt.Errorf("project_type is not supported")
 	}
 	if len(input.Name) > dto.ProjectNameMaxLength {
 		return fmt.Errorf("project name must be %d characters or fewer", dto.ProjectNameMaxLength)

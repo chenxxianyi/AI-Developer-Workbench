@@ -34,7 +34,7 @@ type Blueprint struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	ProjectID string    `gorm:"type:varchar(36);not null;index" json:"project_id"`
 	Content   string    `gorm:"type:json;not null" json:"content"`            // JSON: product_positioning, pages, components, db, api, ui, tech_stack
-	Status    string    `gorm:"not null;default:draft;size:20" json:"status"` // draft | generated | confirmed
+	Status    string    `gorm:"not null;default:draft;size:20" json:"status"` // draft | generated | confirmed | superseded
 	Version   int       `gorm:"not null;default:1" json:"version"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

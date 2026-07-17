@@ -46,9 +46,10 @@ const statusTone = computed(() => {
 })
 
 const generationStages = [
-  { icon: FileCode, label: '生成项目结构与核心代码' },
-  { icon: Files, label: '整理资源、配置和依赖文件' },
-  { icon: Monitor, label: '完成后进入在线预览' },
+  { icon: FileCode, label: '按已确认蓝图生成真实功能模块' },
+  { icon: Files, label: '写入文件并检查项目结构' },
+  { icon: Terminal, label: '安装受限依赖并执行生产构建' },
+  { icon: Monitor, label: '验证通过后发布在线预览' },
 ]
 
 function addLog(text: string, level: GenerationLog['level'] = 'info') {
@@ -155,7 +156,7 @@ onUnmounted(() => eventSource?.close())
   <ProjectStageShell
     :icon="Play"
     title="代码生成"
-    description="根据已确认的蓝图生成项目结构、代码和配置文件。"
+    description="根据已确认蓝图生成真实应用代码，并通过生产构建验证后发布预览。"
     step-text="生成阶段"
   >
     <template v-if="completed" #actions>
